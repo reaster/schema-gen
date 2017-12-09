@@ -1,0 +1,61 @@
+group 'com.javagen'
+version '1.0.0-SNAPSHOT'
+
+apply plugin: 'groovy'
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: GreetingPlugin
+apply plugin: JavaGenPlugin
+
+greeting.message = 'Hi Dude!'
+javaGen.message = 'Hi Gen!'
+
+class GreetingPlugin implements Plugin<Project> {
+    void apply(Project project) {
+        project.extensions.create("greeting", GreetingPluginExtension)
+        // Add a task that uses the configuration
+        project.task('hello') {
+            doLast {
+                println project.greeting.message
+            }
+        }
+    }
+}
+
+class GreetingPluginExtension
+{
+    def String message = 'Hello from GreetingPlugin'
+}
+
+class JavaGenPlugin implements Plugin<Project> {
+    void apply(Project project) {
+        project.extensions.create("javaGen", JavaGenPluginExtension)
+        // Add a task that uses the configuration
+        project.task('gen') {
+            doLast {
+                println project.javaGen.message
+            }
+        }
+    }
+}
+
+class JavaGenPluginExtension
+{
+    def String message = 'Hello from GreetingPlugin'
+}
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:2.4.12'
+    testCompile 'xmlunit:xmlunit:1.6'
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    testCompile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.0'
+    testCompile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.9.0'
+    testCompile 'org.spockframework:spock-core:1.1-groovy-2.4'
+}
