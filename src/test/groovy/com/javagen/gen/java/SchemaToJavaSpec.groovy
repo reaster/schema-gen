@@ -117,6 +117,7 @@ class SchemaToJavaSpec extends Specification
                         </xsd:simpleType>
                     </xsd:schema>"""
         SchemaToJava schemaVisitor = new SchemaToJava()
+        schemaVisitor.useOptional = true
         when: "stage 1 - generate schema"
         Schema schema = new XmlSchemaNormalizer().buildSchema(xml)
         then: "normalized schema produced"
@@ -168,8 +169,11 @@ class SchemaToJavaSpec extends Specification
         MProperty lon = wptClass.fields['lon']
         then: "map to optional property"
         lon != null
+        when: "using Optional setting, primatives are put in primitva wrapper classes and placed in java.util.Optional instances"
+        schemaVisitor.useOptional == true
+        then:
         lon.cardinality == MCardinality.OPTIONAL
-        lon.type.name == 'double'
+        lon.type.name == 'Double'
         when: "simpleType enumeration attribute"
         MProperty fix = wptClass.fields['fix']
         MEnum fixTypeEnum = module.lookupClass('FixTypeEnum')
@@ -192,7 +196,7 @@ class SchemaToJavaSpec extends Specification
         then:
         ele != null
         ele.cardinality == MCardinality.OPTIONAL
-        ele.type.name == 'double'
+        ele.type.name == 'Double'
         ele.val == '1.0'
         when: "optional dateTime element"
         MProperty time = wptClass.fields['time']

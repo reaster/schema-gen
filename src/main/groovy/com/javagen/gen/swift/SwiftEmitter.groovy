@@ -30,18 +30,6 @@ class SwiftEmitter extends MVisitor
 			new SwiftTypeRegistry()
 	}
 
-//	@Override
-//	String fileName(MClass c)
-//	{
-//		fileName(c.fullName())
-//	}
-//
-//	@Override
-//	String fileName(String className)
-//	{
-//		className+".swift"
-//	}
-	
 	@Override
 	def visit(MModule m)
 	{
@@ -274,7 +262,7 @@ class SwiftEmitter extends MVisitor
 	String defaultValue(MBind f, def val = null)
 	{
 		if (val!=null || f.isFinal()) {
-			final String valQuote = valueQuote(f, val)
+			final String valQuote = valueQuote(f, (String)val)
 			return f.cardinality.isContainer() ? val : "${valQuote}${val}${valQuote}"
 		}
 		if (!assignDefaultValues)

@@ -158,17 +158,17 @@ class KotlinGen extends SchemaToJava
         propertyNameFunction = { text -> GlobalFunctionsUtil.legalJavaName(lowerCase(text)) }
         constantNameFunction = { text -> GlobalFunctionsUtil.javaConstName(text) }
 
-        //kotlin-gpx
-        //srcDir = new File('../schema-gen-examples/kotlin-gpx/src/main/kotlin-gen')
-        //schemaFile = new File('/Users/richard/dev/hs/schema-gen-examples/kotlin-gpx/src/main/resources/gpx.xsd').toURI().toURL()
+//        //kotlin-gpx
+//        srcDir = new File('../schema-gen-examples/kotlin-gpx/src/main/kotlin-gen')
+//        schemaFile = new File('/Users/richard/dev/hs/javagen/schema-gen-examples/kotlin-gpx/src/main/resources/gpx.xsd').toURI().toURL()
 
         //kotlin-hsf
-        schemaFile = new File('/Users/richard/dev/hs/hsf-data/hsf-1_1.xsd').toURI().toURL()
-        srcDir = new File('../schema-gen-hsf/hsf-kotlin/src/main/kotlin-gen')
-        customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
-        def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']
-        def unknownEnum = 'Unknown'
-        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: GlobalFunctionsUtil.swiftEnumName(text, false) }
+//        schemaFile = new File('/Users/richard/dev/hs/hsf-data/hsf-1_1.xsd').toURI().toURL()
+//        srcDir = new File('../schema-gen-hsf/hsf-kotlin/src/main/kotlin-gen')
+//        customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
+//        def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']
+//        def unknownEnum = 'Unknown'
+//        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: GlobalFunctionsUtil.swiftEnumName(text, false) }
 
         useOptional = true
     }

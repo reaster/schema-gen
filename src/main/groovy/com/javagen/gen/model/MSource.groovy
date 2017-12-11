@@ -1,7 +1,12 @@
 package com.javagen.gen.model
 
 /**
- * Used by MModule and MClass to allow nested types.
+ * Used by MModule and MClass to allow nested types. Also manages two common source file emission scenarios:
+ * <ul>
+ * <li><file per class - Typically used by Java</li>
+ * <li>file per module - Used by Kotlin and Swift</li>
+ * </ul>
+ *
  */
 trait MSource
 {

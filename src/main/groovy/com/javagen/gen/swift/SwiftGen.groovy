@@ -18,8 +18,8 @@ class SwiftGen extends SchemaToSwift
 		super()
 		//schemaFile = new URL('http://www.topografix.com/gpx/1/1/gpx.xsd')
 		//schemaFile = new File('/Users/richard/dev/hs/hsf-data/hsf-1_1.xsd')
-		schemaFile = new File('/Users/richard/dev/hs/schema-gen/example-gpx-swift/src/resources/gpx.xsd').toURI().toURL()
-		srcDir = new File('example-gpx-swift/src/swift')
+//		schemaFile = new File('/Users/richard/dev/hs/schema-gen/example-gpx-swift/src/resources/gpx.xsd').toURI().toURL()
+//		srcDir = new File('example-gpx-swift/src/swift')
 		//this.validateable = false
 		//this.singleFile = false
 		//this.packageName = 'com.hotspringsfinder.detail.model'

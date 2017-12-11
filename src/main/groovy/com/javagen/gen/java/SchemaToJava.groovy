@@ -60,7 +60,7 @@ class SchemaToJava extends Gen implements SchemaVisitor
     boolean useOptional = false
     
 
-    SchemaToJava(boolean skipInit)
+    SchemaToJava(boolean skipInit=false)
     {
         super()
         if (!skipInit) {

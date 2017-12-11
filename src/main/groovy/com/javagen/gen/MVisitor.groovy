@@ -24,10 +24,7 @@ class MVisitor
 	def tabs = ''
 	def types = [:]
 	File openFile = null
-	//File srcDir
-
-//	MVisitor(Gen gen, def out) { this.gen = gen; this.out = out }
-//	MVisitor(Gen gen) { this(gen, ) }
+	Closure<PrintWriter> openStreamLambda = { File file -> new PrintWriter(file) }
 
 	//entry point
 	//def gen() { visit( gen.getModel() ) }
@@ -41,41 +38,29 @@ class MVisitor
 	def visit(MReference r) {}
 	def visit(MMethod m) {}
 
-	//language-specific methods
-//	String fileName(MClass c) { throw new UnsupportedOperationException("implement me!") }
-//	String fileName(String className) { throw new UnsupportedOperationException("implement me!") }
-
-	//file handling
-//	def openWriter(String className) {
-//		if (gen.srcDir) {
-//			def relativePath = fileName(className)
-//			def path = new File(gen.srcDir, relativePath)
-//			try {
-//				out = new PrintWriter( path )
-//			} catch(FileNotFoundException e) { // mkdirs and try again
-//				path.parentFile.mkdirs()
-//				out = new PrintWriter( path )
-//			}
-//			println '>'+path.toString()
-//		}
-//	}
-	//file handling
+	/**
+	 *
+	 * @param sourceFile
+	 * @return
+	 */
 	def openWriter(File sourceFile) {
 		if (!sourceFile.equals(openFile)) {
 			if (out)
 				out.close()
 			try {
-				out = new PrintWriter( sourceFile )
+				out = openStreamLambda( sourceFile )
 			} catch(FileNotFoundException e) { // mkdirs and try again
 				sourceFile.parentFile.mkdirs()
-				out = new PrintWriter( sourceFile )
+				out = openStreamLambda( sourceFile )
 			}
 			openFile = sourceFile
 			println '>'+sourceFile.toString()
 		}
 	}
-	//def openWriter(MClass c) { openWriter(c.fullName()) }
 
+	/**
+	 * Only close if MSource is a MClass (i.e. has an assigned srcDir file) and the OutputStream is open.
+	 */
 	def closeWriter() {
 		if (gen.srcDir && out) {
 			out.close()
@@ -83,12 +68,6 @@ class MVisitor
 			openFile = null
 		}
 	}
-//	def closeWriter() {
-//		if (gen.srcDir && out) {
-//			out.close()
-//			out = null
-//		}
-//	}
 
 	//template handling
 	def template(def templateText, String className, def binding) {

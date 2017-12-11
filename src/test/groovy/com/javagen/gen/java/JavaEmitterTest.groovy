@@ -52,7 +52,7 @@ class JavaEmitterTest
 	{
 		gen = new TestGen()
 		os = new ByteArrayOutputStream();
-		visitor = new JavaEmitter(gen:gen, out: new PrintStream(os))
+		visitor = new JavaEmitter(gen:gen, openStreamLambda: { f -> new PrintStream(os) })
 
 		module = new MModule(name: 'com.hotspringsfinder.model')
 		phone = new MClass(name: 'Phone')

@@ -20,17 +20,6 @@ class KotlinEmitter extends MVisitor
 		if ( ! MTypeRegistry.isInitialized() )
 			new KotlinTypeRegistry()
 	}
-
-
-//	@Override
-//	String fileName(MClass c) {
-//		GlobalFunctionsUtil.pathFromPackage(c.fullName())
-//	}
-//
-//	@Override
-//	String fileName(String className) {
-//		GlobalFunctionsUtil.pathFromPackage(className)
-//	}
 	
 	@Override
 	def visit(MModule m) {

@@ -3,7 +3,7 @@ package com.javagen.gen.swift
 import com.javagen.gen.Gen
 import com.javagen.gen.MVisitor
 import com.javagen.gen.TestGen
-import com.javagen.gen.gen.model.*
+import com.javagen.gen.model.*
 import com.javagen.gen.model.MClass
 import com.javagen.gen.model.MEnum
 import com.javagen.gen.model.MMethod
@@ -12,6 +12,7 @@ import com.javagen.gen.model.MProperty
 import com.javagen.gen.model.MReference
 import com.javagen.gen.model.MType
 import com.javagen.gen.model.MTypeRegistry
+import com.javagen.gen.model.MCardinality
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
@@ -42,7 +43,7 @@ class MSwiftVistorTest
 	{
 		gen = new TestGen()
 		os = new ByteArrayOutputStream();
-		visitor = new SwiftEmitter(gen: gen, out: new PrintStream(os))
+		visitor = new SwiftEmitter(gen: gen, openStreamLambda: { f -> new PrintStream(os) })
 
 		module = new MModule(name: 'com.hotspringsfinder.model')
 		phone = new MClass(name: 'Phone').setStruct(true)
@@ -54,10 +55,10 @@ class MSwiftVistorTest
 		module.addClass(address)
 		MType.registerType(address)
 		address.addField(new MProperty(name: 'city', 'static': true, scope: 'public'))
-		address.addField(new MProperty(name: 'street1', scope: 'public', cardinality: Container.OPTIONAL))
+		address.addField(new MProperty(name: 'street1', scope: 'public', cardinality: MCardinality.OPTIONAL))
 		address.addField(new MProperty(name: 'zip',scope: 'public', type: MType.lookupType('Int'), val: 99999))
 		address.addField(new MProperty(name: 'planet', scope: 'public', 'final': true, val: 'Earth'))
-		address.addField(new MReference(name: 'phones', cardinality: Container.LIST, type: phone, scope: 'public'))
+		address.addField(new MReference(name: 'phones', cardinality: MCardinality.LIST, type: phone, scope: 'public'))
 		address.addMethod(new MMethod(name: 'getCity', 'static': true))
 		address.addMethod(new MMethod(name: 'addressLabel'))
 	}
