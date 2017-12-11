@@ -27,7 +27,7 @@ Although the design went through three iterations and is now stable, as of 2017,
 **Limitations:** Swift only supports JSON serialization. Given a good XMLEncoder, XML support should easy to add. (I wrote [saxy](https://github.com/reaster/saxy) in Objective-C last time around and it's somebody else's turn to do this for Swift ;-)
 
 ##Usage
-TODO - Gradle plugin
+TODO - grade intsall, Gradle plugin
 
 ##Limitations
 ####Xml Schema
