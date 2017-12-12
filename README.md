@@ -1,9 +1,12 @@
 # schema-gen
-schema-gen is a multi-language, interoperable, XML Schema code generator. The generated code is well suited for reading, writing and minipulating data defined by a XML schema. In particular, it was designed to reduce the amount of coding needed to write cross-language, mobile, client-server applications. Currently supported languages are Java, Kotlin and Swift 4. 
-Written in Groovy, it's packaged as a Gradle plugin.
+schema-gen is a multi-language, interoperable, XML Schema code generator. 
+The generated code allows reading, writing, manipulating and transmitting data in the two most widely used industry formats: XML and JSON. 
+Currently supported languages are Java, Kotlin and Swift 4 and the code is interoperable, meaning it's well suited to developing cross-language, mobile, client-server applications.
 
-## Status
-Although the design went through three iterations and is now stable, as of 2017, the code is still being cleaned up. The Gradle plugin works, but is half-baked. Lastly, it has yet to be tried against a wide variety of schemas and due to the complexity of the task, issues should be expected. 
+Producing concise, readable code is a top schema-gen priority and it takes naming conventions very seriously, providing a high level of flexibility and configurability.
+
+This software is written in Groovy and is packaged as a Gradle plugin.
+
 ## Currently Supported Languages
 
 ### Java
@@ -18,28 +21,83 @@ Although the design went through three iterations and is now stable, as of 2017,
 
 **Usage:** The main entry point is [com.javagen.gen.kotlin.KotlinGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/gen/kotlin/KotlinGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/kotlin-gen folder to keep it separate from hand-written code.
 
-**Limitations:** The code generator attemps to create no-argument constructors by setting default values on every property, which in some cases can cause problems. To minimize unessasary annotations, the generated code requires Java 8 parameter name support. See the build.gradle and unit tests in [kotlin-gpx](https://github.com/reaster/schema-gen-examples/tree/master/kotlin-gpx) proper setup and configuration.
+**Limitations:** The code generator attempts to create no-argument constructors by setting default values on every property, which in some cases can cause problems. To minimize unessasary annotations, the generated code requires Java 8 parameter name support. See the build.gradle and unit tests in [kotlin-gpx](https://github.com/reaster/schema-gen-examples/tree/master/kotlin-gpx) proper setup and configuration.
 
 ### Swift
 **Features:** schema-gen generates code utilizing the built-in Encodable and Decodable JSON support introduced in Swift 4. Extending generated code with business logic can be acheived using Extensions. See the [swift-gpx](https://github.com/reaster/schema-gen-examples/tree/master/swift-gpx) sample project.
 
 **Usage:** The main entry point is [com.javagen.gen.swift.SwiftGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/gen/swift/SwiftGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/swift-gen folder to keep it separate from hand-written code.
 
-**Limitations:** Swift only supports JSON serialization. Given a good XMLEncoder, XML support should easy to add. (I wrote [saxy](https://github.com/reaster/saxy) in Objective-C last time around and it's somebody else's turn to do this for Swift ;-)
+**Limitations:** Swift only supports JSON serialization. Assuming you're server is written in Kotlin or Java, communication with a Swift client can utilize JSON, even if the documents are stored as XML, thanks to Jackson's support of both. However, given a good XMLEncoder, XML support should be strait forward to add. The author wrote [saxy](https://github.com/reaster/saxy) in Objective-C the last time around and it's somebody else's turn to do this for Swift ;-). 
 
 ## Usage
-TODO - grade intsall, Gradle plugin
+Still a work in progress, for now you can install it locally:
+
+```
+schema-gen> gradle install
+```
+Then copy the appropriate `build.gradle` for you target language from the [schema-gen-examples](https://github.com/reaster/schema-gen-examples) project. Finally, run the code generator:
+```
+my-schema> gradle gen
+```
+For code generator development work, you'll want to run the target language gen class (JavaGen, KotlinGen, SwiftGen) directly.  If you place your project (say, kotlin-atom) in the same parent directory as schema-gen, you can hard-code your configuration in the constructor as follows:
+```
+KotlinGen()
+{
+    ...
+    schemaFile = new File('../kotlin-atom/src/main/resources/atom.xsd').toURI().toURL()
+    srcDir = new File('../kotlin-atom/src/main/kotlin-gen')
+} 
+```
+#### Configuration
+The schema-gen code generator was designed to be highly customizable. In particular, how it names classes, properties and enumerations is all encoded in configurable properties and lambdas. Here is a sampling of the properties that can be overridden in the `Gen` base class:
+```
+List<MVisitor> pipeline = []
+File srcDir = new File('src/main/java-gen');
+PluralService pluralService = new PluralService()
+def customPluralMappings = [:] //needed for irregular nouns: tooth->teeth, person->people
+boolean useOptional = false //just effects Java code: Integer vs Optional<Integer>
+String packageName = null
+String addSuffixToEnumClass = 'Enum'
+String removeSuffixFromType = 'Type'
+String fileExtension = 'java'
+
+Function<String,String> packageNameFunction = { ns -> packageName ?: ns ? GlobalFunctionsUtil.javaPackageFromNamespace(ns, true) : 'com.javagen.model' }
+Function<String,String> enumNameFunction = { text -> GlobalFunctionsUtil.javaEnumName(text, false) }
+Function<String,String> enumValueFunction = { text -> text }
+Function<String,String> enumClassNameFunction = { text -> GlobalFunctionsUtil.enumClassName(text, addSuffixToEnumClass) }
+Function<String,String> classNameFunction = { text -> GlobalFunctionsUtil.className(text, removeSuffixFromType) }
+Function<String,String> propertyNameFunction = { text -> GlobalFunctionsUtil.legalJavaName(lowerCase(text)) }
+Function<String,String> constantNameFunction = { text -> GlobalFunctionsUtil.javaConstName(text) }
+Function<String,String> collectionNameFunction = { singular -> customPluralMappings[singular] ?: pluralService.toPlural(singular) }
+Function<String,String> simpleXmlTypeToPropertyType
+BiFunction<Gen,MClass,File> classOutputFile = { gen,clazz -> new File(gen.srcDir, GlobalFunctionsUtil.pathFromPackage(clazz.fullName(),fileExtension))} //default works for Java
+
+```
+These properties can be set in the Gradle plugin or directly as described above.
+
+## Status
+Although the design went through three iterations and is now stable, as of 2017, the code is still being cleaned up. The Gradle plugin works, but is half-baked. Lastly, it has yet to be tried against a wide variety of schemas and due to the complexity of the task, issues should be expected. 
 
 ## Limitations
 #### Xml Schema
-Not intended to support document-centric code like HTML. In particular, mixed content (mixed tags and text) is not well supported.
+##### Mixed Content
+This code generator is not intended to support document-centric (verses data-centric) code like HTML. In particular, mixed content (mixed tags and text) is not well supported and will often be mapped to a single string property.
+##### AttributeGroup
+Currently AttributeGroup are in-lined (i.e. expaned where they are declared) and not mapped to a specific, re-usable entity (interface, class, trait, etc.)
+##### Group
+Currently Group elements are in-lined (i.e. expaned where they are declared) and not mapped to a specific, re-usable entity.
+##### Union
+Unions often consist of 2 or more `TextOnlyType`s merged together with their attached restrictions. If these restrictions are all enumerations, the union of unique values will be modeled properly. However, in other cases - say mixing numeric and string values - you will get a warning and probably an incorrect mapping.
+
+___
 
 ## Architecture
 For developers wishing to extend this framework, here is a quick overview of how it's put together.
-#### SchemaNormalizer
-The simplify the translation process, the XML schema is normalized (references removed, etc.) by this class as the first stage in the code generation pipeline. The results are stored in a Schema instance which tracks schema types (TestOnlyType, SimpleType and ComplextType), elements, attributes and other needed constructs. QNames support mixed namespace schemas.
+#### XmlSchemaNormalizer
+This class simplifies the translation process, the XML schema is normalized (references removed, etc.) by this class as the first stage in the code generation pipeline. The results are stored in a Schema instance which tracks schema types (TestOnlyType, SimpleType and ComplextType), elements, attributes and other needed constructs. QNames support mixed namespace schemas.
 #### Gen
-The translation classes (JavaGen, SwiftGen, etc.) walk the normalized schema and generate an abstract code model (MModule, MClass, MProperty, etc.)
+The translation classes (JavaGen, KotlinGen, SwiftGen, etc.) walk the normalized schema and generate an abstract code model (MModule, MClass, MProperty, etc.)
 #### Callbacks
 Code generation for supported third party libraries are done via callback classes that typicaly set annotations and interfaces to support the data encoding process (see KotlinJacksonCallback for an example). 
 #### Emitters
@@ -49,5 +107,7 @@ These do the grunt work of generating boiler-plate code for methods such as equa
 #### TypeRegistry
 Each langauge needs a type registry, specific to it's supported types along with how to translate these from XML schema types.
 
+___
+
 ## Support
-I have multiple projects in the pipeline and need to move on. If anybody would like to add language support, test new schemas, contribute bug fixes or fill in the test coverage I'd be happy to support you. Lastly, I'm available for contracting/consulting work if that meets your needs.
+The author has multiple projects in the pipeline, other passions and bills to pay, but will try his best to support the community as time allows. In particular, if anybody would like to add language support (Python, C# or Go), test new schemas, contribute bug fixes, expand the documentation or add test coverage, I'd be happy to support you. Lastly, I'm available for contracting/consulting, especially if it involves expanding the framework to support your needs.

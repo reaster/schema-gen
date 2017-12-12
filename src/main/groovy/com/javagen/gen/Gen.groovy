@@ -15,6 +15,8 @@ abstract class Gen
     List<MVisitor> pipeline = []
     File srcDir = new File('src/main/java-gen');
     PluralService pluralService = new PluralService()
+    def customPluralMappings = [:] //needed for irregular nouns: tooth->teeth, person->people
+    boolean useOptional = false //just effects Java code: Integer vs Optional<Integer>
     String packageName = null
     String addSuffixToEnumClass = 'Enum'
     String removeSuffixFromType = 'Type'
@@ -30,9 +32,6 @@ abstract class Gen
     Function<String,String> collectionNameFunction = { singular -> customPluralMappings[singular] ?: pluralService.toPlural(singular) }
     Function<String,String> simpleXmlTypeToPropertyType
     BiFunction<Gen,MClass,File> classOutputFile = { gen,clazz -> new File(gen.srcDir, GlobalFunctionsUtil.pathFromPackage(clazz.fullName(),fileExtension))} //default works for Java
-
-    def customPluralMappings = [:] //needed for irregular nouns: tooth->teeth, person->people
-    boolean useOptional = false //just effects Java code: Integer vs Optional<Integer>
 
     /**
      * Build abstract code model from schema
