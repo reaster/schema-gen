@@ -10,6 +10,7 @@ import com.javagen.schema.model.MEnum
 import com.javagen.schema.model.MMethod
 import com.javagen.schema.model.MModule
 import com.javagen.schema.model.MProperty
+import com.javagen.schema.model.MReference
 import com.javagen.schema.model.MType
 import com.javagen.schema.model.MTypeRegistry
 import com.javagen.schema.xml.XmlSchemaNormalizer
@@ -107,7 +108,7 @@ class KotlinGen extends SchemaToJava
                 MType.registerType(anyClass)
                 callback.gen(any, anyClass)
             }
-            property = new MProperty(name:propertyName, type:anyClass, cardinality:MCardinality.OPTIONAL, final:any.fixed!=null)
+            property = new MReference(name:propertyName, type:anyClass, cardinality:MCardinality.OPTIONAL, final:any.fixed!=null)
 
         } else {
             String val = any.fixed ?: any.'default'
@@ -153,8 +154,8 @@ class KotlinGen extends SchemaToJava
         constantNameFunction = { text -> GlobalFunctionsUtil.javaConstName(text) }
 
         //kotlin-gpx
-//        srcDir = new File('../schema-gen-examples/kotlin-gpx/src/main/kotlin-gen')
-//        schemaFile = new File('../schema-gen-examples/kotlin-gpx/src/main/resources/gpx.xsd').toURI().toURL()
+        srcDir = new File('../schema-gen-examples/kotlin-gpx/src/main/kotlin-gen')
+        schemaFile = new File('../schema-gen-examples/kotlin-gpx/src/main/resources/gpx.xsd').toURI().toURL()
 
         //kotlin-hsf
 //        schemaFile = new File('/Users/richard/dev/hs/hsf-data/hsf-1_1.xsd').toURI().toURL()

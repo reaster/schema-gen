@@ -29,19 +29,9 @@ class JavaEmitter extends CodeEmitter
 			new JavaTypeRegistry()
 	}
 
-
-//	@Override
-//	String fileName(MClass c) {
-//		GlobalFunctionsUtil.pathFromPackage(c.fullName())
-//	}
-//
-//	@Override
-//	String fileName(String className) {
-//		GlobalFunctionsUtil.pathFromPackage(className)
-//	}
-	
 	@Override
-	def visit(MModule m) {
+	def visit(MModule m)
+	{
 		List<MClass> classes = m.classes.findAll{ c -> !c.ignore }
 		classes.each { c -> //visit declared classes and interfaces
 			File sourceFile = gen.classOutputFile.apply(gen,c)
@@ -131,7 +121,8 @@ class JavaEmitter extends CodeEmitter
 	}
 
 	@Override
-	def visit(MField f) {
+	def visit(MField f)
+	{
 		f.annotations.each {
 			out << '\n' << tabs
 			out << it

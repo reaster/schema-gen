@@ -24,6 +24,10 @@ import static com.javagen.schema.model.MMethod.Stereotype.equals
 import static com.javagen.schema.model.MMethod.Stereotype.hash
 import static com.javagen.schema.model.MMethod.Stereotype.toString
 
+/**
+ * Generates constructors and hash and equals extension classes. Note never include both hash and equals stereotypes for Swift.
+ * The Hashable interface includes both hash and equals methods. Use equals when you don't want a hash method.
+ */
 class SwiftPreEmitter extends CodeEmitter
 {
     EnumSet<MMethod.Stereotype> defaultMethods = EnumSet.of(hash) //noneOf(MMethod.Stereotype.class)
@@ -114,7 +118,7 @@ class SwiftPreEmitter extends CodeEmitter
                 //hash: var hashValue: Int
                 MField hv = new MProperty(name: 'hashValue', scope: 'public', type: 'Int', getterBody: this.&hashCodeGetterBody)
                 e.addField(hv)
-                c.methods.remove(m)
+                c.methods.remove(m)//now that it's in the extension, remove from primary class
                 break
             case equals: //generate equals in an extension
                 MClass c = m.parent
@@ -127,13 +131,10 @@ class SwiftPreEmitter extends CodeEmitter
                 hm.params << new MBind(name: 'rhs', type: MType.lookupType(c.name))
                 hm.params << new MBind(name: 'lhs', type: MType.lookupType(c.name))
                 e.addMethod(hm)
-                c.methods.remove(m)
+                c.methods.remove(m)//now that it's in the extension, remove from primary class
                 break
             case toString:
-                m.annotations << '@Override'
-                m.type = 'String'
-                m.name = 'toString'
-                break
+                throw new IllegalStateException("toString not yet supported in Swift")
         }
     }
 

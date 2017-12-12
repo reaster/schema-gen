@@ -51,8 +51,8 @@ class JavaEmitterTest
 	void setup()
 	{
 		gen = new TestGen()
-		os = new ByteArrayOutputStream();
-		visitor = new JavaEmitter(gen:gen, openStreamLambda: { f -> new PrintStream(os) })
+		os = new ByteArrayOutputStream()
+		visitor = new JavaEmitter(gen:gen, openStreamLambda: { File f -> new PrintStream(os) })
 
 		module = new MModule(name: 'com.hotspringsfinder.model')
 		phone = new MClass(name: 'Phone')
@@ -78,7 +78,7 @@ class JavaEmitterTest
 		new JavaPreEmitter(gen:gen).visit(module)
 		visitor.visit(module)
 
-		String output = os.toString("UTF8");
+		String output = os.toString("UTF8")
 		println output
 
 		assertTrue( output.contains('Address() {'))

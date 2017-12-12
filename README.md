@@ -3,7 +3,7 @@ schema-gen is a multi-language, interoperable, XML Schema code generator.
 The generated code allows reading, writing, manipulating and transmitting data in the two most widely used industry formats: XML and JSON. 
 Currently supported languages are Java, Kotlin and Swift 4 and the code is interoperable, meaning it's well suited to developing cross-language, mobile, client-server applications.
 
-Producing concise, readable code is a top schema-gen priority and it takes naming conventions very seriously, providing a high level of flexibility and configurability.
+Producing concise, readable code is a top schema-gen priority and it takes naming conventions seriously, providing a high level of flexibility and configurability.
 
 This software is written in Groovy and is packaged as a Gradle plugin.
 
@@ -21,14 +21,14 @@ This software is written in Groovy and is packaged as a Gradle plugin.
 
 **Usage:** The main entry point is [com.javagen.schema.kotlin.KotlinGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/kotlin/KotlinGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/kotlin-gen folder to keep it separate from hand-written code.
 
-**Limitations:** The code generator attempts to create no-argument constructors by setting default values on every property, which in some cases can cause problems. To minimize unessasary annotations, the generated code requires Java 8 parameter name support. See the build.gradle and unit tests in [kotlin-gpx](https://github.com/reaster/schema-gen-examples/tree/master/kotlin-gpx) proper setup and configuration.
+**Limitations:** The code generator attempts to create no-argument constructors by setting default values on every property, which in some cases can cause problems. To minimize unessasary annotations, the generated code requires Java 8 parameter name support. See the build.gradle and unit tests in [kotlin-gpx](https://github.com/reaster/schema-gen-examples/tree/master/kotlin-gpx) for proper setup and configuration.
 
 ### Swift
 **Features:** schema-gen generates code utilizing the built-in Encodable and Decodable JSON support introduced in Swift 4. Extending generated code with business logic can be acheived using Extensions. See the [swift-gpx](https://github.com/reaster/schema-gen-examples/tree/master/swift-gpx) sample project.
 
-**Usage:** The main entry point is [com.javagen.schema.swift.SwiftGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/swift/SwiftGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/swift-gen folder to keep it separate from hand-written code.
+**Usage:** The main entry point is [com.javagen.schema.swift.SwiftGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/swift/SwiftGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/swift-gen folder to keep it separate from hand-written code.
 
-**Limitations:** Swift only supports JSON serialization. Assuming you're server is written in Kotlin or Java, communication with a Swift client can utilize JSON, even if the documents are stored as XML, thanks to Jackson's support of both. However, given a good XMLEncoder, XML support should be strait forward to add. The author wrote [saxy](https://github.com/reaster/saxy) in Objective-C the last time around and it's somebody else's turn to do this for Swift ;-). 
+**Limitations:** Swift only supports JSON serialization. Assuming you're server is written in Kotlin or Java, communication with a Swift client can utilize JSON, even if the documents are stored as XML, thanks to Jackson's support of both. However, given a good XMLEncoder, XML support should be strait forward to add. The author wrote [saxy](https://github.com/reaster/saxy) in Objective-C the last time around and it's somebody else's turn to do this for Swift ;-)
 
 ## Usage
 Still a work in progress, for now you can install it locally:
@@ -99,7 +99,7 @@ To simplify the schema-to-code translation process, the XML schema is normalized
 #### Gen
 The translation classes (JavaGen, KotlinGen, SwiftGen, etc.) walk the normalized schema and generate an abstract code model: MModule, MClass, MProperty, etc.
 #### Callbacks
-Code generation for supported third party libraries are handled via callback classes that typically set annotations and interfaces to support data encoding. See [KotlinJacksonCallback](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/kotlin/KotlinJacksonCallback.groovy) for an example. 
+Code generation for supported third party libraries is handled via callback classes that typically set annotations and interfaces expected by the library. See [KotlinJacksonCallback](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/kotlin/KotlinJacksonCallback.groovy) for an example. 
 #### Emitters
 An emitter exists for each supported language and takes the abstact model and converts it into the target computer langauge. See [JavaEmitter](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/java/JavaEmitter.groovy) as an example.
 #### PreEmitters
