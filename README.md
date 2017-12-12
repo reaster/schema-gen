@@ -12,21 +12,21 @@ This software is written in Groovy and is packaged as a Gradle plugin.
 ### Java
 **Features:** Generated POJOs contain [Jackson](https://github.com/FasterXML/jackson-dataformat-xml) annotations supporting reading and writing both JSON and XML documents. XML Schema restrictions are also translated into [Bean Validation 2.0](http://beanvalidation.org/) annotations. Equals, hashCode and toString methods are also generated to facilitate testing. See the [java-gpx](https://github.com/reaster/schema-gen-examples/tree/master/java-gpx) sample project.
 
-**Usage:** The main entry point is [com.javagen.gen.java.JavaGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/gen/java/JavaGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/java-gen folder to keep it separate from hand-written code.
+**Usage:** The main entry point is [com.javagen.schema.java.JavaGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/java/JavaGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/java-gen folder to keep it separate from hand-written code.
 
 **Limitations:** Java is not the best language for extending generated code with business logic in a maintainable manner. If you have to regenerate, you may have to manually merge the hand-written and generated code.
 
 ### Kotlin
 **Features:** By leveraging [data classes](https://kotlinlang.org/docs/reference/data-classes.html), Kotlin generated code is very concise. Classes contain [Jackson](https://github.com/FasterXML/jackson-dataformat-xml) annotations supporting reading and writing both JSON and XML documents. XML Schema restrictions are also translated into [Bean Validation 2.0](http://beanvalidation.org/) annotations. Extending generated code with business logic can be acheived using [extensions](https://kotlinlang.org/docs/reference/extensions.html). See the [kotlin-gpx](https://github.com/reaster/schema-gen-examples/tree/master/kotlin-gpx) sample project.
 
-**Usage:** The main entry point is [com.javagen.gen.kotlin.KotlinGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/gen/kotlin/KotlinGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/kotlin-gen folder to keep it separate from hand-written code.
+**Usage:** The main entry point is [com.javagen.schema.kotlin.KotlinGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/kotlin/KotlinGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/kotlin-gen folder to keep it separate from hand-written code.
 
 **Limitations:** The code generator attempts to create no-argument constructors by setting default values on every property, which in some cases can cause problems. To minimize unessasary annotations, the generated code requires Java 8 parameter name support. See the build.gradle and unit tests in [kotlin-gpx](https://github.com/reaster/schema-gen-examples/tree/master/kotlin-gpx) proper setup and configuration.
 
 ### Swift
 **Features:** schema-gen generates code utilizing the built-in Encodable and Decodable JSON support introduced in Swift 4. Extending generated code with business logic can be acheived using Extensions. See the [swift-gpx](https://github.com/reaster/schema-gen-examples/tree/master/swift-gpx) sample project.
 
-**Usage:** The main entry point is [com.javagen.gen.swift.SwiftGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/gen/swift/SwiftGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/swift-gen folder to keep it separate from hand-written code.
+**Usage:** The main entry point is [com.javagen.schema.swift.SwiftGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/swift/SwiftGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/swift-gen folder to keep it separate from hand-written code.
 
 **Limitations:** Swift only supports JSON serialization. Assuming you're server is written in Kotlin or Java, communication with a Swift client can utilize JSON, even if the documents are stored as XML, thanks to Jackson's support of both. However, given a good XMLEncoder, XML support should be strait forward to add. The author wrote [saxy](https://github.com/reaster/saxy) in Objective-C the last time around and it's somebody else's turn to do this for Swift ;-). 
 
@@ -84,9 +84,9 @@ Although the design went through three iterations and is now stable, as of 2017,
 ##### Mixed Content
 This code generator is not intended to support document-centric (verses data-centric) code like HTML. In particular, mixed content (mixed tags and text) is not well supported and will often be mapped to a single string property.
 ##### AttributeGroup
-Currently AttributeGroup are in-lined (i.e. expaned where they are declared) and not mapped to a specific, re-usable entity (interface, class, trait, etc.)
+Currently AttributeGroup are in-lined (i.e. expaned where they are referenced) and not mapped to a specific, re-usable entity (interface, class, trait, etc.)
 ##### Group
-Currently Group elements are in-lined (i.e. expaned where they are declared) and not mapped to a specific, re-usable entity.
+Currently Group elements are in-lined (i.e. expaned where they are referenced) and not mapped to a specific, re-usable entity.
 ##### Union
 Unions often consist of 2 or more `TextOnlyType`s merged together with their attached restrictions. If these restrictions are all enumerations, the union of unique values will be modeled properly. However, in other cases - say mixing numeric and string values - you will get a warning and probably an incorrect mapping.
 
@@ -95,15 +95,15 @@ ___
 ## Architecture
 For developers wishing to extend this framework, here is a quick overview of how it's put together.
 #### XmlSchemaNormalizer
-This class simplifies the translation process, the XML schema is normalized (references removed, etc.) by this class as the first stage in the code generation pipeline. The results are stored in a Schema instance which tracks schema types (TestOnlyType, SimpleType and ComplextType), elements, attributes and other needed constructs. QNames support mixed namespace schemas.
+To simplify the schema-to-code translation process, the XML schema is normalized (references removed, etc.) as the first step in the code generation process. The results are stored in a Schema instance which tracks schema types (TestOnlyType, SimpleType and ComplextType), elements, attributes and other needed constructs. QNames support mixed namespace schemas.
 #### Gen
-The translation classes (JavaGen, KotlinGen, SwiftGen, etc.) walk the normalized schema and generate an abstract code model (MModule, MClass, MProperty, etc.)
+The translation classes (JavaGen, KotlinGen, SwiftGen, etc.) walk the normalized schema and generate an abstract code model: MModule, MClass, MProperty, etc.
 #### Callbacks
-Code generation for supported third party libraries are done via callback classes that typicaly set annotations and interfaces to support the data encoding process (see KotlinJacksonCallback for an example). 
+Code generation for supported third party libraries are handled via callback classes that typically set annotations and interfaces to support data encoding. See [KotlinJacksonCallback](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/kotlin/KotlinJacksonCallback.groovy) for an example. 
 #### Emitters
-An emitter exists for each supported language and takes the abstact model and converts it into the target computer langauge.
+An emitter exists for each supported language and takes the abstact model and converts it into the target computer langauge. See [JavaEmitter](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/java/JavaEmitter.groovy) as an example.
 #### PreEmitters
-These do the grunt work of generating boiler-plate code for methods such as equals, hashCode and toString. The developer can simply add a method with the proper stereotype and the pregenerator will generate the rest. 
+These do the grunt work of generating boiler-plate code for methods such as equals, hashCode and toString. The developer can simply add a method with the proper stereotype and the PreEmitter will generate the rest. See [SwiftPreEmitter](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/swift/SwiftPreEmitter.groovy) as an example.
 #### TypeRegistry
 Each langauge needs a type registry, specific to it's supported types along with how to translate these from XML schema types.
 
