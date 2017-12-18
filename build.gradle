@@ -1,3 +1,7 @@
+//plugins {
+//    id 'java-gradle-plugin'
+//}
+
 group 'com.javagen'
 version '1.0.0-SNAPSHOT'
 
