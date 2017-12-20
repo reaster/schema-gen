@@ -62,7 +62,7 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.upperCase
 
 class SchemaToSwift extends Gen implements SchemaVisitor
 {
-    URL schemaFile
+    URL schemaFile = new URL('http://www.topografix.com/gpx/1/1/gpx.xsd')
     NodeCallback callback
 
     Map<String,MModule> moduleMap = new LinkedHashMap<>()

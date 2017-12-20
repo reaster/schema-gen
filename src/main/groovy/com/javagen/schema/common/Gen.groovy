@@ -28,7 +28,7 @@ import java.util.function.Function
 abstract class Gen
 {
     List<CodeEmitter> pipeline = []
-    File srcDir = new File('src/main/java-xml');
+    File srcDir = new File('src/main/java-gen');
     PluralService pluralService = new PluralService()
     def customPluralMappings = [:] //needed for irregular nouns: tooth->teeth, person->people
     boolean useOptional = false //just effects Java code: Integer vs Optional<Integer>

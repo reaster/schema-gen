@@ -54,7 +54,7 @@ import static com.javagen.schema.xml.node.Schema.DEFAULT_NS
  */
 class SchemaToJava extends Gen implements SchemaVisitor
 {
-    URL schemaFile
+    URL schemaFile = new URL('http://www.topografix.com/gpx/1/1/gpx.xsd')
 
     NodeCallback callback
 
