@@ -47,8 +47,8 @@ class KotlinTypeRegistry extends MTypeRegistry
         def t = []
         t << VOID
         t << new MType(name:'String', val: '')
-        t << new MType(name:'java.common.Date', val: 'java.common.Date()')
-        t << new MType(name:'java.common.Optional', val: '')
+        t << new MType(name:'java.util.Date', val: 'java.util.Date()')
+        t << new MType(name:'java.util.Optional', val: '')
         t << new MType(name:'Set', val: 'setOf()')
         t << new MType(name:'List', val: 'listOf()')
         t << new MType(name:'Map', val: 'mapOf()')
@@ -57,7 +57,7 @@ class KotlinTypeRegistry extends MTypeRegistry
         t << new MType(name:'MutableMap', val: 'mutableMapOf()')
         t << new MType(name:'Array', val: 'emptyArray()')
         //TODO add ByteArray, ShortArray, IntArray, CharArray, DoubleArray, FloatArray
-        t << new MType(name:'java.common.Locale', val: 'java.common.Locale.getDefault()')
+        t << new MType(name:'java.util.Locale', val: 'java.util.Locale.getDefault()')
         t << new MType(name:'Char', val: '\0')
         t << new MType(name:'Byte', val: '0')
         t << new MType(name:'Short', val: '0')
@@ -66,7 +66,7 @@ class KotlinTypeRegistry extends MTypeRegistry
         t << new MType(name:'Float', val: '0.0F')
         t << new MType(name:'Double', val: '0.0')
         t << new MType(name:'Boolean', val: 'false')
-        t << new MType(name:'java.common.BigDecimal', val: 'java.common.BigDecimal(0)')
+        t << new MType(name:'java.util.BigDecimal', val: 'java.util.BigDecimal(0)')
         t << new MType(name:'java.time.LocalTime', val: 'java.time.LocalTime.now()')
         t << new MType(name:'java.time.LocalDateTime', val: 'java.time.LocalDateTime.now()')
         t << new MType(name:'java.time.LocalDate', val: 'java.time.LocalDate.now()')
@@ -118,7 +118,7 @@ class KotlinTypeRegistry extends MTypeRegistry
             'unsignedByte':'Byte',
             'normalizedString':'String',
             'token':'String',
-            'language':'java.common.Locale',
+            'language':'java.util.Locale',
             'Name':'String',
             'NMTOKEN':'String',
             'NMTOKENS':'String',
@@ -144,7 +144,7 @@ class KotlinTypeRegistry extends MTypeRegistry
                 case MCardinality.SET: return 'MutableSet'
                 case MCardinality.LIST: return 'MutableList'
                 case MCardinality.ARRAY: return 'Array'
-            //case MCardinality.OPTIONAL: return 'java.common.Optional'
+            //case MCardinality.OPTIONAL: return 'java.util.Optional'
                 default: return null
             }
         } else {
@@ -154,7 +154,7 @@ class KotlinTypeRegistry extends MTypeRegistry
                 case MCardinality.SET: return 'Set'
                 case MCardinality.LIST: return 'List'
                 case MCardinality.ARRAY: return 'Array'
-            //case MCardinality.OPTIONAL: return 'java.common.Optional'
+            //case MCardinality.OPTIONAL: return 'java.util.Optional'
                 default: return null
             }
         }

@@ -46,15 +46,15 @@ class JavaTypeRegistry extends MTypeRegistry
         def t = []
         t << VOID
         t << new MType(name:'String', val: '')
-        t << new MType(name:'java.common.Date', val: 'new java.common.Date()')
-        t << new MType(name:'java.common.Optional', val: 'java.common.Optional.empty()')
-        t << new MType(name:'java.common.Map', val: 'new java.common.HashMap<>()')
-        t << new MType(name:'java.common.Set', val: 'new java.common.HashSet<>()')
-        t << new MType(name:'java.common.List', val: 'new java.common.ArrayList<>()')
-        t << new MType(name:'java.common.HashMap', val: 'new java.common.HashMap<>()')
-        t << new MType(name:'java.common.HashSet', val: 'new java.common.HashSet<>()')
-        t << new MType(name:'java.common.ArrayList', val: 'new java.common.ArrayList<>()')
-        t << new MType(name:'java.common.Locale', val: 'java.common.Locale.getDefault()')
+        t << new MType(name:'java.util.Date', val: 'new java.util.Date()')
+        t << new MType(name:'java.util.Optional', val: 'java.util.Optional.empty()')
+        t << new MType(name:'java.util.Map', val: 'new java.util.HashMap<>()')
+        t << new MType(name:'java.util.Set', val: 'new java.util.HashSet<>()')
+        t << new MType(name:'java.util.List', val: 'new java.util.ArrayList<>()')
+        t << new MType(name:'java.util.HashMap', val: 'new java.util.HashMap<>()')
+        t << new MType(name:'java.util.HashSet', val: 'new java.util.HashSet<>()')
+        t << new MType(name:'java.util.ArrayList', val: 'new java.util.ArrayList<>()')
+        t << new MType(name:'java.util.Locale', val: 'java.util.Locale.getDefault()')
         t << new MType(name:'char',primitive:true, val: '\0')
         t << new MType(name:'byte',primitive:true, val: '0')
         t << new MType(name:'short',primitive:true, val: '0')
@@ -71,7 +71,7 @@ class JavaTypeRegistry extends MTypeRegistry
         t << new MType(name:'Float', val: '0.0F')
         t << new MType(name:'Double', val: '0.0')
         t << new MType(name:'Boolean', val: 'Boolean.FALSE')
-        t << new MType(name:'java.common.BigDecimal', val: 'new java.common.BigDecimal(0)')
+        t << new MType(name:'java.util.BigDecimal', val: 'new java.util.BigDecimal(0)')
         t << new MType(name:'java.time.LocalTime', val: 'java.time.LocalTime.now()')
         t << new MType(name:'java.time.LocalDateTime', val: 'java.time.LocalDateTime.now()')
         t << new MType(name:'java.time.LocalDate', val: 'java.time.LocalDate.now()')
@@ -123,7 +123,7 @@ class JavaTypeRegistry extends MTypeRegistry
             'unsignedByte':'byte',
             'normalizedString':'String',
             'token':'String',
-            'language':'java.common.Locale',
+            'language':'java.util.Locale',
             'Name':'String',
             'NMTOKEN':'String',
             'NMTOKENS':'String',
@@ -143,20 +143,20 @@ class JavaTypeRegistry extends MTypeRegistry
     static String containerInterface(MCardinality cardinality)
     {
         switch (cardinality) {
-            case MCardinality.MAP: return 'java.common.Map'
-            case MCardinality.SET: return 'java.common.Set'
-            case MCardinality.LIST: return 'java.common.List'
-            case MCardinality.OPTIONAL: return 'java.common.Optional'
+            case MCardinality.MAP: return 'java.util.Map'
+            case MCardinality.SET: return 'java.util.Set'
+            case MCardinality.LIST: return 'java.util.List'
+            case MCardinality.OPTIONAL: return 'java.util.Optional'
             default: return null
         }
     }
     static String containerImplementation(MCardinality cardinality)
     {
         switch (cardinality) {
-            case MCardinality.MAP: return 'java.common.HashMap'
-            case MCardinality.SET: return 'java.common.HashSet'
-            case MCardinality.LIST: return 'java.common.ArrayList'
-            case MCardinality.OPTIONAL: return 'java.common.Optional'
+            case MCardinality.MAP: return 'java.util.HashMap'
+            case MCardinality.SET: return 'java.util.HashSet'
+            case MCardinality.LIST: return 'java.util.ArrayList'
+            case MCardinality.OPTIONAL: return 'java.util.Optional'
             default: return null
         }
     }
