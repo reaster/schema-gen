@@ -39,8 +39,12 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.*
 /**
  * Generate a simplified XML Schema object model. Normalization includes removing references,
  * removing nested definitions, expanding attributeGroup and element Group nodes and mapping compound types to a
- * more expresive model: TextOnlyType, SimpleType and ComplexType. Allthough it complicates the object model, all
+ * more expressive model: TextOnlyType, SimpleType and ComplexType.
+ *
+ * <p>Although it complicates the object model, all
  * nodes are referenced using QName instances with the proper namespace.
+ *
+ * @author Richard Easterling
  */
 class XmlSchemaNormalizer
 {
@@ -67,7 +71,7 @@ class XmlSchemaNormalizer
     /**
      * Recursively walk XML Schema generating a simplified Schema model. Model objects are placed on a set of stacks
      * allowing child object (attributes, elements and types) to be assigned in their proper owners. Global nodes
-     * should be pre-indexed (by calling indexGlobalNodes) so @ref attributes can be resolved possibly befgore the
+     * should be pre-indexed (by calling indexGlobalNodes) so @ref attributes can be resolved before the
      * target node has been processed.
      *
      * @param node any
@@ -433,9 +437,9 @@ class XmlSchemaNormalizer
         def typeElement = node
         while(typeElement) {
             restrictions = typeElement.restriction?.childNodes()?.findAll { n ->
-                'enumeration' != n.qname
+                'enumeration' != n.qname //filter out enumerations as they are mapped to enum classes
             }
-            if (restrictions) //found simpleType.restriction
+            if (restrictions) //are we done? found simpleType.restriction
                 break
             def typeName = typeElement.@type?.text() //reference to simpleType?
             typeName = (typeName ?: typeElement.simpleContent?.extension?.@base?.text()) //nested simple type?
@@ -563,6 +567,9 @@ class XmlSchemaNormalizer
         }
         schema
     }
+    /**
+     * work flow of normalizer
+     */
     Schema buildSchema(InputStream inputStream, URL context)
     {
         boolean isRootSchema = schema == null
@@ -592,31 +599,15 @@ class XmlSchemaNormalizer
         }
         schema
     }
-//    Schema buildSchema(InputStream inputStream)
-//    {
-//
-//        XmlSlurper xmlSlurper = new XmlSlurper()
-//        //xmlSlurper.setFeature('http://apache.org/xml/features/disallow-doctype-decl', false)
-//        GPathResult xmlSchema = xmlSlurper
-//                .parse(inputStream)
-//                .declareNamespace(prefixToNamespaceMap)
-//        xml = new Schema(prefixToNamespaceMap:prefixToNamespaceMap)
-//        elementStack.push(xml)
-//        attributeStack.push(xml)
-//        indexGlobalNodes(xmlSchema)
-//        traverseElements(xmlSchema)
-//        if (!xml.rootElements) //if user has not defined root elements
-//            xml.rootElements = xml.elements.collect{ it.qname } //make all global elements root
-//        xml
-//    }
+
     def static main(args)
     {
-        //def schemaFile = new File('example-gpx-java/src/main/resources/gpx.xsd').toURI().toURL()
-        //def schemaFile = new URL('http://www.topografix.com/gpx/1/1/gpx.xsd')
-        //this.schemaFile = new URL('http://docs.oasis-open.org/election/external/xAL.xsd')
-        //def schemaFile = new File('example-x-java/src/main/resources/xAL.xsd').toURI().toURL()
+        //def schemaURL = new File('example-gpx-java/src/main/resources/gpx.xsd').toURI().toURL()
+        //def schemaURL = new URL('http://www.topografix.com/gpx/1/1/gpx.xsd')
+        //this.schemaURL = new URL('http://docs.oasis-open.org/election/external/xAL.xsd')
+        //def schemaURL = new File('example-x-java/src/main/resources/xAL.xsd').toURI().toURL()
         //XmlSchemaNormalizer xmlSchemaNormalizer = new XmlSchemaNormalizer()
-        //Schema schema = xmlSchemaNormalizer.buildSchema(schemaFile)
+        //Schema schema = xmlSchemaNormalizer.buildSchema(schemaURL)
         //??.visit(xml)
         //println walker.xml
     }

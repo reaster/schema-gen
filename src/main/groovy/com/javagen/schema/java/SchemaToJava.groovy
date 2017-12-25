@@ -31,9 +31,9 @@ import com.javagen.schema.model.MProperty
 import com.javagen.schema.model.MReference
 import com.javagen.schema.model.MType
 import com.javagen.schema.model.MTypeRegistry
-import com.javagen.schema.xml.NodeCallback
+import com.javagen.schema.xml.XmlNodeCallback
 import com.javagen.schema.xml.QName
-import com.javagen.schema.xml.SchemaVisitor
+import com.javagen.schema.xml.XmlSchemaVisitor
 import com.javagen.schema.xml.XmlSchemaNormalizer
 import com.javagen.schema.xml.node.*
 import com.javagen.schema.common.MappingUtil
@@ -51,12 +51,16 @@ import static com.javagen.schema.xml.node.Schema.DEFAULT_NS
 
 /**
  * Build an abstract Java-based model from a normalized XML Schema.
+ *
+ * <p>A XmlNodeCallback can be used to apply specific third-party library annotations to the object model, allowing one
+ * to easily switch technologies. For example one could swap the KotlinJacksonCallback with a KotlinJaxbCallback without
+ * having to rewrite the KotlinGen object model translation code.
+ *
+ * @author Richard Easterling
  */
-class SchemaToJava extends Gen implements SchemaVisitor
+class SchemaToJava extends Gen implements XmlSchemaVisitor
 {
-    URL schemaFile = new URL('http://www.topografix.com/gpx/1/1/gpx.xsd')
-
-    NodeCallback callback
+    XmlNodeCallback callback
 
     Map<String,MModule> moduleMap = new LinkedHashMap<>()
     Map<String,MClass> classMap = [:]
@@ -85,7 +89,7 @@ class SchemaToJava extends Gen implements SchemaVisitor
             }
             if ( ! MTypeRegistry.isInitialized() )
                 new JavaTypeRegistry()
-            callback = new JacksonXmlCallback(this)
+            callback = new JavaJacksonCallback(this)
             pipeline = [
                     new JavaPreEmitter(gen: this),
                     new JavaEmitter(gen: this)
@@ -95,7 +99,7 @@ class SchemaToJava extends Gen implements SchemaVisitor
 
     @Override def gen()
     {
-        schema = new XmlSchemaNormalizer().buildSchema(schemaFile)
+        schema = new XmlSchemaNormalizer().buildSchema(schemaURL)
         visit(schema)
         super.gen()
     }
@@ -112,8 +116,8 @@ class SchemaToJava extends Gen implements SchemaVisitor
         String name = packageNameFunction.apply(schema.prefixToNamespaceMap[Schema.targetNamespace])
         rootModule = new MModule(name:name)
         this << rootModule
-        SchemaVisitor.super.preVisit(schema) //visit global elements, pre-create classes for type reference lookups
-        SchemaVisitor.super.visit(schema)
+        XmlSchemaVisitor.super.preVisit(schema) //visit global elements, pre-create classes for type reference lookups
+        XmlSchemaVisitor.super.visit(schema)
         this >> rootModule
         callback.gen(schema, rootModule)
     }
@@ -242,7 +246,7 @@ class SchemaToJava extends Gen implements SchemaVisitor
         MClass clazz = lookupOrCreateClass(className)
         clazz.attr['nodeType'] = complexType
         this << clazz
-        SchemaVisitor.super.visit(complexType)
+        XmlSchemaVisitor.super.visit(complexType)
         this >> clazz
         clazz.ignore = complexType.isWrapperElement()
         callback.gen(complexType, clazz)
@@ -261,7 +265,7 @@ class SchemaToJava extends Gen implements SchemaVisitor
         MClass clazz = lookupOrCreateClass(className)
         clazz.attr['nodeType'] = simpleType
         this << clazz
-        SchemaVisitor.super.visit(simpleType)
+        XmlSchemaVisitor.super.visit(simpleType)
         this >> clazz
         callback.gen(simpleType, clazz)
     }
@@ -280,6 +284,9 @@ class SchemaToJava extends Gen implements SchemaVisitor
                 clazz = lookupOrCreateClass(className, true)
                 clazz.enumValues = enumValues
                 javaEnum( clazz )
+            }
+            if (!clazz) {
+                throw new IllegalStateException("no clazz generated for TextOnlyType: ${textOnlyType}")
             }
             this << clazz
             println "textOnlyType @name=${textOnlyType.qname.name} -> ${clazz}"
@@ -513,9 +520,6 @@ class SchemaToJava extends Gen implements SchemaVisitor
     {
         if (!type)
             throw new Error("Missing type")
-        if (type.qname?.name == 'anyURI') {
-            println 'TODO remvoe me'
-        }
         String typeName = schemaTypeToPropertyTypeName(type) // defaults to primitives
         if (MTypeRegistry.instance().containerRequiresPrimitiveWrapper(container)) {
             typeName = useWrapper(typeName)
@@ -560,7 +564,7 @@ class SchemaToJava extends Gen implements SchemaVisitor
         throw new IllegalStateException("TODO add support for converting type: ${type}")
     }
 
-    void leftShift(MBase node) {
+    MBase leftShift(MBase node) {
         if (node) {
             if (node instanceof MModule) {
                 if (!nestedStack.isEmpty()) {
@@ -574,8 +578,10 @@ class SchemaToJava extends Gen implements SchemaVisitor
             } else if (node instanceof MClass || node instanceof MEnum) {
                 MSource parent = nestedStack.peek() //as MNested
                 boolean isGlobalNode = node.name && (parent instanceof MModule)
+                boolean shouldAdd = !isGlobalNode || !MType.lookupType(node.name)
                 nestedStack << node
-                if (!isGlobalNode || !MType.lookupType(node.name)) {
+                //println "${parent} << ${node}, shouldAdd=${shouldAdd}, isGlobalNode=${isGlobalNode}, MType.lookupType(node.name)=${MType.lookupType(node.name)}"
+                if (shouldAdd) {
                     parent.addClass(node)
                     if (node.name) {
                         classMap[node.name] = node
@@ -593,7 +599,7 @@ class SchemaToJava extends Gen implements SchemaVisitor
         }
         node
     }
-    void rightShift(MBase node) {
+    MBase rightShift(MBase node) {
         if (node) {
             if (node instanceof MModule) {
                 nestedStack.pop()

@@ -16,7 +16,6 @@
 
 package com.javagen.schema.kotlin
 
-import com.javagen.schema.common.Gen
 import com.javagen.schema.common.CodeEmitter
 import com.javagen.schema.java.SchemaToJava
 import com.javagen.schema.model.MBind
@@ -44,6 +43,13 @@ import static com.javagen.schema.xml.node.Schema.DEFAULT_NS
 import static com.javagen.schema.common.GlobalFunctionsUtil.lowerCase
 import static com.javagen.schema.common.GlobalFunctionsUtil.upperCase
 
+/**
+ * This class is the entry point for Kotlin code generation.
+ *
+ * TODO may still be using some Java-specific code.
+ *
+ * @author Richard Easterling
+ */
 class KotlinGen extends SchemaToJava
 {
     String sourceFileName = null
@@ -153,6 +159,7 @@ class KotlinGen extends SchemaToJava
     {
         super(true)
         fileExtension = 'kt'
+        srcDir = new File('src/main/kotlin-gen')
         simpleXmlTypeToPropertyType = { typeName ->
             KotlinTypeRegistry.simpleXmlTypeToPropertyType[typeName]
         }
@@ -160,21 +167,19 @@ class KotlinGen extends SchemaToJava
             new KotlinTypeRegistry()
         callback = new KotlinJacksonCallback(this)
         pipeline = [
-                //new PreJavaVisitor(xml: this),
                 new KotlinEmitter(gen: this)
         ]
-        classOutputFile = { gen,clazz -> Gen.pathFromSourceFileName(gen, clazz) } //combine classes into single source file
         //TODO convert to Kotlin:
         enumNameFunction = { text -> GlobalFunctionsUtil.javaEnumName(text, false) }
         propertyNameFunction = { text -> GlobalFunctionsUtil.legalJavaName(lowerCase(text)) }
         constantNameFunction = { text -> GlobalFunctionsUtil.javaConstName(text) }
 
         //kotlin-gpx
-        srcDir = new File('../schema-gen-examples/kotlin-gpx/src/main/kotlin-gen')
-        schemaFile = new File('../schema-gen-examples/kotlin-gpx/src/main/resources/gpx.xsd').toURI().toURL()
+//        srcDir = new File('../schema-gen-examples/kotlin-gpx/src/main/kotlin-gen')
+//        schemaURL = new File('../schema-gen-examples/kotlin-gpx/src/main/resources/gpx.xsd').toURI().toURL()
 
         //kotlin-hsf
-//        schemaFile = new File('/Users/richard/dev/hs/hsf-data/hsf-1_1.xsd').toURI().toURL()
+//        schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-1_1.xsd').toURI().toURL()
 //        srcDir = new File('../schema-gen-hsf/hsf-kotlin/src/main/kotlin-gen')
 //        customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
 //        def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']
@@ -186,12 +191,12 @@ class KotlinGen extends SchemaToJava
 
     @Override def gen()
     {
-        schema = new XmlSchemaNormalizer().buildSchema(schemaFile)
+        schema = new XmlSchemaNormalizer().buildSchema(schemaURL)
         visit(schema)
         MModule rootModule = getModel()
         if (!sourceFileName) //if no source file name defined, use first root element name
             sourceFileName = schema.rootElements.isEmpty() ? 'JavaGen' : upperCase(schema.rootElements.first().name)
-        rootModule.sourceFile = Gen.pathFromSourceFileName(this, rootModule, sourceFileName)
+        rootModule.sourceFile = pathFromSourceFileName(this, rootModule, sourceFileName)
         pipeline.each { visitor ->
             visitor.visit(rootModule)
         }

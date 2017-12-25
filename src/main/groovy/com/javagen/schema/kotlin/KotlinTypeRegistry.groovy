@@ -25,6 +25,8 @@ import com.javagen.schema.model.MTypeRegistry
  * Create a Kotlin-specific instance of the type registry.
  *
  * usage: MTypeRegistry.instance().lookupType('String')
+ *
+ * @author Richard Easterling
  */
 class KotlinTypeRegistry extends MTypeRegistry
 {
@@ -163,25 +165,12 @@ class KotlinTypeRegistry extends MTypeRegistry
     {
     }
 
+    /* this Java-specific logic is not needed */
     static String useWrapper(String type)
     {
         false
-//        if (!type)
-//            return type
-//        final String wrapper = primitiveToWrapperMap[type]
-//        wrapper ?: type
     }
 
-//    static Map<String,String> primitiveToWrapperMap = [
-//            'boolean':'Boolean',
-//            'char':'Character',
-//            'short':'Short',
-//            'byte':'Byte',
-//            'int':'Integer',
-//            'long':'Long',
-//            'float':'Float',
-//            'double':'Double'
-//    ]
 
     static Set<String> floatingPointTypeSet = ['float','Float','double','Double']
 
@@ -189,17 +178,6 @@ class KotlinTypeRegistry extends MTypeRegistry
     {
         floatingPointTypeSet.contains(type)
     }
-
-//    static Map<String,String> wrapperToPrimitiveMap = primitiveToWrapperMap.collectEntries { k,v -> [v:k] }
-
-//    static boolean isWrapper(String type)
-//    {
-//        type ? wrapperToPrimitiveMap[type] : false
-//    }
-//    static boolean isPrimitive(String type)
-//    {
-//        type ? primitiveToWrapperMap[type] : false
-//    }
 
     static EnumSet<MCardinality> containerRequiresWrapper = EnumSet.of(MCardinality.SET,MCardinality.LIST,MCardinality.OPTIONAL)
 

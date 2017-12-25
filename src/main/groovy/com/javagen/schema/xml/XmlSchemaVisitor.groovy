@@ -21,8 +21,11 @@ import com.javagen.schema.xml.node.*
 /**
  * Traverses the nodes of a Schema object graph. Subclass overridden methods will usually call these methods
  * for navigating the tree using trait syntax: SchemaVisitor.super.visit(xml).
+ *
+ * @author Richard Easterling
  */
-trait SchemaVisitor {
+trait XmlSchemaVisitor
+{
     boolean printTrace = false
 
     def visit(Schema schema) {

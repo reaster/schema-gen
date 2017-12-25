@@ -29,13 +29,17 @@ trait MSource
     File sourceFile
     def parent //MModule or MClass
     List<MClass> classes = []
-    private Imports imports = new Imports(this)
+    private Imports imports
 
     abstract String nestedAttr(String key)
 
     boolean isSource() { sourceFile != null }
 
-    def getImports() { imports }
+    def getImports() {
+        if (!imports)
+            imports = new Imports(this)
+        imports
+    }
 
     def addClass(c) {
         if (c) {
@@ -71,10 +75,12 @@ trait MSource
         def owner
         Imports(owner) { this.owner=owner }
         def leftShift(item) {
-            if ((owner.parent instanceof MModule)) {
+            def parent = owner.parent
+            //println "Imports.leftShift owner=${owner}, owner.parent=${owner.parent} , this=${this} "
+            if ((parent instanceof MModule)) {
                 list << item
             } else {
-                owner.parent.imports << item
+                parent.imports << item
             }
         }
         boolean isEmpty() { list.isEmpty() }

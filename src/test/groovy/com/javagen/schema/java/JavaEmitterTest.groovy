@@ -82,7 +82,7 @@ class JavaEmitterTest
 		println output
 
 		assertTrue( output.contains('Address() {'))
-		assertTrue( output.contains('Address(String street1, int zip, String planet, java.common.List<Phone> phones)'))
+		assertTrue( output.contains('Address(String street1, int zip, String planet, java.util.List<Phone> phones)'))
 		assertTrue( output.contains('Address(String planet)'))
 	}
 
@@ -113,7 +113,7 @@ class JavaEmitterTest
 		assertTrue( output.contains('public class Phone'))
 		assertTrue( output.contains('public String getNumber()'))
 		assertTrue( output.contains('public void setNumber(String number)'))
-		assertTrue( output.contains('public void setMap(java.common.Map<Integer,String> map)'))
+		assertTrue( output.contains('public void setMap(java.util.Map<Integer,String> map)'))
 	}
 
 	@Test

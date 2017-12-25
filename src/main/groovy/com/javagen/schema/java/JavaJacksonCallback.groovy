@@ -17,7 +17,7 @@
 package com.javagen.schema.java
 
 import com.javagen.schema.model.*
-import com.javagen.schema.xml.NodeCallback
+import com.javagen.schema.xml.XmlNodeCallback
 import com.javagen.schema.xml.node.Any
 import com.javagen.schema.xml.node.AnyAttribute
 import com.javagen.schema.xml.node.Attribute
@@ -34,13 +34,15 @@ import static com.javagen.schema.xml.node.Restriction.RType.*
 
 /**
  * Decorate Java code with Jackson and Java validation constraint annotations.
+ *
+ * @author Richard Easterling
  */
-class JacksonXmlCallback extends NodeCallback
+class JavaJacksonCallback extends XmlNodeCallback
 {
     final SchemaToJava gen
     final boolean validationAnnotations
 
-    JacksonXmlCallback(SchemaToJava gen, boolean validationAnnotations = true)
+    JavaJacksonCallback(SchemaToJava gen, boolean validationAnnotations = true)
     {
         this.gen = gen
         this.validationAnnotations = validationAnnotations
@@ -185,35 +187,5 @@ class JacksonXmlCallback extends NodeCallback
             field.imports << 'javax.validation.Valid'
         }
     }
-
-//    private MField declareProperty(MClass clazz, MType nestedType, def propType, def propName, Container cardinality, String defaultVal, boolean isFinal)
-//    {
-//        assert clazz != null
-//        MType type = nestedType ?: MType.lookupType(propType) // defaults to primitives
-//        if (JavaTypeRegistry.containerRequiresPrimitiveWrapper(cardinality)) {
-//            propType = JavaTypeRegistry.useWrapper(propType)
-//            type = nestedType ?: MType.lookupType(propType)
-//        }
-//        if (!type)
-//            type = clazz.lookupClass(propType) //try looking up nested type
-//        if (!type)
-//            throw new Error('No MType or MClass type registed for \"'+propType+'\" for '+clazz.name+'.'+propName)
-//        boolean notNull = false
-//        if (Container.OPTIONAL == cardinality) {
-//            if (!xml.useOptional) {
-//                cardinality = Container.REQUIRED // just use nulled wrapper class
-//            }
-//        } else if (Container.REQUIRED == cardinality && !type.isPrimitive()) {
-//            notNull = true
-//        }
-//        boolean isReference = xml.isReferenceClass(propType)
-//        MProperty prop = (isReference) ? new MReference(name:propName,type:type,cardinality:cardinality) : new MProperty(name:propName,type:type,cardinality:cardinality)
-//        prop.setFinal(isFinal)
-//        prop.setVal(defaultVal)
-//        prop.attr['notNull'] = notNull
-//        clazz.addField(prop)
-//        return prop
-//    }
-
 
 }

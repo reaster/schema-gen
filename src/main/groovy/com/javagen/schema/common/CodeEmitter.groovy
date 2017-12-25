@@ -29,7 +29,9 @@ import groovy.text.SimpleTemplateEngine
 /**
  * Base class for code generator emitter. Subclasses should override visitor methods as needed.
  *
- * @author richard
+ * <p>This class manages code formatting (tab indentation) and code output routing.
+ *
+ * @author Richard Easterling
  */
 class CodeEmitter
 {
@@ -42,6 +44,7 @@ class CodeEmitter
 	def tabs = ''
 	def types = [:]
 	File openFile = null
+	/** hook to allow unit testing by inserting a ByteArrayOutputStream to capture generated code. */
 	Closure<PrintWriter> openStreamLambda = { File file -> new PrintWriter(file) }
 
 	//entry point

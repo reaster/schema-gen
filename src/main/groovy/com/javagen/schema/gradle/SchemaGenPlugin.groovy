@@ -18,20 +18,29 @@ package com.javagen.schema.gradle
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import com.javagen.schema.java.JavaGen
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
+/**
+ * Simple Gradle plugin to generate object model and marshalling code from XML schema. Supports java, kotlin and swift.
+ *
+ * @author Richard Easterling
+ */
+@groovy.transform.CompileStatic
 class SchemaGenPlugin implements Plugin<Project>
 {
-    void apply(Project project)
-    {
-        project.extensions.add("gen", JavaGen)
+    private static final Logger LOG = LoggerFactory.getLogger(SchemaGenPlugin)
 
-        project.task('gen') {
-            doLast {
-                println 'Hello from the SchemaGenPlugin'
-                println "SchemaGenPlugin schemaFile=${project.extensions.gen.schemaFile} srcDir=${project.extensions.gen.srcDir}"
-                project.extensions.gen.gen()
-            }
+    @Override void apply(Project project)
+    {
+        if (project.plugins.hasPlugin(SchemaGenPlugin)) {
+            return
         }
+        LOG.info("Applying SchemaGenPlugin plugin")
+
+        project.extensions.create(GenExtension.NAME, GenExtension)
+        project.task(type: SchemaGenTask, SchemaGenTask.NAME)
+        project.task(type: SchemaGenCleanTask, SchemaGenCleanTask.NAME)
     }
+
 }

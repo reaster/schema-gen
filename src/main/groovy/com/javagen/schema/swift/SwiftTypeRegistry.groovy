@@ -24,6 +24,8 @@ import com.javagen.schema.model.MTypeRegistry
  * Create a Swift-specific instance of the type registry.
  *
  * usage: MTypeRegistry.instance().lookupType('String')
+ *
+ * @author Richard Easterling
  */
 class SwiftTypeRegistry extends MTypeRegistry
 {
@@ -78,16 +80,6 @@ class SwiftTypeRegistry extends MTypeRegistry
             result[type.name] = type
         }
         result
-//		t << new MType(name:'java.common.ArrayList')
-//		t << new MType(name:'java.common.Locale')
-//		t << new MType(name:'char',primitive:true)
-//		t << new MType(name:'byte',primitive:true)
-//		t << new MType(name:'int',primitive:true)
-//		t << new MType(name:'long',primitive:true)
-//		t << new MType(name:'float',primitive:true)
-//		t << new MType(name:'double',primitive:true)
-//		t << new MType(name:'boolean',primitive:true)
-//		t << new MType(name:'void',primitive:true)
     }
 
      static String containerClassName(MCardinality container)

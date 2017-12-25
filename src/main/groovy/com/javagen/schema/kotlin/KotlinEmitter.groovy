@@ -23,7 +23,7 @@ import com.javagen.schema.model.MMethod.Stereotype
 /**
  * Traverses model and emits Kotlin code.
  * 
- * @author richard
+ * @author Richard Easterling
  */
 class KotlinEmitter extends CodeEmitter
 {
@@ -35,12 +35,12 @@ class KotlinEmitter extends CodeEmitter
 		if ( ! MTypeRegistry.isInitialized() )
 			new KotlinTypeRegistry()
 	}
-	
+
+	/** supports grouping classes into single source file */
 	@Override
 	def visit(MModule m) {
 		List<MClass> classes = m.classes.findAll{ c -> !c.ignore }
 		if (m.isSource()) {
-			//File sourceFile = xml.classOutputFile.apply(xml,c)
 			openWriter(m.sourceFile)
 			List<String> imports = m.gatherSourceImports()
 			out << 'package ' << m.fullName() << '\n'

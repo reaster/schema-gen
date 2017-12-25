@@ -34,9 +34,12 @@ import com.javagen.schema.xml.node.TextOnlyType
  * Allows fine-tunning of generated target language code. Subclasses may apply technology-specific annotations and other
  * implementation details. These methods are usualy the last thing called after the conversion (SchemaToJava,
  * SchemaToSwift, etc.) code has finished.
+ *
  * TODO extends to support Union, List, Group, AttributeGroup, sequence, etc.
+ *
+ * @author Richard Easterling
  */
-class NodeCallback
+class XmlNodeCallback
 {
     void gen(Schema schema, MModule module) { }
     void gen(Element element, MProperty property) {  }

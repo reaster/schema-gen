@@ -41,8 +41,12 @@ import static com.javagen.schema.model.MMethod.Stereotype.hash
 import static com.javagen.schema.model.MMethod.Stereotype.toString
 
 /**
- * Generates constructors and hash and equals extension classes. Note never include both hash and equals stereotypes for Swift.
+ * Generates constructors, hash and equals extension classes.
+ *
+ * Note never include both hash and equals stereotypes for Swift.
  * The Hashable interface includes both hash and equals methods. Use equals when you don't want a hash method.
+ *
+ * @author Richard Easterling
  */
 class SwiftPreEmitter extends CodeEmitter
 {

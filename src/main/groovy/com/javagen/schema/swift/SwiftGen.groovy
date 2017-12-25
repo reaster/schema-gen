@@ -16,17 +16,20 @@
 
 package com.javagen.schema.swift
 /**
- * Configure
+ * This class is the entry point for Swift 4 code generation.
+ *
+ * TODO migrate SchemaToSwift into this class
+ *
+ * @author Richard Easterling
  */
 class SwiftGen extends SchemaToSwift
 {
-
 	SwiftGen()
 	{
 		super()
-		//schemaFile = new URL('http://www.topografix.com/gpx/1/1/gpx.xsd')
-		//schemaFile = new File('/Users/richard/dev/hs/hsf-data/hsf-1_1.xsd')
-//		schemaFile = new File('../schema-gen-examples/swift-gpx/src/resources/gpx.xsd').toURI().toURL()
+		//schemaURL = new URL('http://www.topografix.com/gpx/1/1/gpx.xsd')
+		//schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-1_1.xsd')
+//		schemaURL = new File('../schema-gen-examples/swift-gpx/src/resources/gpx.xsd').toURI().toURL()
 //		srcDir = new File('../schema-gen-examples/swift-gpx/src/swift-gen')
 		//this.validateable = false
 		//this.singleFile = false
@@ -37,7 +40,7 @@ class SwiftGen extends SchemaToSwift
 //		this.rootTags = ['gpx', 'hotSpringsMetadata']
 //		this.nsPrefix = 'p'
 //		this.nsURL = 'http://www.hotspringsfinder.com/schema/meatadata/1/1'
-//		this.schemaLocation = this.nsURL+' ../'+schemaFile+' '
+//		this.schemaLocation = this.nsURL+' ../'+schemaURL+' '
 //		this.defaultTextBodyProperty = 'note'
 //		this.skipTags = ["facilities","services","photos"]
 //		this.customTextPropertyNameForClass = ['Leg':'directions','Email':'address','Phone':'number']

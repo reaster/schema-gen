@@ -18,9 +18,13 @@ package com.javagen.schema.xml
 
 import groovy.transform.EqualsAndHashCode
 
-/** Qualified name has both a type name and a XML namespace */
+/**
+ * Qualified name has both a type name and a XML namespace. Although this class complicates XML node lookups, it is
+ * required to support multi-namespace schemas.
+ *
+ * @author Richard Easterling
+ */
 @EqualsAndHashCode
-//@ToString(includePackage=false,excludes='namespace')
 class QName
 {
     String name

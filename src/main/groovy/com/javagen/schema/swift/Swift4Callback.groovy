@@ -20,7 +20,7 @@ import com.javagen.schema.model.MClass
 import com.javagen.schema.model.MEnum
 import com.javagen.schema.model.MModule
 import com.javagen.schema.model.MProperty
-import com.javagen.schema.xml.NodeCallback
+import com.javagen.schema.xml.XmlNodeCallback
 import com.javagen.schema.xml.node.Any
 import com.javagen.schema.xml.node.AnyAttribute
 import com.javagen.schema.xml.node.Attribute
@@ -31,7 +31,12 @@ import com.javagen.schema.xml.node.Schema
 import com.javagen.schema.xml.node.SimpleType
 import com.javagen.schema.xml.node.TextOnlyType
 
-class Swift4Callback extends NodeCallback
+/**
+ * Swap classes for structs, and decorates code with Swift's Codable protocol to support JSON marshalling.
+ *
+ * @author Richard Easterling
+ */
+class Swift4Callback extends XmlNodeCallback
 {
     final SchemaToSwift gen
     final boolean validationAnnotations

@@ -22,6 +22,11 @@ import com.javagen.schema.model.MModule
 import com.javagen.schema.model.MTypeRegistry
 import com.javagen.schema.common.GlobalFunctionsUtil
 
+/**
+ * Old template-based code generator supporting an in-house XML parser - currently not in use.
+ *
+ * @author Richard Easterling
+ */
 class Saxy4JVisitor extends CodeEmitter
 {
     //TODO add template support for: wrapper types, root tags, 

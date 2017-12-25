@@ -7,6 +7,17 @@ import static junit.framework.TestCase.*
 
 class GlobalFunctionsUtilTest
 {
+
+    @Test
+    void testContainsRelativeFilePath()
+    {
+        assertEquals('if dot in path, assumes it was originally relative','./src/test/resources/xml.xsd', containsRelativeFilePath(new File('./src/test/resources/xml.xsd').toURI().toURL()))
+        assertEquals('if dot in path, assumes it was originally relative','./src/test/resources/xml.xsd', containsRelativeFilePath(new URL('file:/Users/dude/./src/test/resources/xml.xsd')))
+        assertEquals('./src/test/resources/xml.xsd', containsRelativeFilePath(new URL('file:./src/test/resources/xml.xsd')))
+        assertEquals('src/test/resources/xml.xsd', containsRelativeFilePath(new URL('file:src/test/resources/xml.xsd')))
+        assertNull('ignores windows paths', containsRelativeFilePath(new URL('file:C:src/test/resources/xml.xsd')))
+    }
+
     @Test
     void testLoadNamespaces1()
     {

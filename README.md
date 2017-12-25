@@ -31,29 +31,66 @@ This software is written in Groovy and is packaged as a Gradle plugin.
 **Limitations:** Swift only supports JSON serialization. Assuming you're server is written in Kotlin or Java, communication with a Swift client can utilize JSON, even if the documents are stored as XML, thanks to Jackson's support of both. However, given a good XMLEncoder, XML support should be straight forward to add. The author wrote [saxy](https://github.com/reaster/saxy) in Objective-C the last time around and it's somebody else's turn to do this for Swift ;-)
 
 ## Usage
-Still a work in progress, for now you can install it locally:
 
+### Gradle Plugin
+schema-gen includes a Gradle Plugin which can be added to your gradle.build file by including it in your buildscript, and applying and configuring it:
+  
+```
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.javagen:schema-gen:0.9.0'
+    }
+}
+
+apply plugin: 'com.javagen.schema-gen'
+
+schemaGen {
+    swift {
+        schemaURL = new URL('file:src/main/resources/gpx.xsd')
+    }
+}
+
+```  
+To generate code use the gen task:
+```
+swift-gpx> gradle gen
+```
+To remove the generated code, use the genClean task:
+```
+swift-gpx> gradle genClean
+```
+
+To install the Gradle plugin locally, use the maven install task:
 ```
 schema-gen> gradle install
 ```
-Then copy the appropriate `build.gradle` for you target language from the [schema-gen-examples](https://github.com/reaster/schema-gen-examples) project. Finally, run the code generator:
+A good starting point is to download the [schema-gen-examples](https://github.com/reaster/schema-gen-examples) project, regenerate the code and run the tests:
 ```
-my-schema> gradle gen
+schema-gen-examples> gradle genClean gen test
 ```
-For code generator development work, you'll want to run the target language gen class (JavaGen, KotlinGen, SwiftGen) directly.  If you place your project (say, kotlin-atom) in the same parent directory as schema-gen, you can hard-code your configuration in the constructor as follows:
+### Running the Generators in your IDE
+
+For code generator development work, you'll want to run the target language gen class (JavaGen, KotlinGen, SwiftGen) directly.  If you place your project (say, kotlin-atom) in the same parent directory as [schema-gen](https://github.com/reaster/schema-gen), you can hard-code your configuration in the [KotlinGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/kotlin/KotlinGen.groovy) constructor as follows:
 ```
 KotlinGen()
 {
     ...
-    schemaFile = new File('../kotlin-atom/src/main/resources/atom.xsd').toURI().toURL()
+    schemaURL = new URL('file:../kotlin-atom/src/main/resources/atom.xsd')
     srcDir = new File('../kotlin-atom/src/main/kotlin-gen')
 } 
 ```
+Then you can point your IDE at KotlinGen in the  [schema-gen](https://github.com/reaster/schema-gen) project and the generated code will be put in your kotlin-atom project.
+
 #### Configuration
-The schema-gen code generator was designed to be highly customizable. In particular, how it names classes, properties, and enumerations is all encoded in configurable properties and lambdas. Here is a sampling of the properties that can be overridden in the `Gen` base class:
+The code generator is designed to be highly customizable. In particular, how it names classes, properties, and enumerations is all encoded in configurable properties and lambdas. Here is a sampling of the properties that can be overridden in the `Gen` base class:
 ```
+URL schemaURL = new URL('http://www.topografix.com/gpx/1/1/gpx.xsd')
+File srcDir = new File('src/main/java-gen')
 List<MVisitor> pipeline = []
-File srcDir = new File('src/main/java-gen');
 PluralService pluralService = new PluralService()
 def customPluralMappings = [:] //needed for irregular nouns: tooth->teeth, person->people
 boolean useOptional = false //just effects Java code: Integer vs Optional<Integer>
@@ -71,13 +108,29 @@ Function<String,String> propertyNameFunction = { text -> GlobalFunctionsUtil.leg
 Function<String,String> constantNameFunction = { text -> GlobalFunctionsUtil.javaConstName(text) }
 Function<String,String> collectionNameFunction = { singular -> customPluralMappings[singular] ?: pluralService.toPlural(singular) }
 Function<String,String> simpleXmlTypeToPropertyType
-BiFunction<Gen,MClass,File> classOutputFile = { gen,clazz -> new File(gen.srcDir, GlobalFunctionsUtil.pathFromPackage(clazz.fullName(),fileExtension))} //default works for Java
+BiFunction<Gen,MClass,File> classOutputFileFunction = { gen,clazz -> new File(gen.srcDir, GlobalFunctionsUtil.pathFromPackage(clazz.fullName(),fileExtension))} //default works for Java
 
 ```
-These properties can be set in the Gradle plugin or directly as described above.
+These properties can be set in the Gradle plugin for each of the target languages:
+```
+schemaGen {
+    kotlin {
+        srcDir = new File('../kotlin-gpx/src/main/kotlin')
+    }
+    swift{
+        srcDir = new File('../swift-gpx/src/swift-gen')
+    }
+    java {
+        srcDir = new File('src/main/java')
+        packageName = 'com.javagen.model'
+    }
+
+ }
+
+```
 
 ## Status
-Although the design went through three iterations and is now stable as of 2017, the code is still being cleaned up. The Gradle plugin works, but is half-baked. Finally, it has yet to be tried against a wide variety of schemas and, due to the complexity of the task, issues should be expected. 
+Although the design went through three iterations and is now stable as of 2017, the code is still being cleaned up. It has yet to be tested against a wide variety of schemas, so issues should be expected when trying new schemas. 
 
 ## Limitations
 #### Xml Schema
@@ -86,7 +139,7 @@ This code generator is not intended to support document-centric (versus data-cen
 ##### AttributeGroup
 Currently, AttributeGroup are in-lined (i.e. expaned where they are referenced) and not mapped to a specific, re-usable entity (interface, class, trait, etc.)
 ##### Group
-Currently, Group elements are in-lined (i.e. expanded where they are referenced) and not mapped to a specific, re-usable entity.
+Currently, Group elements are in-lined (i.e. expanded where they are referenced) and not mapped to a specific, re-usable entity (interface, class, trait, etc.)
 ##### Union
 Unions often consist of 2 or more `TextOnlyType`s merged together with their attached restrictions. If these restrictions are all enumerations, the union of unique values will be modeled properly. However, in other cases - say mixing numeric and string values - you will get a warning and probably an incorrect mapping.
 

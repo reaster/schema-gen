@@ -33,7 +33,7 @@ import com.javagen.schema.model.MTypeRegistry
 /**
  * Traverses model and emits Swift 4 code.
  * 
- * @author richard
+ * @author Richard Easterling
  */
 class SwiftEmitter extends CodeEmitter
 {
@@ -46,19 +46,23 @@ class SwiftEmitter extends CodeEmitter
 			new SwiftTypeRegistry()
 	}
 
+	/** supports grouping classes in single source file */
 	@Override
 	def visit(MModule m)
 	{
 		List<MClass> classes = m.classes.findAll{ c -> !c.ignore }
-		classes.each { c -> //visit declared classes and interfaces
-			File sourceFile = gen.classOutputFile.apply(gen, c)
-			openWriter(sourceFile)
-			c.imports.each {
+		if (m.isSource()) {
+			openWriter(m.sourceFile)
+			List<String> imports = m.gatherSourceImports()
+			imports.each {
 				out << '\n' << 'import ' << it
 			}
-			if (!c.imports.isEmpty())
+			if (!imports.isEmpty())
 				out << '\n'
+		}
+		classes.each { c -> //visit declared classes and interfaces
 			visit(c)
+			out << '\n'
 		}
 		for(childModule in m.children.values()) { //visit submodules
 			visit(childModule)

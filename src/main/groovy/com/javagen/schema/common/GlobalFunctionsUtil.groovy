@@ -19,6 +19,9 @@ package com.javagen.schema.common
 import groovy.transform.CompileStatic
 import org.xml.sax.InputSource
 
+import java.nio.file.Path
+import java.nio.file.Paths
+
 import static GlobalFunctionsUtil.CharType.*
 import org.xml.sax.helpers.DefaultHandler
 import javax.xml.parsers.SAXParser
@@ -29,6 +32,10 @@ import org.xml.sax.SAXException
 
 /**
  * Utility functions mostly targeting programming language string formatting.
+ *
+ * TODO move language-specific code into correct package namespaces.
+ *
+ * @author Richard Easterling
  */
 @CompileStatic
 final class GlobalFunctionsUtil
@@ -232,6 +239,31 @@ final class GlobalFunctionsUtil
 	////////////////////////////////////////////////////////////////////////////
 	// generic common methods:
 	////////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Quirky relative path extractor.
+	 * @param url can be relative or absolute, but if it has a dot, it's treated as relative.
+	 * @return relative path if url maps to a file and is relative or starts with dot, otherwise returns null
+	 */
+	static String containsRelativeFilePath(URL url)
+	{
+		final String protocol = url.protocol
+		if (protocol == 'file') {
+			final String path = url.path
+			final int index = path.indexOf('/.')
+			if (index >= 0) {
+				final String relative = path.substring(index+1)
+				return relative
+				final Path path1 = Paths.get(url.toURI())
+				return path.toString()
+			} else if (path.startsWith('.')) {
+				return path
+			} else if (!path.startsWith('/') && path.indexOf(':') == -1) { //excludes windows drive paths: C:/path
+				return path
+			}
+		}
+		null
+	}
 
 	private static class NamespaceHandler extends DefaultHandler
 	{

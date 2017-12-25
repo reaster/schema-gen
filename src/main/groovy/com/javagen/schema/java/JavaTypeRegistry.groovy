@@ -25,6 +25,8 @@ import com.javagen.schema.model.MTypeRegistry
  * Create a Java-specific instance of the type registry.
  *
  * usage: MTypeRegistry.instance().lookupType('String')
+ *
+ * @author Richard Easterling
  */
 class JavaTypeRegistry extends MTypeRegistry
 {

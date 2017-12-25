@@ -23,6 +23,11 @@ import com.javagen.schema.xml.node.Restriction
 import static com.javagen.schema.model.MRestriction.Type
 import static com.javagen.schema.xml.node.Restriction.RType
 
+/**
+ * Translates XML schema-like restrictions (Restriction.RType) to javax.validation-like constraints (MRestriction.Type).
+ *
+ * @author Richard Easterling
+ */
 class MappingUtil
 {
     static MRestriction translate(Restriction restriction)

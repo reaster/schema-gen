@@ -32,7 +32,7 @@ import com.javagen.schema.model.MTypeRegistry
 /**
  * Traverses model and emits Java code.
  * 
- * @author richard
+ * @author Richard Easterling
  */
 class JavaEmitter extends CodeEmitter
 {
@@ -45,12 +45,13 @@ class JavaEmitter extends CodeEmitter
 			new JavaTypeRegistry()
 	}
 
+	/** outputs each class in separate source file */
 	@Override
 	def visit(MModule m)
 	{
 		List<MClass> classes = m.classes.findAll{ c -> !c.ignore }
 		classes.each { c -> //visit declared classes and interfaces
-			File sourceFile = gen.classOutputFile.apply(gen,c)
+			File sourceFile = gen.classOutputFileFunction.apply(gen,c)
 			openWriter(sourceFile)
 			out << 'package ' << m.fullName() << ';\n'
 			c.imports.each {

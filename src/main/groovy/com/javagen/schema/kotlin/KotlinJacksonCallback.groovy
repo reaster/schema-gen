@@ -23,7 +23,7 @@ import com.javagen.schema.model.MEnum
 import com.javagen.schema.model.MField
 import com.javagen.schema.model.MMethod
 import com.javagen.schema.model.MProperty
-import com.javagen.schema.xml.NodeCallback
+import com.javagen.schema.xml.XmlNodeCallback
 import com.javagen.schema.xml.node.Any
 import com.javagen.schema.xml.node.AnyAttribute
 import com.javagen.schema.xml.node.Attribute
@@ -39,8 +39,10 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.*
 
 /**
  * Decorate Kotlin code with Jackson and validation constraint annotations.
+ *
+ * @author Richard Easterling
  */
-class KotlinJacksonCallback extends NodeCallback {
+class KotlinJacksonCallback extends XmlNodeCallback {
     final KotlinGen gen
     final boolean validationAnnotations
 

@@ -31,9 +31,9 @@ import com.javagen.schema.model.MProperty
 import com.javagen.schema.model.MReference
 import com.javagen.schema.model.MType
 import com.javagen.schema.model.MTypeRegistry
-import com.javagen.schema.xml.NodeCallback
+import com.javagen.schema.xml.XmlNodeCallback
 import com.javagen.schema.xml.QName
-import com.javagen.schema.xml.SchemaVisitor
+import com.javagen.schema.xml.XmlSchemaVisitor
 import com.javagen.schema.xml.node.Any
 import com.javagen.schema.xml.node.AnyAttribute
 import com.javagen.schema.xml.node.Attribute
@@ -60,10 +60,18 @@ import static com.javagen.schema.xml.node.Schema.DEFAULT_NS
 import static com.javagen.schema.common.GlobalFunctionsUtil.lowerCase
 import static com.javagen.schema.common.GlobalFunctionsUtil.upperCase
 
-class SchemaToSwift extends Gen implements SchemaVisitor
+/**
+ * Translate XML schema to Swift 4 code.
+ *
+ * <p>A XmlNodeCallback can be used to apply specific third-party library annotations to the object model, allowing one
+ * to easily switch technologies. For example one could swap the KotlinJacksonCallback with a KotlinJaxbCallback without
+ * having to rewrite the KotlinGen object model translation code.
+ *
+ * @author Richard Easterling
+ */
+class SchemaToSwift extends Gen implements XmlSchemaVisitor
 {
-    URL schemaFile = new URL('http://www.topografix.com/gpx/1/1/gpx.xsd')
-    NodeCallback callback
+    XmlNodeCallback callback
 
     Map<String,MModule> moduleMap = new LinkedHashMap<>()
     Map<String,MClass> classMap = [:]
@@ -97,8 +105,8 @@ class SchemaToSwift extends Gen implements SchemaVisitor
                 new SwiftEmitter(gen: this)
         ]
         fileExtension = 'swift'
+        srcDir = new File('src/main/swift-gen')
         simpleXmlTypeToPropertyType = { typeName -> SwiftTypeRegistry.simpleXmlTypeToPropertyType[typeName] }
-        classOutputFile = { gen,clazz -> Gen.fileNmeFromAttr(gen, clazz) } //combine classes into single source file
         enumNameFunction = { text -> GlobalFunctionsUtil.swiftEnumName(text, false) }
         propertyNameFunction = { text -> GlobalFunctionsUtil.legalSwiftName(lowerCase(text)) }
         constantNameFunction = { text -> GlobalFunctionsUtil.swiftConstName(text) }
@@ -106,12 +114,24 @@ class SchemaToSwift extends Gen implements SchemaVisitor
 
     @Override def gen()
     {
-        schema = new XmlSchemaNormalizer().buildSchema(schemaFile)
+//        schema = new XmlSchemaNormalizer().buildSchema(schemaURL)
+//        visit(schema)
+//        MModule rootModule = getModel()
+//        if (!sourceFileName) //if no source file name defined, use first root element name
+//            sourceFileName = schema.rootElements.isEmpty() ? 'JavaGen' : upperCase(schema.rootElements.first().name)
+//        rootModule.sourceFile = pathFromSourceFileName(this, rootModule, sourceFileName)
+//        pipeline.each { visitor ->
+//            visitor.visit(rootModule)
+//        }
+        schema = new XmlSchemaNormalizer().buildSchema(schemaURL)
         visit(schema)
+        MModule rootModule = getModel()
         if (!sourceFileName) //if no source file name defined, use first root element name
             sourceFileName = schema.rootElements.isEmpty() ? 'JavaGen' : upperCase(schema.rootElements.first().name)
-        rootModule.attr['fileName'] = sourceFileName
-        super.gen()
+        rootModule.sourceFile = pathFromSourceFileName(this, rootModule, sourceFileName)
+        pipeline.each { visitor ->
+            visitor.visit(rootModule)
+        }
     }
 
     @Override
@@ -126,8 +146,8 @@ class SchemaToSwift extends Gen implements SchemaVisitor
         String name = packageNameFunction.apply(schema.prefixToNamespaceMap[Schema.targetNamespace])
         rootModule = new MModule(name:name)
         this << rootModule
-        SchemaVisitor.super.preVisit(schema) //visit global elements, pre-create classes for type reference lookups
-        SchemaVisitor.super.visit(schema)
+        XmlSchemaVisitor.super.preVisit(schema) //visit global elements, pre-create classes for type reference lookups
+        XmlSchemaVisitor.super.visit(schema)
         this >> rootModule
         callback.gen(schema, rootModule)
     }
@@ -242,7 +262,7 @@ class SchemaToSwift extends Gen implements SchemaVisitor
         MClass clazz = lookupOrCreateClass(className)
         clazz.attr['nodeType'] = complexType
         this << clazz
-        SchemaVisitor.super.visit(complexType)
+        XmlSchemaVisitor.super.visit(complexType)
         this >> clazz
         clazz.ignore = complexType.isWrapperElement()
         callback.gen(complexType, clazz)
@@ -261,7 +281,7 @@ class SchemaToSwift extends Gen implements SchemaVisitor
         MClass clazz = lookupOrCreateClass(className)
         clazz.attr['nodeType'] = simpleType
         this << clazz
-        SchemaVisitor.super.visit(simpleType)
+        XmlSchemaVisitor.super.visit(simpleType)
         this >> clazz
         callback.gen(simpleType, clazz)
     }
@@ -511,9 +531,6 @@ class SchemaToSwift extends Gen implements SchemaVisitor
     {
         if (!type)
             throw new Error("Missing type")
-        if (type.qname?.name == 'anyURI') {
-            println 'TODO remvoe me'
-        }
         String typeName = schemaTypeToPropertyTypeName(type)
         MType javaType = MType.lookupType(typeName) //global type?
         if (!javaType) {

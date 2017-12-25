@@ -19,7 +19,13 @@ package com.javagen.schema.common
 import groovy.transform.CompileStatic
 
 /**
- * Adds manual mapping for irregular nouns and caching.
+ * Used for generating one-to-many property names. Builds on the stateless GlobalFunctionsUtil.toPlural() and
+ * GlobalFunctionsUtil.toSingular() functions to add manual
+ * mapping for irregular nouns and caching. Because the toSingular() method does a much poorer job than toPlural() at
+ * producing correct English, caching improves the results when toPlural() is called first (which is generaly the case
+ * in this code base).
+ *
+ * @author Richard Easterling
  */
 @CompileStatic
 class PluralService

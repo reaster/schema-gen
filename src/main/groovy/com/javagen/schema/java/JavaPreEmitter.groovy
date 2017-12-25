@@ -44,6 +44,8 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.*
 
 /**
  * Generates addMethod signatures and default implementations from stereotypes (getters, setters, hash, equals, toString).
+ *
+ * @author Richard Easterling
  */
 class JavaPreEmitter extends CodeEmitter
 {
