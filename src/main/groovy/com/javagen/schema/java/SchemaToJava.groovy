@@ -407,8 +407,10 @@ class SchemaToJava extends Gen implements XmlSchemaVisitor
 
     MClass lookupOrCreateClass(String className, boolean isEnum=false)
     {
-        MClass clazz = nestedStack.peek().lookupClass(className)
-        clazz ?: isEnum ? new MEnum(name: className) : new MClass(name: className)
+        MSource parent = nestedStack.peek()
+        MClass clazz = parent.lookupClass(className)
+        boolean isNestedClass = parent instanceof MClass //nested classes should be static
+        clazz ?: isEnum ? new MEnum(name: className) : new MClass(name: className, static: isNestedClass)
     }
     MEnum lookupOrCreateEnum(String enumName)
     {

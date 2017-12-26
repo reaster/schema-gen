@@ -1,68 +1,25 @@
-//plugins {
-    //id 'com.gradle.plugin-publish' version '0.9.9'
+plugins {
+    id 'com.gradle.plugin-publish' version '0.9.9'
     //id 'java-gradle-plugin'
-//}
-//pluginBundle {
-//    website = 'https://github.com/reaster/schema-gen'
-//    vcsUrl = 'https://github.com/reaster/schema-gen'
-//    plugins {
-//        gen {
-//            id = 'com.javagen.schema-gen'
-//            displayName = 'Schema Gen Plugin'
-//            description = 'Generates Java, Kotlin and Swift 4 model and marshalling code from XML Schema (.xsd) files'
-//            tags = ['schema', 'xml','xsd', 'json', 'jaxb', 'java', 'kotlin', 'swift', 'generator', 'plugin', 'jackson']
-//            version = '0.9.0'
-//        }
-//    }
-//}
+}
+pluginBundle {
+    website = 'https://github.com/reaster/schema-gen'
+    vcsUrl = 'https://github.com/reaster/schema-gen'
+    plugins {
+        gen {
+            id = 'com.javagen.schema-gen'
+            displayName = 'Schema Gen Plugin'
+            description = 'Generates Java, Kotlin and Swift 4 model, validation and marshalling code from XML Schema (.xsd) files'
+            tags = ['schema', 'xml','xsd', 'json', 'jaxb', 'java', 'kotlin', 'swift', 'generator', 'plugin', 'jackson']
+            version = '0.9.0'
+        }
+    }
+}
 group 'com.javagen'
-version '0.9.0'
+version '0.9.1'
 
 apply plugin: 'groovy'
 apply plugin: 'maven'
-//apply plugin: 'com.gradle.plugin-publish'
-//apply plugin: GreetingPlugin
-//apply plugin: SchemaGenPlugin
-//
-//greeting.message = 'Hi Dude!'
-//gen {
-//    message = 'Hi Gen!'
-//}
-//
-//class GreetingPlugin implements Plugin<Project> {
-//    void apply(Project project) {
-//        project.extensions.create("greeting", GreetingPluginExtension)
-//        // Add a task that uses the configuration
-//        project.task('hello') {
-//            doLast {
-//                println project.greeting.message
-//            }
-//        }
-//    }
-//}
-//
-//class GreetingPluginExtension
-//{
-//    def String message = 'Hello from GreetingPlugin'
-//}
-//
-//class SchemaGenPlugin implements Plugin<Project>
-//{
-//    void apply(Project project) {
-//        project.extensions.create("gen", SchemaGenPluginPluginExtension)
-//        // Add a task that uses the configuration
-//        project.task('gen') {
-//            doLast {
-//                println project.gen.message
-//            }
-//        }
-//    }
-//}
-//
-//class SchemaGenPluginPluginExtension
-//{
-//    def String message = 'Hello from SchemaGenPlugin'
-//}
 
 sourceCompatibility = 1.8
 
