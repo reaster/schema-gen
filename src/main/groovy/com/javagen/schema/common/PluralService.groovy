@@ -69,3 +69,10 @@ class PluralService
     }
 
 }
+
+@CompileStatic
+class PluralServiceNoop extends PluralService
+{
+    @Override String toPlural(String singular) { singular }
+    @Override String toSingular(String plural) { plural }
+}

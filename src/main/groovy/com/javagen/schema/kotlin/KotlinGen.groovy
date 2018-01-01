@@ -17,6 +17,7 @@
 package com.javagen.schema.kotlin
 
 import com.javagen.schema.common.CodeEmitter
+import com.javagen.schema.common.PluralServiceNoop
 import com.javagen.schema.java.SchemaToJava
 import com.javagen.schema.model.MBind
 import com.javagen.schema.model.MCardinality
@@ -32,6 +33,8 @@ import com.javagen.schema.xml.XmlSchemaNormalizer
 import com.javagen.schema.xml.node.Any
 import com.javagen.schema.xml.node.Body
 import com.javagen.schema.common.GlobalFunctionsUtil
+
+import java.util.function.Function
 
 import static com.javagen.schema.model.MMethod.Stereotype.constructor
 import static com.javagen.schema.model.MMethod.Stereotype.equals
@@ -97,22 +100,22 @@ class KotlinGen extends SchemaToJava
         MProperty property
         if (container == MCardinality.LIST) {
             /*
-            class Extensions(@JsonIgnore var map:LinkedHashMap<String, String> = linkedMapOf())
+            class Foo(@JsonIgnore var map:LinkedHashMap<String, String> = linkedMapOf())
             {
-            public @JsonAnySetter fun set(key: String, value: String) = this.map.put(key, value)
-            public @JsonAnyGetter fun all(): Map<String, String> = this.map
-            override fun hashCode() = map.hashCode()
-            override fun equals(other: Any?) = when {
-            this === other -> true
-            other is Extensions -> map.size == other.map.size
-                && map.all { (k,v) -> v.equals(other.map[k]) }
-            else -> false
-            }
-            override fun toString() = map.toString()
+                public @JsonAnySetter fun set(key: String, value: String) = this.map.put(key, value)
+                public @JsonAnyGetter fun all(): Map<String, String> = this.map
+                override fun hashCode() = map.hashCode()
+                override fun equals(other: Any?) = when {
+                    this === other -> true
+                    other is Foo -> map.size == other.map.size
+                                            && map.all { (k,v) -> v.equals(other.map[k]) }
+                    else -> false
+                }
+                override fun toString() = map.toString()
             }
              */
 
-            String anyClassName = upperCase(propertyName)
+            String anyClassName = classNameFunction.apply(propertyName)
             MClass anyClass = (MClass)MType.lookupType(anyClassName)
             if (!anyClass || anyClass.fields.isEmpty()) { //TODO should this be done in the ComplexType method?
                 anyClass = new MClass(name: anyClassName)
@@ -146,7 +149,7 @@ class KotlinGen extends SchemaToJava
         v.out << 'when {'
         v.next()
         v.out << '\n' << v.tabs << 'this === other -> true'
-        v.out << '\n' << v.tabs << 'other is Extensions -> map.size == other.map.size'
+        v.out << '\n' << v.tabs << "other is ${m.parent.name} -> map.size == other.map.size"
         v.next()
         v.out << '\n' << v.tabs << '&& map.all { (k,v) -> v.equals(other.map[k]) }'
         v.previous()
@@ -159,6 +162,7 @@ class KotlinGen extends SchemaToJava
     {
         super(true)
         fileExtension = 'kt'
+        useOptional = true //only applies to Java
         srcDir = new File('src/main/kotlin-gen')
         simpleXmlTypeToPropertyType = { typeName ->
             KotlinTypeRegistry.simpleXmlTypeToPropertyType[typeName]
@@ -170,9 +174,10 @@ class KotlinGen extends SchemaToJava
                 new KotlinEmitter(gen: this)
         ]
         //TODO convert to Kotlin:
-        enumNameFunction = { text -> GlobalFunctionsUtil.javaEnumName(text, false) }
-        propertyNameFunction = { text -> GlobalFunctionsUtil.legalJavaName(lowerCase(text)) }
-        constantNameFunction = { text -> GlobalFunctionsUtil.javaConstName(text) }
+        enumNameFunction = { text -> KotlinUtil.kotlinEnumName(text, false) }
+        propertyNameFunction = { text -> KotlinUtil.legalKotlinName(lowerCase(text)) }
+        constantNameFunction = { text -> KotlinUtil.kotlinConstName(text) }
+        classNameFunction = { text -> KotlinUtil.legalKotlinClassName(text) }
 
         //kotlin-gpx
 //        srcDir = new File('../schema-gen-examples/kotlin-gpx/src/main/kotlin-gen')
@@ -186,7 +191,10 @@ class KotlinGen extends SchemaToJava
 //        def unknownEnum = 'Unknown'
 //        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: GlobalFunctionsUtil.swiftEnumName(text, false) }
 
-        useOptional = true
+        schemaURL = new URL('file:../schema-gen-examples/wadl/src/main/resources/wadl.xsd')
+        srcDir = new File('../schema-gen-examples/wadl/src/main/kotlin-gen')
+        pluralService = new PluralServiceNoop()
+        rootElements = ['application'] as Set
     }
 
     @Override def gen()

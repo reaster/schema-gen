@@ -106,7 +106,7 @@ class KotlinEmitter extends CodeEmitter
 				} else if (assignDefaultValues && f.cardinality == MCardinality.OPTIONAL) {
 					out << ' = null'
 				} else if (assignDefaultValues && f.cardinality == MCardinality.REQUIRED) {
-					out << ' = null'
+					out << ' = ' << c.name << '()'
 				}
 			}
 			this--
@@ -384,6 +384,9 @@ class KotlinEmitter extends CodeEmitter
 				} else {
 					if (val==null) {
 						val = MTypeRegistry.instance().lookupDefaultValue(f.type.name)
+						if (val == 'null') { // return default constructor call
+							return "${f.type.name}()"
+						}
 					}
 					final String quote = valueQuote(f, val)
 					return (val==null) ? null : "${quote}${val}${quote}"

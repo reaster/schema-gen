@@ -37,6 +37,7 @@ import com.javagen.schema.xml.XmlSchemaVisitor
 import com.javagen.schema.xml.XmlSchemaNormalizer
 import com.javagen.schema.xml.node.*
 import com.javagen.schema.common.MappingUtil
+import com.sun.tools.classfile.Opcode
 
 import java.util.function.BiFunction
 
@@ -65,6 +66,8 @@ class SchemaToJava extends Gen implements XmlSchemaVisitor
     Map<String,MModule> moduleMap = new LinkedHashMap<>()
     Map<String,MClass> classMap = [:]
     Stack<MSource> nestedStack = []
+    Set<String> rootElements = [] as Set
+    boolean rootElementsDefined = false
     MModule rootModule
     static final Set<String> CONTAINER_TYPES = ['NMTOKENS','IDREFS','ENTITIES'] as Set
     Schema schema
@@ -113,6 +116,7 @@ class SchemaToJava extends Gen implements XmlSchemaVisitor
     def visit(Schema schema)
     {
         this.schema = schema
+        rootElementsDefined = !rootElements.isEmpty()
         String name = packageNameFunction.apply(schema.prefixToNamespaceMap[Schema.targetNamespace])
         rootModule = new MModule(name:name)
         this << rootModule
@@ -306,11 +310,13 @@ class SchemaToJava extends Gen implements XmlSchemaVisitor
     }
     def visit(QName root)
     {
-        println "root node: ${root}"
         Element rootElement = schema.lookupElement(root)
         String className = classNameFunction.apply(rootElement.type.qname.name)
         MClass clazz = rootModule.lookupClass(className)
-        callback.gen(rootElement, clazz)
+        if (!rootElementsDefined || rootElements.contains(rootElement.qname.name)) {
+            println "root node: ${root}"
+            callback.gen(rootElement, clazz)
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////

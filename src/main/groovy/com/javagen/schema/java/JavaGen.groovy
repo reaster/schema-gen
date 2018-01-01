@@ -17,6 +17,7 @@
 package com.javagen.schema.java
 
 import com.javagen.schema.common.PluralService
+import com.javagen.schema.common.PluralServiceNoop
 
 import static com.javagen.schema.common.GlobalFunctionsUtil.javaEnumName
 
@@ -29,8 +30,6 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.javaEnumName
  */
 class JavaGen extends SchemaToJava
 {
-	final String name
-
 	def initGpx()
 	{
 		schemaURL = new File('/Users/richard/dev/hs/xml-xml/example-gpx-java/src/main/resources/gpx.xsd').toURI().toURL()
@@ -49,10 +48,14 @@ class JavaGen extends SchemaToJava
 		enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: javaEnumName(text, false) }
 	}
 
-	JavaGen(String name)
+	JavaGen()
 	{
 		super(false)
-		this.name = name
+//		schemaURL = new URL('file:../schema-gen-examples/wadl/src/main/resources/wadl.xsd')
+//		srcDir = new File('../schema-gen-examples/wadl/src/main/java-gen')
+//		pluralService = new PluralServiceNoop()
+//		rootElements = ['application'] as Set
+
 //		srcDir = new File('example-atom-java/src/main/java-xml')
 //		schemaURL = new File('/Users/richard/dev/hs/xml-xml/example-atom-java/src/main/resources/atom.xsd').toURI().toURL()
 //		packageName = 'org.w3.atom'
@@ -62,7 +65,6 @@ class JavaGen extends SchemaToJava
 //		initGpx()
 //		initHsf()
 	}
-	JavaGen() { this('java') }
 
 	static void main(String[] args) {
 		new JavaGen().gen()

@@ -102,6 +102,7 @@ class JavaJacksonCallback extends XmlNodeCallback
             }
         }
     }
+    /** root element callback */
     @Override void gen(Element element, MClass clazz)
     {
         if (!clazz)

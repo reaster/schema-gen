@@ -25,6 +25,7 @@ import groovy.transform.ToString
 @ToString(includeSuper=true,includePackage=false)
 class ComplexType extends SimpleType implements ElementHolder
 {
+    Compositor compositor
     //@Override boolean isEmpty() { base == null && elements.isEmpty() }
     /** wrapper elements can be mapped directly to a container (i.e. List<ChildElement>) and don't need their own class */
     @Override boolean isWrapperElement() {

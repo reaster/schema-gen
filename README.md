@@ -38,8 +38,9 @@ schema-gen includes a Gradle Plugin which can be added to your gradle.build file
 ```
 buildscript {
     repositories {
-        mavenLocal()
-        mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath 'com.javagen:schema-gen:0.9.0'
@@ -50,7 +51,7 @@ apply plugin: 'com.javagen.schema-gen'
 
 schemaGen {
     swift {
-        schemaURL = new URL('file:src/main/resources/gpx.xsd')
+        schemaURL = new URL('http://www.topografix.com/gpx/1/1/gpx.xsd')
     }
 }
 
