@@ -14,7 +14,7 @@ This software is written in Groovy and is packaged as a Gradle plugin.
 
 **Usage:** The main entry point is [com.javagen.schema.java.JavaGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/java/JavaGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/java-gen folder to keep it separate from hand-written code.
 
-**Limitations:** Because Java does not have the extension features of more recent languages, it's harder to maintain a clean separation between hand-written and generated code. You may be forced to put your business logic in the generated files with the downside being, if you ever have to regenerate, you'll have to manually merge your code back in.
+**Limitations:** A limitation of the Java langauge is that it does not support the extension features of more recent languages, making it harder to maintain a clean separation between hand-written and generated code. You may be forced to put your business logic in the generated files with the downside being, if you ever have to regenerate, you'll have to manually merge your code back in.
 
 ### Kotlin
 **Features:** By leveraging [data classes](https://kotlinlang.org/docs/reference/data-classes.html), Kotlin generated code is very concise. Classes contain [Jackson](https://github.com/FasterXML/jackson-dataformat-xml) annotations supporting reading and writing both JSON and XML documents. XML Schema restrictions are also translated into [Bean Validation 2.0](http://beanvalidation.org/) annotations. Extending generated code with business logic can be acheived using [extensions](https://kotlinlang.org/docs/reference/extensions.html). See the [kotlin-gpx](https://github.com/reaster/schema-gen-examples/tree/master/kotlin-gpx) sample project.
@@ -43,7 +43,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.javagen:schema-gen:0.9.0'
+        classpath 'com.javagen:schema-gen:0.9.1'
     }
 }
 
@@ -166,11 +166,11 @@ ___
 ## Change Log
 
 #### 0.9.1
-Add suport for compositors (all, sequence, choice). Kotlin reserved words now handled properly.
+At the schema level, add suport for compositors (all, sequence, choice), support for substitutionGroup, add double and float types, and proper targetNamespace vs default namespace handling. Kotlin reserved words now handled properly. Java inheritance support added.
 #### 0.9.0
 First release. Language support: Java, Kotlin and Swift 4. Tested XML schemas: GPX, Atom.
 
 ___
 
 ## Support
-The author has multiple projects in the pipeline, other passions plus bills to pay, but will try his best to support the community as time allows. In particular, if anybody would like to add language support (Python, C# or Go), test new schemas, contribute bug fixes, expand the documentation, or add test coverage, I'd be happy to support you. Finally, I'm available for contracting/consulting, especially if it involves expanding the framework to support your needs.
+The author has multiple projects in the pipeline, other passions and bills to pay, but will try his best to support the community as time allows. In particular, if anybody would like to add language support (Python, C# or Go), test new schemas, contribute bug fixes, expand the documentation, or add test coverage, I'd be happy to support you. Finally, I'm available for contracting/consulting, especially if it involves expanding the framework to support your needs.

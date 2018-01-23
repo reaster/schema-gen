@@ -1,8 +1,14 @@
 package com.javagen.schema.common
 
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import org.junit.Test
 
+import javax.xml.bind.annotation.XmlSeeAlso
+import javax.xml.bind.annotation.XmlType
 import java.time.LocalDateTime
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
@@ -93,8 +99,44 @@ class JacksonTest
         Conference c1 = mapper.readerFor(Conference.class).readValue(result)
         assertEquals("Tech-1", c1.name)
         assertEquals(2, c1.events.size())
-
-
     }
+
+    //@JsonTypeInfo(use=JsonTypeInfo.Id.NAME , include=JsonTypeInfo.As.PROPERTY, property="@class")
+    //@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.WRAPPER_OBJECT)
+    //@JsonSubTypes([B, C])
+    //@XmlType(name = "A") @XmlSeeAlso([B.class, C.class])
+    //@JsonTypeInfo(use=JsonTypeInfo..Id.NAME)
+    @JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.WRAPPER_OBJECT)
+    @JsonSubTypes([
+            @JsonSubTypes.Type(value = B.class, name = "B"),
+            @JsonSubTypes.Type(value = C.class, name = "C")
+    ])
+    static class A {
+        @JacksonXmlProperty(isAttribute = true)
+        String name
+    }
+    static class B extends A {}
+    static class C extends A {}
+    @JacksonXmlRootElement(localName = "POLY")
+    static class Poly {
+        @JacksonXmlElementWrapper(useWrapping=false)
+        @JsonProperty()
+        List<A> list
+    }
+
+    @Test
+    void testPolymorphism() throws IOException
+    {
+        ObjectMapper mapper = new XmlMapper()
+
+        Poly poly = new Poly( list: [new B(name:'b'), new C(name:'c')] )
+        String result = mapper.writeValueAsString(poly)
+        System.out.println(result)
+        //TODO getting this:
+        assertEquals('<POLY><list><B name="b"/></list><list><C name="c"/></list></POLY>', result)
+        //TODO but want this:
+        //assertEquals('<POLY><B name="b"/><C name="c"/></POLY>', result)
+    }
+
 
 }
