@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Outsource Cafe, Inc.
+ * Copyright (c) 2018 Outsource Cafe, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package com.javagen.schema.xml.node
+package com.javagen.schema.xml
 
-import com.javagen.schema.xml.QName
-import groovy.transform.ToString
+import spock.lang.Specification
 
-@ToString(includePackage=false)
-abstract class Node
-{
-    QName qname
-    String id
-    def attr = [:]
-    boolean isRoot() { return qname!=null }
-    void setQname(String name) { this.qname = new QName(name:name) }
-    void setQname(QName qname) { this.qname = qname }
+class QNameSpec extends Specification {
+    def "qname equals"() {
+        given:
+        def q1 = new QName(namespace: 'a', name:'A')
+        def q2 = new QName(namespace: 'a', name:'A')
+        expect:
+        q1 == q2
+    }
 }

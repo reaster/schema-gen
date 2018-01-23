@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Outsource Cafe, Inc.
+ * Copyright (c) 2018 Outsource Cafe, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,22 @@
 
 package com.javagen.schema.xml.node
 
-/**
- * A Body element can be present in SimpleType and CompextType. It presents a challenge when mapping because it has
- * no name and may be of mixed content (text intermixed with child elements).
- *
- * @author Richard Easterling
- */
-class Body extends Value
+import com.javagen.schema.xml.QName
+
+trait CompositorHolder extends ElementHolder
 {
-    /** can be a SimpleType or ComplexType */
-    SimpleType parent
-    /** can be an Element or Any */
-    Element element
-    @Override TextOnlyType getType() { super.type ?: element?.type }
-    boolean mixedContent = false
+    java.util.List<Compositor> compositors = []
+    int elementCount() {
+        int c = super.elementCount()
+        compositors.each { c += it.elementCount() }
+        c
+    }
+    java.util.List<Element> childElements() {
+        java.util.List<Element> results = super.childElements()
+        compositors.each {
+            java.util.List<Element> sublist = it.childElements()
+            results.addAll(sublist)
+        }
+        results
+    }
 }

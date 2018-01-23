@@ -54,9 +54,11 @@ abstract class Gen
 
     List<CodeEmitter> pipeline = []
 
+    Map<String,String> typeOverrideMap = [:]
     PluralService pluralService = new PluralService()
     def customPluralMappings = [:] //needed for irregular nouns: tooth->teeth, person->people
     boolean useOptional = false //just effects Java code: Integer vs Optional<Integer>
+    boolean printSchema = false
     String packageName = null
     String addSuffixToEnumClass = 'Enum'
     String removeSuffixFromType = 'Type'

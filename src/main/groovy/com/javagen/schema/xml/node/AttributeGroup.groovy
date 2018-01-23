@@ -21,4 +21,5 @@ import groovy.transform.ToString
 @ToString(includeSuper=true,includePackage=false)
 class AttributeGroup extends Node implements AttributeHolder
 {
+    volatile AttributeGroup ref
 }

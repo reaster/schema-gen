@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:fee="http://javagen.com/fee"
+        xmlns:fi="http://javagen.com/fi"
+        elementFormDefault="qualified"
+        targetNamespace="http://javagen.com/fo"
+        xmlns:fo="http://javagen.com/fo" version="1.0.0">
+
+    <import namespace="http://javagen.com/fee" schemaLocation="fee.xsd"/>
+    <import namespace="http://javagen.com/fi" schemaLocation="fi.xsd"/>
+
+    <complexType name="FoType">
+        <all>
+            <element name="fo" type="xs:string"/>
+            <element name="word" type="fee:WordType"/>
+            <element name="word" type="fi:FiType"/>
+        </all>
+    </complexType>
+    <element name="fo" type="fo:FoType"/>
+</schema>

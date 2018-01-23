@@ -66,11 +66,13 @@ class MappingUtil
     static List<MRestriction> translate(Element element)
     {
         List<MRestriction> results = []
-        if (element.type.restrictions) {
-            for(Restriction restriction : element.type.restrictions) {
-                MRestriction result = translate(restriction)
-                if (result)
-                    results << result
+        if (element.type) {
+            if (element.type.restrictions) {
+                for(Restriction restriction : element.type.restrictions) {
+                    MRestriction result = translate(restriction)
+                    if (result)
+                        results << result
+                }
             }
         }
         results << new MRestriction(Type.min, element.minOccurs)

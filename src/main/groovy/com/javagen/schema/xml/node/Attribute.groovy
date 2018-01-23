@@ -19,5 +19,5 @@ package com.javagen.schema.xml.node
 class Attribute extends Value
 {
     boolean required = false
-    @Override String toString() { "<attribute @name='${qname?.name}' @type='${type?.qname?.name}' />"}
+    @Override String toString() { "[Attribute ${qname?.name}' @type='${type?.qname?.name}']" }
 }

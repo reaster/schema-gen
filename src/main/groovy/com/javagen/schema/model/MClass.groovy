@@ -22,7 +22,7 @@ class MClass extends MType implements MSource
 	private boolean _abstract
 	private boolean _static
 	private boolean _interface
-	private boolean extension
+	private boolean extension //Swift and Kotlin
 	private boolean data
 	boolean ignore = false //do not emmit class
 	protected def scope = 'public'
@@ -30,6 +30,7 @@ class MClass extends MType implements MSource
 	Map<String,MField> fields = [:]
 	List<MMethod> methods = []
 	def _implements = [] as Set<String>
+	String _extends = null
 
 	def MClass() {
 		scope = 'public'
@@ -76,6 +77,10 @@ class MClass extends MType implements MSource
 	MClass setInterface(i) { _interface = i; return this  }
 	boolean isInterface() { _interface }
 	boolean isStruct() { struct }
+	MClass setExtends(String extendsSuperClass) { _extends= extendsSuperClass; return this  }
+	String getExtends() { _extends }
+	boolean hasSuper() { _extends != null }
+
 	MClass setStruct(boolean s) { struct = s; return this  }
 	def lookupField(String name) { fields[name] }
 	def fieldsWithAttr(String attrName) { fields.values().findAll { it.attr[attrName] } }

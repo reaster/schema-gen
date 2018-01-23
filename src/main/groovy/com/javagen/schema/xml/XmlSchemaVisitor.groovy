@@ -84,8 +84,44 @@ trait XmlSchemaVisitor
         for (Element element : complexType.elements) {
             visit(element)
         }
+        for (Compositor compositor : complexType.compositors) {
+            visit(compositor)
+        }
         if (complexType.isBody()) {
             visit(complexType.getBody())
+        }
+    }
+
+    def visit(All all) {
+        if (printTrace) println "all"
+        for (Element element : all.elements) {
+            visit(element)
+        }
+    }
+
+    def visit(Choice choice) {
+        if (printTrace) println "choice @minOccurs=${choice.minOccurs} @maxOccurs=${choice.maxOccurs}"
+        for (Element element : choice.elements) {
+            visit(element)
+        }
+        for (Group group : choice.groups) {
+            visit(group)
+        }
+        for (Compositor compositor : choice.compositors) {
+            visit(compositor)
+        }
+    }
+
+    def visit(Sequence sequence) {
+        if (printTrace) println "sequence @minOccurs=${sequence.minOccurs} @maxOccurs=${sequence.maxOccurs}"
+        for (Element element : sequence.elements) {
+            visit(element)
+        }
+        for (Group group : sequence.groups) {
+            visit(group)
+        }
+        for (Compositor compositor : sequence.compositors) {
+            visit(compositor)
         }
     }
 

@@ -51,7 +51,13 @@ abstract class MTypeRegistry
         _instance
     }
 
+    /** return language-specific void type */
     abstract MType getVOID()
+    /**
+     * hook for handling language-specific situations where a simple map lookup won't work, like Java arrays.
+     * should return null, if not special type.
+     */
+    abstract MType lookupTypeSpecial(String name)
 
     String lookupDefaultValue(String name, boolean mutable=true)
     {
@@ -64,7 +70,10 @@ abstract class MTypeRegistry
     }
     MType lookupType(String name)
     {
-        types[name]
+        MType result = types[name]
+        if (!result)
+            result = lookupTypeSpecial(name)
+        result
     }
     void registerType(String name, MType type)
     {

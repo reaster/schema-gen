@@ -63,7 +63,7 @@ class JavaEmitterTest
 		address.addField(new MProperty(name: 'zip',scope: 'public', type: 'int', val: 99999))
 		address.addField(new MProperty(name: 'planet', scope: 'public', 'final': true, val: '"Earth"'))
 		address.addField(new MReference(name: 'phones', cardinality: LIST, type: phone))
-		address.addMethod(new MMethod(name: 'getCentury', 'static': true, type: 'int', body: { m, v -> v.out << '\n' << v.tabs << 'return 21;' }))
+		address.addMethod(new MMethod(name: 'getCentury', 'static': true, type: 'int', body: { m, v, s -> v.out << '\n' << v.tabs << 'return 21;' }))
 		module.addClass(address)
 		module.addClass(phone)
 	}

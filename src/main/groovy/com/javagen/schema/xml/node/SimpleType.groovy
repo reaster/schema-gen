@@ -23,7 +23,7 @@ class SimpleType extends TextOnlyType implements AttributeHolder
 {
     boolean mixedContent = false
     /** signals an empty element. TODO not sure this is implemented correctly */
-    boolean isEmpty() { base == null }
+    @Override boolean isEmpty() { base == null }
     /** @return true if contains a single value, text only content. */
     @Override boolean isSimpleType() { false }
     /** @return true if contains text only content and attributes. */

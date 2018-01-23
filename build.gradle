@@ -11,7 +11,7 @@ pluginBundle {
             displayName = 'Schema Gen Plugin'
             description = 'Generates Java, Kotlin and Swift 4 model, validation and marshalling code from XML Schema (.xsd) files'
             tags = ['schema', 'xml','xsd', 'json', 'jaxb', 'java', 'kotlin', 'swift', 'generator', 'plugin', 'jackson']
-            version = '0.9.0'
+            version = '0.9.1'
         }
     }
 }

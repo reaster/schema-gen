@@ -487,6 +487,11 @@ final class GlobalFunctionsUtil
 		pos < 0 ? text : text.substring(0, pos)
 	}
 
+	static void printStackTrace()
+	{
+		new Throwable().printStackTrace()
+	}
+
 //	static String packageFromPath(String filePath)
 //    {
 //        if (filePath==null || filePath.length()==0)
@@ -555,7 +560,7 @@ final class GlobalFunctionsUtil
 		}
 	}
 
-	enum CharType{constonant, vowel, digit, white, symbol, system}
+	enum CharType{constonant, vowel, digit, white, symbol, system }
 
 	/** fast char categorization */
 	static final CharType charType(char c)

@@ -39,7 +39,11 @@ class SwiftTypeRegistry extends MTypeRegistry
     }
 
     static MType VOID = new MType(name:'Void')
-    MType getVOID() { VOID }
+    @Override MType getVOID() { VOID }
+    @Override MType lookupTypeSpecial(String name)
+    {
+        null //throw new Error("method not implemented - type: ${name}")
+    }
 
     private static Map<String, MType> defaultTypes()
     {
@@ -99,6 +103,8 @@ class SwiftTypeRegistry extends MTypeRegistry
             'anySimpleType':'Any',
             //https://www.w3.org/TR/xmlschema-2/#built-in-primitive-datatypes
             'string':'String',
+            'double':'Double',
+            'float':'Float',
             'decimal':'Double',
             'boolean':'Bool',
             'duration':'String', //TODO

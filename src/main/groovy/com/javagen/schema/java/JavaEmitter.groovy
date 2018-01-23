@@ -19,6 +19,7 @@ package com.javagen.schema.java
 import com.javagen.schema.common.CodeEmitter
 import com.javagen.schema.model.MBind
 import com.javagen.schema.model.MCardinality
+import static com.javagen.schema.model.MCardinality.*
 import com.javagen.schema.model.MClass
 import com.javagen.schema.model.MEnum
 import com.javagen.schema.model.MField
@@ -36,6 +37,7 @@ import com.javagen.schema.model.MTypeRegistry
  */
 class JavaEmitter extends CodeEmitter
 {
+	static EnumSet<MCardinality> NON_GENERIC_PARAMS = EnumSet.of(MAP,LINKEDMAP,REQUIRED)
 	boolean assignDefaultValues = false;
 	//boolean useOptional = false;
 
@@ -79,9 +81,15 @@ class JavaEmitter extends CodeEmitter
 			out << c.scope << ' '
 		if (c.isStatic())
 			out << 'static '
-		if (c.isAbstract())
+		if (c.isAbstract() && !c.isInterface())
 			out << 'abstract '
-		out << (c.isInterface() ? 'interface ' : 'class ') << c.name
+		out << (c.isInterface() ? 'interface ' : 'class ') << c.name << ' '
+		if (c.getExtends())
+			out << 'extends ' << c.getExtends()
+		c.implements.eachWithIndex { e, i ->
+			out << (i==0) ? 'extends ' : ', '
+			out << e.name
+		}
 		out << '\n' << tabs << '{'
 		this++
 		for(f in c.fields.values()) {
@@ -140,7 +148,7 @@ class JavaEmitter extends CodeEmitter
 	@Override
 	def visit(MField f)
 	{
-		f.annotations.each {
+		f.annotations.list.findAll{ !it.onGenericParam || NON_GENERIC_PARAMS.contains(f.cardinality)}.each {
 			out << '\n' << tabs
 			out << it
 		}
@@ -184,7 +192,7 @@ class JavaEmitter extends CodeEmitter
 			out << it
 		}
 		out << '\n' << tabs
-		if (m.scope)
+		if (m.scope && !m.parent.isInterface())
 			out << m.scope << ' '
 		if (m.isStatic())
 			out << 'static '
@@ -206,7 +214,7 @@ class JavaEmitter extends CodeEmitter
 		} else if (m.body!=null) {
 			out << ' {'
 			this++
-			m.body(m, this)
+			m.body(m, this, m.parent.hasSuper())
 			this--
 			out << '\n' << tabs << '}'
 		} else {
@@ -231,7 +239,14 @@ class JavaEmitter extends CodeEmitter
 			case MCardinality.LIST:
 			case MCardinality.SET:
 			case MCardinality.OPTIONAL:
-				return container + '<' + p.type.name + '>'
+				String s = container + '<'
+				p.annotations.list.findAll{ it.onGenericParam }.each {
+					s += it
+					s += ' '
+				}
+				s += p.type.name
+				s += '>'
+				return s
 			case MCardinality.MAP:
 				def keyType = p.attr['keyType']
 				keyType = keyType ?:  m?.refs['property']?.attr['keyType']
@@ -292,6 +307,21 @@ class JavaEmitter extends CodeEmitter
 					return (val==null) ? "${container}.empty()" : "${container}.of(${quote}${val}${quote})"
 				}
 			default: // REQUIRED
+				switch(f.type.name) {
+					case 'boolean':
+						if (val)
+							val = isTrue(val) ? 'true' : 'false'
+						break
+					case 'Boolean':
+						if (val)
+							val = isTrue(val) ? 'Boolean.TRUE' : 'Boolean.FALSE'
+						break
+					case 'byte[]':
+						if (val)
+							val = "javax.xml.bind.DatatypeConverter.parseHexBinary(\"${val}\")"
+					default:
+						break
+				}
 				val = val ?: (f.type.val ?: null)
 		}
 		if (val==null)
@@ -303,7 +333,10 @@ class JavaEmitter extends CodeEmitter
 		"${quote}${val}${quote}"
 	}
 
-
+	boolean isTrue(String val)
+	{
+		val != null && (val == 'true' || val == '1' || val == 'yes')
+	}
 
 //	String JAVA_ENUM_CLASS = '''<% if (packageName) { %>package ${packageName};
 //

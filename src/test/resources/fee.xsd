@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        elementFormDefault="qualified"
+        targetNamespace="http://javagen.com/fee"
+        xmlns:fee="http://javagen.com/fee" version="1.0.0">
+
+    <element name="fee" type="fee:FeeType" />
+    <complexType name="FeeType">
+        <choice minOccurs="0" maxOccurs="unbounded">
+            <element name="word" type="fee:WordType"/>
+            <element name="other" type="xs:string"/>
+        </choice>
+    </complexType>
+    <simpleType name="WordType">
+        <restriction>
+            <enumeration value="FEE"/>
+            <enumeration value="FI"/>
+            <enumeration value="FO"/>
+            <enumeration value="FUM"/>
+        </restriction>
+    </simpleType>
+</schema>

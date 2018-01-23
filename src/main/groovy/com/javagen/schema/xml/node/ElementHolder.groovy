@@ -24,6 +24,12 @@ trait ElementHolder
 {
     java.util.List<Element> elements = []
     java.util.List<Group> groups = []
-    Element lookupElement(QName qname) { elements.find { it.qname == qname} }
+    Element lookupElement(QName qname) { elements.find { it.qname == qname } }
     Element lookupGroup(QName qname) { groups.find { it.qname == qname} }
+    int elementCount() { int c = elements.size(); groups.each { c+= it.elements.size() }; c }
+    java.util.List<Element> childElements() {
+        java.util.List<Element> results = new ArrayList(elements)
+        groups.each { results.addAll( it.elements ) }
+        results
+    }
 }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        elementFormDefault="qualified"
+        targetNamespace="http://javagen.com/fi"
+        xmlns:fi="http://javagen.com/fi" version="1.0.0">
+
+    <complexType name="FiType">
+        <sequence>
+            <element name="fi" type="xs:string"/>
+        </sequence>
+        <attribute name="bloodOf" type="xs:string" default="englishman" />
+    </complexType>
+</schema>

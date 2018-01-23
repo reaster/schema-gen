@@ -23,20 +23,24 @@ import groovy.transform.ToString
  * exception of wrapperClasses which can be mapped to a parametrized container (i.e. List<ChildElement>).
  */
 @ToString(includeSuper=true,includePackage=false)
-class ComplexType extends SimpleType implements ElementHolder
+class ComplexType extends SimpleType implements CompositorHolder
 {
-    Compositor compositor
-    //@Override boolean isEmpty() { base == null && elements.isEmpty() }
     /** wrapper elements can be mapped directly to a container (i.e. List<ChildElement>) and don't need their own class */
     @Override boolean isWrapperElement() {
-        boolean result = attributes.isEmpty() && elements.size() == 1 && elements[0].maxOccurs > 1 && !elements[0].isMixed()
+        if (!attributes.isEmpty())
+            return false
+        def elements = childElements()
+        if (elements.size() != 1)
+            return false
+        Element e = elements[0]
+        boolean result = e.maxOccurs > 1 && !e.isMixed()
 //        if (result)
 //            println("isWrapperElement: ${this}")
         result
     }
     @Override TextOnlyType wrapperType() {
         if ( isWrapperElement() )
-            elements[0].type
+            childElements()[0].type
         else
             null
     }
@@ -47,16 +51,17 @@ class ComplexType extends SimpleType implements ElementHolder
     /** @return true if contains child elements and attributes. */
     @Override boolean isComplextContent() { true }
 //    @Override boolean isEmpty() {
-//        base == null || !(elements.size() == 1 && elements[0] instanceof Any)
+//        base == null || !(childElements().size() == 1 && childElements()[0] instanceof Any)
 //    }
     @Override boolean isBody() {
-        elements.size() == 1 && elements[0] instanceof Any
+        boolean result = elementCount() == 1 && childElements()[0] instanceof Any && childElements()[0].maxOccurs == 1
+        result
     }
 
     @Override Body getBody() {
-        if (elements.size() == 1 && elements[0] instanceof Any) {
-            Any any = elements[0]
-            new Body(parent: this, type: any.type, mixedContent: mixedContent)
+        if (elementCount() == 1 && childElements()[0] instanceof Any && childElements()[0].maxOccurs == 1) {
+            Any any = childElements()[0]
+            new Body(parent: this, element: any, mixedContent: mixedContent)
         } else if (base != null) {
             super.getBody()
         } else {

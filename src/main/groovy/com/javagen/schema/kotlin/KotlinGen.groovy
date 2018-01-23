@@ -17,8 +17,7 @@
 package com.javagen.schema.kotlin
 
 import com.javagen.schema.common.CodeEmitter
-import com.javagen.schema.common.PluralServiceNoop
-import com.javagen.schema.java.SchemaToJava
+import com.javagen.schema.java.JavaGen
 import com.javagen.schema.model.MBind
 import com.javagen.schema.model.MCardinality
 import com.javagen.schema.model.MClass
@@ -32,9 +31,6 @@ import com.javagen.schema.model.MTypeRegistry
 import com.javagen.schema.xml.XmlSchemaNormalizer
 import com.javagen.schema.xml.node.Any
 import com.javagen.schema.xml.node.Body
-import com.javagen.schema.common.GlobalFunctionsUtil
-
-import java.util.function.Function
 
 import static com.javagen.schema.model.MMethod.Stereotype.constructor
 import static com.javagen.schema.model.MMethod.Stereotype.equals
@@ -47,13 +43,17 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.lowerCase
 import static com.javagen.schema.common.GlobalFunctionsUtil.upperCase
 
 /**
- * This class is the entry point for Kotlin code generation.
+ * Translate XML schema to Swift 4 code.
  *
- * TODO may still be using some Java-specific code.
+ * <p>A XmlNodeCallback can be used to apply specific third-party library annotations to the object model, allowing one
+ * to easily switch technologies. For example one could swap the KotlinJacksonCallback with a KotlinJaxbCallback without
+ * having to rewrite the KotlinGen object model translation code.
+ *
+ * This class is the entry point for Kotlin code generation.
  *
  * @author Richard Easterling
  */
-class KotlinGen extends SchemaToJava
+class KotlinGen extends JavaGen
 {
     String sourceFileName = null
 
@@ -92,7 +92,7 @@ class KotlinGen extends SchemaToJava
         callback.gen(body, property)
     }
 
-    MProperty genAny(String propertyName, Any any)
+    @Override MProperty genAny(String propertyName, Any any)
     {
         MClass clazz = nestedStack.peek()
         MCardinality container = container(any)
@@ -114,7 +114,8 @@ class KotlinGen extends SchemaToJava
                 override fun toString() = map.toString()
             }
              */
-
+            if (propertyName == 'any')
+                println("any")
             String anyClassName = classNameFunction.apply(propertyName)
             MClass anyClass = (MClass)MType.lookupType(anyClassName)
             if (!anyClass || anyClass.fields.isEmpty()) { //TODO should this be done in the ComplexType method?
@@ -144,7 +145,7 @@ class KotlinGen extends SchemaToJava
         property
     }
 
-    def mapHashCodeMethodBody(MMethod m, CodeEmitter v)
+    def mapHashCodeMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
         v.out << 'when {'
         v.next()
@@ -173,28 +174,10 @@ class KotlinGen extends SchemaToJava
         pipeline = [
                 new KotlinEmitter(gen: this)
         ]
-        //TODO convert to Kotlin:
         enumNameFunction = { text -> KotlinUtil.kotlinEnumName(text, false) }
         propertyNameFunction = { text -> KotlinUtil.legalKotlinName(lowerCase(text)) }
         constantNameFunction = { text -> KotlinUtil.kotlinConstName(text) }
         classNameFunction = { text -> KotlinUtil.legalKotlinClassName(text) }
-
-        //kotlin-gpx
-//        srcDir = new File('../schema-gen-examples/kotlin-gpx/src/main/kotlin-gen')
-//        schemaURL = new File('../schema-gen-examples/kotlin-gpx/src/main/resources/gpx.xsd').toURI().toURL()
-
-        //kotlin-hsf
-//        schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-1_1.xsd').toURI().toURL()
-//        srcDir = new File('../schema-gen-hsf/hsf-kotlin/src/main/kotlin-gen')
-//        customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
-//        def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']
-//        def unknownEnum = 'Unknown'
-//        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: GlobalFunctionsUtil.swiftEnumName(text, false) }
-
-        schemaURL = new URL('file:../schema-gen-examples/wadl/src/main/resources/wadl.xsd')
-        srcDir = new File('../schema-gen-examples/wadl/src/main/kotlin-gen')
-        pluralService = new PluralServiceNoop()
-        rootElements = ['application'] as Set
     }
 
     @Override def gen()
@@ -209,9 +192,4 @@ class KotlinGen extends SchemaToJava
             visitor.visit(rootModule)
         }
     }
-
-    static void main(String[] args) {
-        new KotlinGen().gen()
-    }
-
 }

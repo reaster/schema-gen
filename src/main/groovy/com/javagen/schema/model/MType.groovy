@@ -21,6 +21,7 @@ class MType extends MBase
 {
 	boolean primitive = false
 	boolean builtIn = false
+	int arrayDimensions = 0 //needed to handle Java array types: byte[], byte[][], etc.
 	String val // default value
 
 	String toString() { name }

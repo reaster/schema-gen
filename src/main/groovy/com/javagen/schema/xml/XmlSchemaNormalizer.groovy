@@ -16,17 +16,23 @@
 
 package com.javagen.schema.xml
 
+import com.javagen.schema.model.MType
+import com.javagen.schema.xml.node.All
 import com.javagen.schema.xml.node.Any
 import com.javagen.schema.xml.node.AnyAttribute
 import com.javagen.schema.xml.node.Attribute
 import com.javagen.schema.xml.node.AttributeGroup
 import com.javagen.schema.xml.node.AttributeHolder
+import com.javagen.schema.xml.node.Choice
 import com.javagen.schema.xml.node.ComplexType
+import com.javagen.schema.xml.node.Compositor
+import com.javagen.schema.xml.node.CompositorHolder
 import com.javagen.schema.xml.node.Element
 import com.javagen.schema.xml.node.ElementHolder
 import com.javagen.schema.xml.node.Group
 import com.javagen.schema.xml.node.Restriction
 import com.javagen.schema.xml.node.Schema
+import com.javagen.schema.xml.node.Sequence
 import com.javagen.schema.xml.node.SimpleType
 import com.javagen.schema.xml.node.TextOnlyType
 import com.javagen.schema.xml.node.Type
@@ -49,7 +55,7 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.*
 class XmlSchemaNormalizer
 {
     Schema schema
-    Stack<ElementHolder> elementStack = new Stack<>()
+    Stack<CompositorHolder> elementStack = new Stack<>()
     Stack<AttributeHolder> attributeStack = new Stack<>()
     Stack<Value> valueStack = new Stack<>()
     Stack<TextOnlyType> simpleTypeStack = new Stack<>()
@@ -83,7 +89,7 @@ class XmlSchemaNormalizer
             println 'overflow...'
             return
         }
-
+        boolean isGlobal = node.name() == 'schema' || node.name().endsWith(':schema')
         for (child in node.'*') {
             String tag = child.name()
             if (!tag)
@@ -92,17 +98,19 @@ class XmlSchemaNormalizer
             String ref = child.@ref?.text()
             String id = child.@ID?.text()
             String typeWithPrefix = child.@type?.text()
-            Type type = typeWithPrefix ? schema.getGlobal(qname(typeWithPrefix)) : null
+            Type type = typeWithPrefix ? schema.getGlobal(qnameRef(typeWithPrefix)) : null
             if (typeWithPrefix && !type) {
                 throw new IllegalStateException("${tag} @name='${name}' has @type='${typeWithPrefix}' but NO global type was found")
             }
             switch (tag) {
                 case 'simpleType':
                     name = name ?: node.@name?.text()
+                    boolean _abstract = child.@abstract?.text() == 'true'
                     if (!name)
                         throw new IllegalStateException("simpleType must have name defined")
                     if (isTextOnlyType(child)) {
                         TextOnlyType textOnlyType = schema.getGlobal(qname(name)) ?: new TextOnlyType(qname:name,base:type,id:id)
+                        textOnlyType.abstract = _abstract
                         simpleTypeStack.push(textOnlyType)
                         traverseElements(child)
                         if (child.@name?.text()) {
@@ -113,6 +121,7 @@ class XmlSchemaNormalizer
                         simpleTypeStack.pop()
                     } else {
                         SimpleType simpleType = schema.getGlobal(qname(name)) ?: new SimpleType(qname:name,base:type,id:id)
+                        simpleType.abstract = _abstract
                         simpleTypeStack.push(simpleType)
                         attributeStack.push(simpleType)
                         traverseElements(child)
@@ -136,6 +145,9 @@ class XmlSchemaNormalizer
                             throw new IllegalStateException("complexType must have name defined")
                         ComplexType complexType = schema.getGlobal(qname(name)) ?: new ComplexType(qname:name,base:type,id:id)
                         complexType.mixedContent = mixed
+                        boolean _abstract = child.@abstract?.text() == 'true'
+                        if (_abstract)
+                            complexType.abstract = _abstract
                         elementStack.push(complexType)
                         attributeStack.push(complexType)
                         traverseElements(child)
@@ -169,18 +181,36 @@ class XmlSchemaNormalizer
                     attributeStack.pop()
                     break
                 case 'element':
-                    Element element = new Element(id:id)
-                    def refNode
+//                    if (name == 'AddressDetails' || ref.endsWith('AddressDetails')) {
+//                        println("name/ref=${name}/${ref}")
+//                        printStackTrace()
+//                    }
+                    Element element = null
                     if (ref) {
-                        refNode = globalElementNodeLookup[qname(ref)]
+                        QName qname = qnameRef(ref)
+                        element = new Element(id:id,qname:qname)
+                        def refNode = globalElementNodeLookup[qname]
+                        if (refNode==null)
+                            throw new Error("Expecting <element ref='${ref}'/> to be a global ref element in globalElementNodeLookup[].")
                         setElementProperties(element, refNode)
+                    } else if (isGlobal) {
+                        element = schema.lookupElement(qname(name))
+                        if (element==null)
+                            throw new Error("Expecting <element name='${name}'/> to be pre-created and placed in global elements.")
+                    } else {
+                        element = new Element(id:id) //create a new local element
                     }
                     setElementProperties(element, child)
                     if (verbose) println "${tab*indent}<element name='${name}' type='${type}' ref='${ref}'>"
                     valueStack.push(element)
                     indent+=1
+                    def ch = elementStack.peek()
                     traverseElements(child)
-                    elementStack.peek().elements << element
+                    if ( !element.type && !(element instanceof Any) && !element.isAbstract()) {
+                        println "no type for element=@name='${name} in namespaces: ${prefixToNamespaceMap.peek()}"
+                    }
+                    if (!isGlobal) //only add if not global b/c already added
+                        ch.elements << element
                     valueStack.pop()
                     indent-=1
                     break
@@ -191,7 +221,8 @@ class XmlSchemaNormalizer
                     valueStack.push(any)
                     indent+=1
                     traverseElements(child)
-                    elementStack.peek().elements << any
+                    ElementHolder eh = elementStack.peek()
+                    eh.elements << any
                     valueStack.pop()
                     indent-=1
                     break
@@ -199,7 +230,7 @@ class XmlSchemaNormalizer
                     Attribute attribute = new Attribute(id:id)
                     def refNode
                     if (ref) {
-                        QName attrQName = qname(ref)
+                        QName attrQName = qnameRef(ref)
                         refNode = globalAttributeNodeLookup[attrQName]
                         setAttributeProperties(attribute, refNode)
                     }
@@ -229,7 +260,7 @@ class XmlSchemaNormalizer
                     break
                 case 'attributeGroup':
                     if (ref) {
-                        def attributeGroup = attributeGroupNodeLookup[qname(ref)]
+                        def attributeGroup = attributeGroupNodeLookup[qnameRef(ref)]
                         if (inlineGroups) {
                             traverseElements(attributeGroup) //just add them to the current type
                         } else {
@@ -247,7 +278,7 @@ class XmlSchemaNormalizer
                     break
                 case 'group':
                     if (ref) {
-                        def group = groupNodeLookup[qname(ref)]
+                        def group = groupNodeLookup[qnameRef(ref)]
                         if (inlineGroups) {
                             traverseElements(group) //just add them to the current type
                         } else {
@@ -265,7 +296,7 @@ class XmlSchemaNormalizer
                     break
                 case 'list':
                     String itemType = child.@itemType?.text()
-                    def base = itemType ? schema.getGlobal( qname(itemType) ) : null
+                    def base = itemType ? schema.getGlobal( qnameRef(itemType) ) : null
                     com.javagen.schema.xml.node.List list = new com.javagen.schema.xml.node.List(itemType:base)
                     simpleTypeStack.peek().base = list
                     break
@@ -275,7 +306,7 @@ class XmlSchemaNormalizer
                     String memberTypes = child.@memberTypes?.text()
                     if (memberTypes) {
                         for(String member : memberTypes.split(' ')) {
-                            def simpleType = schema.getGlobal( qname(member) )
+                            def simpleType = schema.getGlobal( qnameRef(member) )
                             if (!simpleType)
                                 throw new IllegalStateException("can not find type for union member: ${member}")
                             union.simpleTypes << simpleType
@@ -285,14 +316,26 @@ class XmlSchemaNormalizer
                     simpleTypeStack.peek().base = union
                     break
                 case 'sequence':
+                    Sequence sequence = setCompositorProperties(new Sequence(id:id), child)
+                    elementStack.peek().compositors << sequence
+                    elementStack.push(sequence)
                     traverseElements(child)
+                    elementStack.pop()
                     break
                 case 'choice':
+                    Choice choice = setCompositorProperties(new Choice(id:id), child)
+                    elementStack.peek().compositors << choice
+                    elementStack.push(choice)
                     traverseElements(child)
+                    elementStack.pop()
                     break
-//                case 'any':
-//                    traverseElements(child)
-//                    break
+                case 'all':
+                    All all = setCompositorProperties(new All(id:id), child)
+                    elementStack.peek().compositors << all
+                    elementStack.push(all)
+                    traverseElements(child)
+                    elementStack.pop()
+                    break
                 case 'notation':
                 case 'unique':
                 case 'selector':
@@ -325,7 +368,7 @@ class XmlSchemaNormalizer
                 case 'extension':
                     //<element name="PremiseNumberPrefix"><complexType><simpleContent><extension base="xs:string"><attribute...
                     String base = child.@base?.text()
-                    def baseType = base ? schema.getGlobal( qname(base) ) : null
+                    Type baseType = base ? schema.getGlobal( qnameRef(base) ) : null
                     if (baseType) {
                         Type parentType = findParentType(child)
                         parentType.base = baseType
@@ -339,17 +382,21 @@ class XmlSchemaNormalizer
         }
     }
 
-    QName qname(String nameWithPrefix)
+    QName qname(String nameWithPrefix, boolean targetNS = true)
     {
         if (!nameWithPrefix)
             return null
         String prefix = extractNamespacePrefix(nameWithPrefix)
         String namespace = prefixToNamespaceMap.peek()[prefix]
         if (!namespace)
-            namespace = prefixToNamespaceMap.peek()[Schema.targetNamespace]
+            namespace = prefixToNamespaceMap.peek()[ targetNS ? Schema.targetNamespace : '']
         if (!namespace)
             throw new IllegalStateException("no namespace registered for prefix '${prefix}' for name: ${nameWithPrefix}")
         new QName(namespace:namespace,name: stripNamespace(nameWithPrefix))
+    }
+    QName qnameRef(String nameWithPrefix)
+    {
+        qname(nameWithPrefix, false)
     }
 
     /**
@@ -386,18 +433,28 @@ class XmlSchemaNormalizer
             globalAttributeNodeLookup[qname] = node
         }
         for(node in schemaNode.element.list()) {
-            QName qname = qname(node.@name.text())
+            final String name = node.@name.text()
+            if (name == 'AbstractColorStyleGroup')
+                println name
+            QName qname = qname(name)
             globalElementNodeLookup[qname] = node
-            if (qname.name == 'xAL')
-                println qname
-            generateGlobalTypeForElementIfEmbeddedType(qname, node)
+            Type type = generateGlobalTypeForElementIfEmbeddedType(qname, node)
+            Element element = new Element(qname:qname,type:type)
+            schema.elements << element
         }
     }
 
+    /**
+     * setElementProperties() expects a type, but if a ref comes before the definition, there won't be one. So we
+     * create a placeholder for this case.
+     */
     Type generateGlobalTypeForElementIfEmbeddedType(QName qname, def node)
     {
+        if (qname.name == 'AbstractColorStyleGroup')
+            println(qname.name)
         Type type = null
-        if ( ! node.@type?.text() ) {
+        String typeDecl = node.@type?.text()
+        if ( ! typeDecl ) {
             if (node.complexType?.simpleContent?.list()) {
                 type = new SimpleType(qname:qname)
             } else if (node.complexType?.list()) {
@@ -421,7 +478,7 @@ class XmlSchemaNormalizer
     boolean isBuiltInType(def valueNode)
     {
         String typeName = valueNode.@type?.text()
-        Type type = typeName ? schema.getGlobal(qname(typeName)) : null
+        Type type = typeName ? schema.getGlobal(qnameRef(typeName)) : null
         type ? type.builtInType : false
     }
 
@@ -448,6 +505,19 @@ class XmlSchemaNormalizer
         restrictions
     }
 
+    Compositor setCompositorProperties(Compositor compositor, Object node)
+    {
+        def minOccurs = node.@minOccurs?.text()
+        compositor.minOccurs = minOccurs ? Integer.parseInt(minOccurs) : compositor.minOccurs
+        def maxOccurs = node.@maxOccurs?.text()
+        compositor.maxOccurs = maxOccurs ? (maxOccurs=='unbounded' ? Integer.MAX_VALUE : Integer.parseInt(maxOccurs)) : compositor.maxOccurs
+        def elements = node.'*'.findAll { n -> //TODO doesn't handle group elements
+            ('element' == n.name() || 'any' == n.name()) && n.@maxOccurs == 'unbounded'
+        }
+        compositor.uboundedChildElements = elements.size()
+        compositor
+    }
+
     def setAttributeProperties(Attribute attribute, Object node)
     {
         try {
@@ -465,7 +535,7 @@ class XmlSchemaNormalizer
         if (name)
             attribute.qname = qname(name)
         String typeWithPrefix = node.@type?.text()
-        Type type = typeWithPrefix ? schema.getGlobal(qname(typeWithPrefix)) : null
+        Type type = typeWithPrefix ? schema.getGlobal(qnameRef(typeWithPrefix)) : null
         if (type)
             attribute.type = type
     }
@@ -482,29 +552,57 @@ class XmlSchemaNormalizer
     def setElementProperties(Element element, Object node)
     {
         def minOccurs = node.@minOccurs?.text()
-        element.minOccurs = minOccurs ? Integer.parseInt(minOccurs) : element.minOccurs
+        if (minOccurs)
+            element.minOccurs = Integer.parseInt(minOccurs)
         def maxOccurs = node.@maxOccurs?.text()
-        element.maxOccurs = maxOccurs ? (maxOccurs=='unbounded' ? Integer.MAX_VALUE : Integer.parseInt(maxOccurs)) : element.maxOccurs
+        if (maxOccurs)
+            element.maxOccurs = maxOccurs=='unbounded' ? Integer.MAX_VALUE : Integer.parseInt(maxOccurs)
         if (node.@default?.text())
             element.setDefault(node.@default?.text())
         if (node.@fixed?.text()) {
             element.fixed = node.@fixed?.text()
             if (!minOccurs) element.minOccurs = 1
         }
-        element.setAbstract(node.@abstract?.text() == 'true')
-        element.nillable = node.@nillable?.text() == 'true'
-        String name = node.@name?.text()
-        if (name)
-            element.qname = qname(name)
-        String typeWithPrefix = node.@type?.text()
-        QName typeQName = (!typeWithPrefix && globalElementNodeLookup[element.qname]) ? element.qname : qname(typeWithPrefix)
-        Type type = typeQName ? schema.getGlobal(typeQName) : null
-        if (type) {
-            element.type = type
-        } else if ( ! (element instanceof Any) ) {
-            println "no type for element=@name='${name}"
+        String abstractDecl = node.@abstract?.text()
+        if (abstractDecl)
+            element.setAbstract(abstractDecl == 'true')
+        String nillableDecl = node.@nillable?.text()
+        if (nillableDecl)
+            element.nillable = nillableDecl == 'true'
+        String id = node.@ID?.text()
+        if (id) {
+            element.id = id
         }
-    }
+        if (!element.qname) {
+            String name = node.@name?.text()
+            if (name)
+                element.qname = qname(name)
+        }
+        String typeWithPrefix = node.@type?.text()
+        if (element.type == null) {
+            Type type = null
+            if (typeWithPrefix) {
+                QName typeQName = (!typeWithPrefix && globalElementNodeLookup[element.qname]) ? element.qname : qnameRef(typeWithPrefix)
+                type = typeQName ? schema.getGlobal(typeQName) : null
+            } else if (element.qname) {
+                type = schema.getGlobal(element.qname) //root elements with embeded types and a placeholder: generateGlobalTypeForElementIfEmbeddedType
+            }
+            if (type) {
+                element.type = type
+            }
+        }
+        String substitutionGroupDecl = node.@substitutionGroup?.text()
+        if (substitutionGroupDecl) {
+            Element substitutionGroup = schema.lookupElement(qnameRef(substitutionGroupDecl))
+            if (substitutionGroup) {
+                element.substitutionGroup = substitutionGroup
+            } else {
+                println(schema)
+                Thread.sleep(500)
+                throw new IllegalStateException("can't find type for <element name='${element.qname?.name}' substitutionGroup='${substitutionGroupDecl}'...>")
+            }
+        }
+     }
 
     boolean isTextOnlyType(def node)
     {
@@ -551,24 +649,31 @@ class XmlSchemaNormalizer
         }
         throw new IllegalStateException("can't find parent Type")
     }
+
     Schema buildSchema(URL xmlSchemaURL) {
-        prefixToNamespaceMap.push(loadNamespaces(xmlSchemaURL))
+        final Map<String,String> namespaces = loadNamespaces(xmlSchemaURL)
+        //println "PUSH: ${namespaces}"
+        prefixToNamespaceMap.push(namespaces)
         Schema schema = buildSchema(xmlSchemaURL.openStream(), xmlSchemaURL)
         if (prefixToNamespaceMap.size() > 1) {
-            prefixToNamespaceMap.pop()
+            def popedNS = prefixToNamespaceMap.pop()
+            //println "POP: ${popedNS}"
         }
+        schema.prefixToNamespaceMap = prefixToNamespaceMap.peek()
         schema
     }
+
     Schema buildSchema(String xmlSchemaText) {
         prefixToNamespaceMap.push(loadNamespaces(xmlSchemaText))
         Schema schema = buildSchema(new ByteArrayInputStream(xmlSchemaText.getBytes()), null)
         if (prefixToNamespaceMap.size() > 1) {
             prefixToNamespaceMap.pop()
         }
+        schema.prefixToNamespaceMap = prefixToNamespaceMap.peek()
         schema
     }
     /**
-     * work flow of normalizer
+     * recursive work flow of normalizer
      */
     Schema buildSchema(InputStream inputStream, URL context)
     {
@@ -591,26 +696,25 @@ class XmlSchemaNormalizer
             URL url = new URL(context, location)
             buildSchema(url)
         }
+        //need to index global elements so they can be ref(erenced)
         indexGlobalNodes(xmlSchema)
+        //walk the schema XML tree
         traverseElements(xmlSchema)
+
         if (isRootSchema) {
             if (!schema.rootElements) //if user has not defined root elements
-                schema.rootElements = schema.elements.collect{ it.qname } //make all global elements root
+                schema.rootElements = schema.elements.findAll{
+                    Element e = schema.lookupElement(it.qname)
+                    if (e.abstract)
+                        return false
+                    if (!e)
+                        throw new IllegalStateException("root element has no global declaration: ${it.qname}")
+                    if (!e.type)
+                        throw new IllegalStateException("root element ${e.qname.name} (${e.qname.namespace}) has no type")
+                    !e.type.isSimpleType()     //not likely that a root is a atomic type
+                }.collect{ it.qname } //make all global elements root
         }
         schema
     }
-
-    def static main(args)
-    {
-        //def schemaURL = new File('example-gpx-java/src/main/resources/gpx.xsd').toURI().toURL()
-        //def schemaURL = new URL('http://www.topografix.com/gpx/1/1/gpx.xsd')
-        //this.schemaURL = new URL('http://docs.oasis-open.org/election/external/xAL.xsd')
-        //def schemaURL = new File('example-x-java/src/main/resources/xAL.xsd').toURI().toURL()
-        //XmlSchemaNormalizer xmlSchemaNormalizer = new XmlSchemaNormalizer()
-        //Schema schema = xmlSchemaNormalizer.buildSchema(schemaURL)
-        //??.visit(xml)
-        //println walker.xml
-    }
-
 
 }

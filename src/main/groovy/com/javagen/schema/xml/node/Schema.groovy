@@ -22,7 +22,7 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.extractNamespacePref
 import static com.javagen.schema.common.GlobalFunctionsUtil.stripNamespace
 
 //@ToString(includeNames=true,includePackage=false,excludes='TARGET_PREFIX,DEFAULT_NS,DEFAULT_PREFIX')
-class Schema implements ElementHolder, AttributeHolder
+class Schema implements CompositorHolder, AttributeHolder
 {
     static final String targetNamespace = 'targetNamespace'
     static final String DEFAULT_NS = 'http://www.w3.org/2001/XMLSchema'
@@ -67,17 +67,21 @@ class Schema implements ElementHolder, AttributeHolder
             throw new IllegalStateException("can't add a type without a qname: ${node}")
         globalTypes[node.qname] = node
     }
-    def getGlobal(String namespace, String name)
+    Type getGlobal(String namespace, String name)
     {
         (namespace && name) ? getGlobal(new QName(namespace:namespace,name:name)) : null
     }
-    def getGlobal(QName qname)
+    Type getGlobal(QName qname)
     {
         qname ? globalTypes[qname] : null
     }
-    def getGlobal(String nameWithPrefix)
+    Type getGlobal(String nameWithPrefix)
     {
         nameWithPrefix ? getGlobal(qname(nameWithPrefix)) : null
+    }
+    Type getXsdType(String builtInTypeName)
+    {
+        getGlobal(DEFAULT_NS, builtInTypeName)
     }
 
     static final def BUILT_IN_TYPES = [
@@ -151,20 +155,32 @@ class Schema implements ElementHolder, AttributeHolder
     {
         def s = 'Schema[\n'
         s+= '  prefixToNamespaceMap[\n'
-        for(def e : prefixToNamespaceMap)
-            s+= "    ${e.key} -> ${e.value}\n"
+        for(def n : prefixToNamespaceMap)
+            s+= "    ${n.key} -> ${n.value}\n"
+        s+= '  ]\n'
+        s+= '  elements (global elements) [\n'
+        for(def n : elements)
+            s+= "    ${n}\n"
+        s+= '  ]\n'
+        s+= '  attributes (global attributes) [\n'
+        for(def n : attributes)
+            s+= "    ${n}\n"
         s+= '  ]\n'
         s+= '  globalAttributeGroups[\n'
-        for(def e : globalAttributeGroups)
-            s+= "    ${e.key} -> ${e.value}\n"
+        for(def n : globalAttributeGroups)
+            s+= "    ${n.key} -> ${n.value}\n"
         s+= '  ]\n'
         s+= '  globalGroups[\n'
-        for(def e : globalGroups)
-            s+= "    ${e.key} -> ${e.value}\n"
+        for(def n : globalGroups)
+            s+= "    ${n.key} -> ${n.value}\n"
         s+= '  ]\n'
         s+= '  globalTypes[\n'
-        for(def e : globalTypes)
-            s+= "    ${e.key} -> ${e.value}\n"
+        for(def n : globalTypes)
+            s+= "    ${n.key} -> ${n.value}\n"
+        s+= '  ]\n'
+        s+= '  rootElements (qname references) [\n'
+        for(def n : rootElements)
+            s+= "    ${n}\n"
         s+= '  ]\n'
         s+= ']\n'
         s

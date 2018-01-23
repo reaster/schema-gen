@@ -42,7 +42,11 @@ class KotlinTypeRegistry extends MTypeRegistry
     }
 
     static MType VOID = new MType(name:'void',primitive:true)
-    MType getVOID() { VOID }
+    @Override MType getVOID() { VOID }
+    @Override MType lookupTypeSpecial(String name)
+    {
+        null //throw new Error("method not implemented - type: ${name}")
+    }
 
     private static Map<String, MType> defaultTypes()
     {
@@ -68,7 +72,7 @@ class KotlinTypeRegistry extends MTypeRegistry
         t << new MType(name:'Float', val: '0.0F')
         t << new MType(name:'Double', val: '0.0')
         t << new MType(name:'Boolean', val: 'false')
-        t << new MType(name:'java.util.BigDecimal', val: 'java.util.BigDecimal(0)')
+        t << new MType(name:'java.math.BigDecimal', val: 'java.math.BigDecimal(0)')
         t << new MType(name:'java.time.LocalTime', val: 'java.time.LocalTime.now()')
         t << new MType(name:'java.time.LocalDateTime', val: 'java.time.LocalDateTime.now()')
         t << new MType(name:'java.time.LocalDate', val: 'java.time.LocalDate.now()')
@@ -88,6 +92,8 @@ class KotlinTypeRegistry extends MTypeRegistry
             'anySimpleType':'Any',
             //https://www.w3.org/TR/xmlschema-2/#built-in-primitive-datatypes
             'string':'String',
+            'double':'Double',
+            'float':'Float',
             'decimal':'Double',
             'boolean':'Boolean',
             'duration':'String', //TODO

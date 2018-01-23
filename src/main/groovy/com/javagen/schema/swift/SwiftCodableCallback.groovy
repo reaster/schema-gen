@@ -36,36 +36,17 @@ import com.javagen.schema.xml.node.TextOnlyType
  *
  * @author Richard Easterling
  */
-class Swift4Callback extends XmlNodeCallback
+class SwiftCodableCallback extends XmlNodeCallback
 {
-    final SchemaToSwift gen
+    final SwiftGen gen
     final boolean validationAnnotations
 
-    Swift4Callback(SchemaToSwift gen, boolean validationAnnotations = true)
+    SwiftCodableCallback(SwiftGen gen, boolean validationAnnotations = true)
     {
         this.gen = gen
         this.validationAnnotations = validationAnnotations
     }
 
-    @Override void gen(Schema schema, MModule module) {
-
-    }
-    @Override void gen(Element element, MProperty property) {
-
-    }
-    @Override void gen(Attribute attribute, MProperty property) {
-
-    }
-    @Override void gen(AnyAttribute anyAttribute, MProperty property) {
-
-    }
-
-    @Override void gen(Any anyNode, MProperty property) {
-
-    }
-    @Override void gen(Body body, MProperty property) {
-
-    }
     @Override void gen(TextOnlyType textOnlyType, MEnum enumClass)
     {
         enumClass.implements << 'String' << 'Codable'
@@ -79,8 +60,5 @@ class Swift4Callback extends XmlNodeCallback
     {
         clazz.struct = gen.useStruct //use struct instead of class
         clazz.implements << 'Codable'
-    }
-    @Override void gen(Element element, MClass clazz) {
-
     }
 }

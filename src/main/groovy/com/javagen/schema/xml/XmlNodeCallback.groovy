@@ -35,7 +35,7 @@ import com.javagen.schema.xml.node.TextOnlyType
  * implementation details. These methods are usualy the last thing called after the conversion (SchemaToJava,
  * SchemaToSwift, etc.) code has finished.
  *
- * TODO extends to support Union, List, Group, AttributeGroup, sequence, etc.
+ * TODO extends to support Union, List, Group, AttributeGroup, etc.
  *
  * @author Richard Easterling
  */
@@ -51,5 +51,5 @@ class XmlNodeCallback
     void gen(TextOnlyType textOnlyType, MEnum enumClass) {  }
     void gen(SimpleType simpleType, MClass clazz) {  }
     void gen(ComplexType complexType, MClass clazz) {  }
-    void gen(Element element, MClass clazz) {  }
+    void gen(Element element, MClass clazz) { /* root elements */ }
 }

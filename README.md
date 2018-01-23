@@ -163,5 +163,14 @@ Each langauge needs a type registry, specific to it's supported types along with
 
 ___
 
+## Change Log
+
+#### 0.9.1
+Add suport for compositors (all, sequence, choice). Kotlin reserved words now handled properly.
+#### 0.9.0
+First release. Language support: Java, Kotlin and Swift 4. Tested XML schemas: GPX, Atom.
+
+___
+
 ## Support
 The author has multiple projects in the pipeline, other passions plus bills to pay, but will try his best to support the community as time allows. In particular, if anybody would like to add language support (Python, C# or Go), test new schemas, contribute bug fixes, expand the documentation, or add test coverage, I'd be happy to support you. Finally, I'm available for contracting/consulting, especially if it involves expanding the framework to support your needs.

@@ -20,7 +20,7 @@ import com.javagen.schema.common.CodeEmitter
 
 class MMethod extends MBase
 {
-	enum Stereotype {unknown, constructor, getter, setter, adder, putter, toString, equals, hash}
+	enum Stereotype {unknown, constructor, getter, setter, adder, putter, toString, toStringBuilder, equals, hash}
 	enum IncludeProperties {noProperties, finalProperties, allProperties}
 	Stereotype stereotype = Stereotype.unknown
 	IncludeProperties includeProperties
@@ -66,7 +66,7 @@ class MMethod extends MBase
 	 * body can ba a Closure or anything with a toString() method.
 	 */
 	void setBody(final body) {
-		this.body = (body instanceof Closure) ? body : { MMethod m, CodeEmitter v ->  v.out << body.toString() }
+		this.body = (body instanceof Closure) ? body : { MMethod m, CodeEmitter v, boolean hasSuper ->  v.out << body.toString() }
 	}
 	/**
 	 * convenience method that sets single expression method body for Kotlin methods.

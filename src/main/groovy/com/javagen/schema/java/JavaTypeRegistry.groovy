@@ -41,7 +41,28 @@ class JavaTypeRegistry extends MTypeRegistry
     }
 
     static MType VOID = new MType(name:'void',primitive:true)
-    MType getVOID() { VOID }
+    @Override MType getVOID() { VOID }
+    @Override MType lookupTypeSpecial(String name)
+    {
+        if (name.endsWith('[]')) {
+            MType type = new MType(name: name, arrayDimensions: 1)
+            String atomicType = name[0..-3]
+            while(atomicType.endsWith('[]')) {
+                type.arrayDimensions++
+                atomicType = atomicType[0..-3]
+            }
+            MType atomicRegistered = lookupType(atomicType)
+            if (atomicRegistered) {
+                type.builtIn = atomicRegistered.builtIn
+            } else {
+                throw new Error("Java array (${name}) base type unregistered: ${atomicType}")
+            }
+            registerType(name, type)
+            type
+        } else {
+            null //throw new Error("unknown Java type: ${name}")
+        }
+    }
 
     private static Map<String, MType> defaultTypes()
     {
@@ -73,11 +94,12 @@ class JavaTypeRegistry extends MTypeRegistry
         t << new MType(name:'Float', val: '0.0F')
         t << new MType(name:'Double', val: '0.0')
         t << new MType(name:'Boolean', val: 'Boolean.FALSE')
-        t << new MType(name:'java.util.BigDecimal', val: 'new java.util.BigDecimal(0)')
+        t << new MType(name:'java.math.BigDecimal', val: 'new java.math.BigDecimal(0)')
         t << new MType(name:'java.time.LocalTime', val: 'java.time.LocalTime.now()')
         t << new MType(name:'java.time.LocalDateTime', val: 'java.time.LocalDateTime.now()')
         t << new MType(name:'java.time.LocalDate', val: 'java.time.LocalDate.now()')
         t << new MType(name:'java.time.ZonedDateTime', val: 'java.time.ZonedDateTime.now()')
+        t << new MType(name:'StringBuilder', val: 'new StringBuilder()')
         t << new MType(name:'java.net.URL')
         t << new MType(name:'Object')
         Map<String, MType> result = [:]
@@ -93,7 +115,9 @@ class JavaTypeRegistry extends MTypeRegistry
             'anySimpleType':'Object',
             //https://www.w3.org/TR/xmlschema-2/#built-in-primitive-datatypes
             'string':'String',
-            'decimal':'double',
+            'double':'double',
+            'float':'float',
+            'decimal':'double', //java.math.BigDecimal
             'boolean':'boolean',
             'duration':'String', //TODO
             'dateTime':'java.time.LocalDateTime',
@@ -182,7 +206,7 @@ class JavaTypeRegistry extends MTypeRegistry
             'double':'Double'
     ]
 
-    static Set<String> floatingPointTypeSet = ['float','Float','double','Double']
+    static Set<String> floatingPointTypeSet = ['float','Float','double','Double','java.math.BigDecimal']
 
     static boolean isFloatingPointType(String type)
     {

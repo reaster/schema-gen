@@ -12,14 +12,14 @@ import com.javagen.schema.xml.node.*
 import spock.lang.Shared
 import spock.lang.Specification
 
-class SchemaToJavaSpec extends Specification
+class JavaGenSpec extends Specification
 {
     @Shared def prefixToNamespaceMap = ['xsd':DEFAULT_NS, 'gpx':'http://www.topografix.com/GPX/1/1', targetNamespace:'http://www.topografix.com/GPX/1/1']
 
     def "module gen from schema"()
     {
         given:
-        SchemaToJava schemaToJava = new SchemaToJava()
+        JavaGen schemaToJava = new JavaGen()
         when:
         Schema schema = new Schema(prefixToNamespaceMap:[targetNamespace:'http://www.topografix.com/GPX/1/1'])
         then:
@@ -35,7 +35,7 @@ class SchemaToJavaSpec extends Specification
     def "class gen from global SimpleType"()
     {
         given:
-        SchemaToJava schemaToJava = new SchemaToJava()
+        JavaGen schemaToJava = new JavaGen()
         Schema schema = new Schema(prefixToNamespaceMap:prefixToNamespaceMap)
         when:
         SimpleType simpleType = new SimpleType(qname:schema.qname('Foo'),base:schema.getGlobal('xsd:string'))
@@ -62,10 +62,46 @@ class SchemaToJavaSpec extends Specification
         foo.fullName() == 'com.topografix.gpx.Foo'
     }
 
+    def "test compositor variations"() {
+        given:
+        def xml = """<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://joe.org/schemmata" targetNamespace="http://joe.org/schemmata" elementFormDefault="qualified">
+                        <xsd:element name="joe" type="joeType" />
+                        <xsd:complexType name="joeType">
+                            <xsd:choice minOccurs="0" maxOccurs="unbounded">
+                                <xsd:element name="name" type="xsd:string"/>
+                                <xsd:element name="place" type="xsd:string" />
+                            </xsd:choice>
+                        </xsd:complexType>
+                    </xsd:schema>"""
+        JavaGen schemaVisitor = new JavaGen()
+        when: "stage 1 - generate xml"
+        Schema schema = new XmlSchemaNormalizer().buildSchema(xml)
+        schemaVisitor.visit(schema)
+        MModule module = schemaVisitor.model
+        then: "root module generated containing classes"
+        module != null
+        module.classes.size() > 0
+        module.classes.each { println it }
+        when: "ComplexType"
+        MClass joeClass = module.lookupClass('Joe')
+        then: "map to Java Class with properties"
+        joeClass != null
+        joeClass.fields.size() > 0
+        joeClass.fields.values().each { println it }
+        when: "maxOccurs=unbounded choice mapping"
+        MProperty names = joeClass.fields['names']
+        MProperty places = joeClass.fields['places']
+        then: "map to optional property"
+        names != null
+        names.cardinality == MCardinality.LIST
+        places != null
+        places.cardinality == MCardinality.LIST
+    }
+
     def "test element and attribute mapping variations"()
     {
         given:
-        def xml = """<xsd:xml xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.topografix.com/GPX/1/1" targetNamespace="http://www.topografix.com/GPX/1/1" elementFormDefault="qualified">
+        def xml = """<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.topografix.com/GPX/1/1" targetNamespace="http://www.topografix.com/GPX/1/1" elementFormDefault="qualified">
                         <xsd:element name="wpt" type="wptType" />
                         <xsd:complexType name="wptType">
                             <xsd:sequence>
@@ -84,13 +120,13 @@ class SchemaToJavaSpec extends Specification
                             <xsd:attribute name="lon" type="longitudeType" use="optional" />
                         </xsd:complexType>
                         <xsd:simpleType name="latitudeType">
-                            <xsd:restriction base="xsd:decimal">
+                            <xsd:restriction base="xsd:double">
                                 <xsd:minInclusive value="-90.0"/>
                                 <xsd:maxInclusive value="90.0"/>
                             </xsd:restriction>
                         </xsd:simpleType>
                         <xsd:simpleType name="longitudeType">
-                            <xsd:restriction base="xsd:decimal">
+                            <xsd:restriction base="xsd:double">
                                 <xsd:minInclusive value="-180.0"/>
                                 <xsd:maxExclusive value="180.0"/>
                             </xsd:restriction>
@@ -115,8 +151,8 @@ class SchemaToJavaSpec extends Specification
                         <xsd:simpleType name="measureType">
                             <xsd:union memberTypes="fixType unitType"/>
                         </xsd:simpleType>
-                    </xsd:xml>"""
-        SchemaToJava schemaVisitor = new SchemaToJava()
+                    </xsd:schema>"""
+        JavaGen schemaVisitor = new JavaGen()
         schemaVisitor.useOptional = true
         when: "stage 1 - generate xml"
         Schema schema = new XmlSchemaNormalizer().buildSchema(xml)
@@ -126,6 +162,11 @@ class SchemaToJavaSpec extends Specification
         ComplexType wptType = schema.getGlobal(schema.qname('wptType'))
         then: "normalized ComplexType produced"
         wptType != null
+        when: "get composter from wpt"
+        Sequence sequence = wptType.compositors.isEmpty() ? null : wptType.compositors.first()
+        then: "should have sequence with 6 elements"
+        sequence != null
+        sequence.elements.size() == 6
         when: "stage 2 - generate object model from xml"
         schemaVisitor.visit(schema)
         MModule module = schemaVisitor.model
@@ -196,7 +237,7 @@ class SchemaToJavaSpec extends Specification
         then:
         ele != null
         ele.cardinality == MCardinality.OPTIONAL
-        ele.type.name == 'Double'
+        ele.type.name == 'Double' //'java.math.BigDecimal'
         ele.val == '1.0'
         when: "optional dateTime element"
         MProperty time = wptClass.fields['time']

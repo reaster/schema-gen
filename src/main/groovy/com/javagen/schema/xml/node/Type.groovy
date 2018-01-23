@@ -20,6 +20,9 @@ abstract class Type extends Node
 {
     Type base
     boolean builtInType = false
+    boolean _abstract = false
+    boolean isAbstract() { _abstract }
+    void setAbstract(boolean _abstract) { this._abstract = _abstract }
     /** @return true if contains a single value, text only content. */
     boolean isSimpleType() { true }
     /** @return true if contains text only content and attributes. */

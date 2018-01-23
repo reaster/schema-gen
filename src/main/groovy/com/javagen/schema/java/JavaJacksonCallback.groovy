@@ -27,6 +27,7 @@ import com.javagen.schema.xml.node.Element
 import com.javagen.schema.xml.node.Restriction
 import com.javagen.schema.xml.node.TextOnlyType
 
+
 import static com.javagen.schema.model.MMethod.Stereotype.getter
 import static com.javagen.schema.model.MMethod.Stereotype.putter
 import static com.javagen.schema.common.GlobalFunctionsUtil.*
@@ -35,14 +36,16 @@ import static com.javagen.schema.xml.node.Restriction.RType.*
 /**
  * Decorate Java code with Jackson and Java validation constraint annotations.
  *
+ * TODO use javax.annotation.Nullable and javax.annotation.Nonnull ?
+ *
  * @author Richard Easterling
  */
 class JavaJacksonCallback extends XmlNodeCallback
 {
-    final SchemaToJava gen
+    final JavaGen gen
     final boolean validationAnnotations
 
-    JavaJacksonCallback(SchemaToJava gen, boolean validationAnnotations = true)
+    JavaJacksonCallback(JavaGen gen, boolean validationAnnotations = true)
     {
         this.gen = gen
         this.validationAnnotations = validationAnnotations
@@ -67,7 +70,7 @@ class JavaJacksonCallback extends XmlNodeCallback
         if (MCardinality.LIST == property.cardinality) {
             def wrapperName = gen.pluralService.toSingular(property.name)
             property.attr['singular'] = wrapperName
-            property.annotations << "@JacksonXmlElementWrapper(localName=\"${property.name}\"" + (element.type.isWrapperElement() ? ')' : ', useWrapping=false)')
+            property.annotations << "@JacksonXmlElementWrapper(localName=\"${property.name}\"" + (element.type?.isWrapperElement() ? ')' : ', useWrapping=false)')
             property.annotations << "@JacksonXmlProperty(localName=\"${wrapperName}\")"
             property.parent.imports << 'com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper'
             property.parent.imports << 'com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty'
@@ -75,7 +78,7 @@ class JavaJacksonCallback extends XmlNodeCallback
             property.annotations << "@JacksonXmlProperty(localName=\"${element.qname.name}\")"
             property.parent.imports << 'com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty'
         }
-        applyRestrictions(property, element.type.restrictions)
+        applyRestrictions(property, element.type?.restrictions)
     }
     @Override void gen(Any any, MProperty property)
     {
@@ -92,6 +95,10 @@ class JavaJacksonCallback extends XmlNodeCallback
     {
         property.annotations << '@JacksonXmlText'
         property.parent.imports << 'com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText'
+        if (body.element) {
+            property.annotations << '@JacksonXmlCData'
+            property.parent.imports << 'com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlCData'
+        }
     }
     @Override void gen(TextOnlyType textOnlyType, MEnum enumClass)
     {
@@ -117,53 +124,55 @@ class JavaJacksonCallback extends XmlNodeCallback
         String max = null
         String fractionDigitsVal = null
         String totalDigitsVal = null
-        restrictions.each { restriction ->
-            final String value = restriction.value
-            if (value) {
-                switch (restriction.type) {
-                    case minExclusive: //not really supported
-                    case minInclusive:
-                        if (JavaTypeRegistry.isFloatingPointType(field.type.name)) {
-                            field.annotations << "@DecimalMin(\"${value}\")"
-                            field.imports << 'javax.validation.constraints.DecimalMin'
-                        } else {
-                            field.annotations << "@Min(${stripDecimals(value)})"
-                            field.imports << 'javax.validation.constraints.Min'
-                        }
-                        break
-                    case maxExclusive: //not really supported
-                    case maxInclusive:
-                        if (JavaTypeRegistry.isFloatingPointType(field.type.name)) {
-                            field.annotations << "@DecimalMax(\"${value}\")"
-                            field.imports << 'javax.validation.constraints.DecimalMax'
-                        } else {
-                            field.annotations << "@Max(${stripDecimals(value)})"
-                            field.imports << 'javax.validation.constraints.Max'
-                        }
-                        break
-                    case whiteSpace: //preserve, replace, collapse
-                        break
-                    case pattern:
-                        field.annotations << "@Pattern(regexp=\"${escapeJavaRegexp(value)}\")"
-                        field.imports << 'javax.validation.constraints.Pattern'
-                        break
-                    case length:
-                        min = max = stripDecimals(value)
-                        break
-                    case minLength:
-                        min = stripDecimals(value)
-                        break
-                    case maxLength:
-                        max = stripDecimals(value)
-                        break
-                    case fractionDigits:
-                        fractionDigitsVal = val
-                        break
-                    case totalDigits:
-                        totalDigitsVal = value
-                        break
-                    case enumeration: //handled elsewhere
-                        break
+        if (restrictions) {
+            restrictions.each { restriction ->
+                final String value = restriction.value
+                if (value) {
+                    switch (restriction.type) {
+                        case minExclusive: //not really supported
+                        case minInclusive:
+                            if (JavaTypeRegistry.isFloatingPointType(field.type.name)) {
+                                field.annotations << new MAnnotation(expr:"@DecimalMin(\"${value}\")", onGenericParam:true)
+                                field.imports << 'javax.validation.constraints.DecimalMin'
+                            } else {
+                                field.annotations << new MAnnotation(expr:"@Min(${stripDecimals(value)})", onGenericParam:true)
+                                field.imports << 'javax.validation.constraints.Min'
+                            }
+                            break
+                        case maxExclusive: //not really supported
+                        case maxInclusive:
+                            if (JavaTypeRegistry.isFloatingPointType(field.type.name)) {
+                                field.annotations << new MAnnotation(expr:"@DecimalMax(\"${value}\")", onGenericParam:true)
+                                field.imports << 'javax.validation.constraints.DecimalMax'
+                            } else {
+                                field.annotations << new MAnnotation(expr:"@Max(${stripDecimals(value)})", onGenericParam:true)
+                                field.imports << 'javax.validation.constraints.Max'
+                            }
+                            break
+                        case whiteSpace: //preserve, replace, collapse
+                            break
+                        case pattern:
+                            field.annotations << new MAnnotation(expr:"@Pattern(regexp=\"${escapeJavaRegexp(value)}\")", onGenericParam:true)
+                            field.imports << 'javax.validation.constraints.Pattern'
+                            break
+                        case length:
+                            min = max = stripDecimals(value)
+                            break
+                        case minLength:
+                            min = stripDecimals(value)
+                            break
+                        case maxLength:
+                            max = stripDecimals(value)
+                            break
+                        case fractionDigits:
+                            fractionDigitsVal = val
+                            break
+                        case totalDigits:
+                            totalDigitsVal = value
+                            break
+                        case enumeration: //handled elsewhere
+                            break
+                    }
                 }
             }
         }
@@ -173,7 +182,7 @@ class JavaJacksonCallback extends XmlNodeCallback
         }
         if (fractionDigitsVal && totalDigitsVal) {
             String integerDigits = String.valueOf( Integer.parseInt(totalDigitsVal) - Integer.parseInt(fractionDigitsVal) )
-            field.annotations << "@Digits(integer=${integerDigits},fraction=${fractionDigitsVal}))"
+            field.annotations << new MAnnotation(expr:"@Digits(integer=${integerDigits},fraction=${fractionDigitsVal}))", onGenericParam:true)
             field.imports << 'javax.validation.constraints.Digits'
         }
         //boolean primitiveOrWrapper = JavaTypeRegistry.isPrimitive(field.type.name) || JavaTypeRegistry.isWrapper(field.type.name)

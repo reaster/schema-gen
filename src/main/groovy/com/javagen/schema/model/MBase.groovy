@@ -19,7 +19,7 @@ package com.javagen.schema.model
 class MBase {
 	String name
 	def attr = [:]
-	def annotations = []
+	Annotations annotations = new Annotations()
 	static final String TEMPLATE_NAME = 'TEMPLATE_NAME'
 
 	String shortName() { 
@@ -36,4 +36,24 @@ class MBase {
 	{
 		return attr[key]
 	}
+
+	/**
+	 * Allows strings to be passed in, as well as, MAnnotation types.
+	 */
+	static class Annotations
+	{
+		List<MAnnotation> list = []
+		def leftShift(item) {
+			if ((item instanceof MAnnotation)) {
+				list << item
+			} else {
+				list << new MAnnotation(expr:item.toString())
+			}
+		}
+		boolean isEmpty() { list.isEmpty() }
+		def each(Closure c) { list.each(c) }
+		int size() { list.size() }
+		//def findAll(Closure c) { list.findAll{c} }
+	}
+
 }

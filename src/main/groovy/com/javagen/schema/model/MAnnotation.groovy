@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Outsource Cafe, Inc.
+ * Copyright (c) 2018 Outsource Cafe, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package com.javagen.schema.xml.node
+package com.javagen.schema.model
 
-/**
- * A Body element can be present in SimpleType and CompextType. It presents a challenge when mapping because it has
- * no name and may be of mixed content (text intermixed with child elements).
- *
- * @author Richard Easterling
- */
-class Body extends Value
+class MAnnotation
 {
-    /** can be a SimpleType or ComplexType */
-    SimpleType parent
-    /** can be an Element or Any */
-    Element element
-    @Override TextOnlyType getType() { super.type ?: element?.type }
-    boolean mixedContent = false
+    String expr
+    /**
+     * if true annotation is applied to generic type parameter, rather than the type declaration as a whole:
+     * <pre>
+     *     List<@Email String> vs @Email List<String>
+     * </pre>
+     */
+
+    boolean onGenericParam = false
+    String toString() { expr }
 }

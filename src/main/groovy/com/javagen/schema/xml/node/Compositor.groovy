@@ -20,16 +20,17 @@ package com.javagen.schema.xml.node
  * Compositors determine what, how many and in what order elements cab be nested and sequenced together. The valid
  * subtypes are All, Choice and Sequence.
  *
- * Parents: group, choice, sequence, complexType, restriction (simpleContent), extension (simpleContent), restriction (complexContent), extension (complexContent)
- * Content: (annotation?, (element | group | choice | sequence | any)*)
+ * Implementing classes: ComplexType, Group, All, Choice, Sequence
+ * Content: (element | group | choice | sequence | any)*)
  *
  * @author Richard Easterling
  */
-abstract class Compositor extends Node implements ElementHolder
+abstract class Compositor extends Node implements CompositorHolder
 {
     /** min allowed occurrences. Defaults to 1. */
     int minOccurs = 1
     /** max allowed occurrences. Defaults to 1. unbounded is converted to Integer.MAX */
     int maxOccurs = 1
-    List<Compositor> compositors = []
+    int uboundedChildElements = 0
+    boolean isUboundedChildElement() { uboundedChildElements > 0 }
 }

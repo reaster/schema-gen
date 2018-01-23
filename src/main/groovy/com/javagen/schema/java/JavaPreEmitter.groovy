@@ -39,6 +39,7 @@ import static com.javagen.schema.model.MMethod.Stereotype.getter
 import static com.javagen.schema.model.MMethod.Stereotype.hash
 import static com.javagen.schema.model.MMethod.Stereotype.setter
 import static com.javagen.schema.model.MMethod.Stereotype.toString
+import static com.javagen.schema.model.MMethod.Stereotype.toStringBuilder
 import static java.util.EnumSet.of
 import static com.javagen.schema.common.GlobalFunctionsUtil.*
 
@@ -49,8 +50,8 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.*
  */
 class JavaPreEmitter extends CodeEmitter
 {
-    final EnumSet<MMethod.Stereotype> CLASS_METHODS = of(equals, hash, toString)
-    EnumSet<MMethod.Stereotype> defaultMethods = of(equals, hash, toString, getter, setter, adder)
+    final EnumSet<MMethod.Stereotype> CLASS_METHODS = of(equals, hash, toString, toStringBuilder)
+    EnumSet<MMethod.Stereotype> defaultMethods = of(equals, hash, toString, toStringBuilder, getter, setter, adder)
 
     JavaPreEmitter()
     {
@@ -126,7 +127,7 @@ class JavaPreEmitter extends CodeEmitter
     @Override
     def visit(MMethod m)
     {
-        if (!m.stereotype)
+        if (!m.stereotype || m.parent.isInterface())
             return
         switch (m.stereotype) {
             case constructor:
@@ -159,10 +160,37 @@ class JavaPreEmitter extends CodeEmitter
                 m.name = 'toString'
                 m.body = m.body ?: this.&toStringMethodBody
                 break
+            case toStringBuilder:
+                if (m.parent.hasSuper())
+                    m.annotations << '@Override'
+                m.name = 'toString'
+                m.scope = 'protected'
+                m.params = [ new MBind(type:MType.lookupType('StringBuilder'), name:'sb') ]
+                m.body = m.body ?: this.&toStringBuilderMethodBody
+                break
         }
     }
 
-    private def toStringMethodBody(MMethod m, CodeEmitter v)
+    private def toStringBuilderMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+    {
+        def fields = m.parent.fields.values().findAll{ p -> !p.isStatic() }
+        fields.eachWithIndex { f, i ->
+            v.out << '\n' << v.tabs << "sb.append(\"${(i>0 || hasSuper ? ', ' : '')}${f.name}=\").append(${f.name})" << ';'
+        }
+    }
+
+    private def toStringMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+    {
+        def name = m.parent.shortName()
+        v.out << '\n' << v.tabs << "StringBuilder sb = new StringBuilder(\"${name}[\");"
+        if (hasSuper) {
+            v.out << '\n' << v.tabs << 'super.toString(sb);'
+        }
+        v.out << '\n' << v.tabs << 'toString(sb);'
+        v.out << '\n' << v.tabs << 'return sb.append(\"]\").toString();'
+    }
+
+    private def toStringMethodBodyStandAlone(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
         def name = m.parent.shortName()
         def fields = m.parent.fields.values().findAll{ p -> !p.isStatic() }
@@ -173,7 +201,7 @@ class JavaPreEmitter extends CodeEmitter
         v.out << '\n' << v.tabs << 'return sb.append(\"]\").toString();'
     }
 
-    private def constructorMethodBody(MMethod m, CodeEmitter v)
+    private def constructorMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
         if ( ! m.parent.isEnum() )
             v.out << '\n' << v.tabs << 'super();'
@@ -263,26 +291,26 @@ class JavaPreEmitter extends CodeEmitter
         }
     }
 
-    static def getterMethodBody(MMethod m, CodeEmitter v)
+    static def getterMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
         MProperty prop = (MProperty)m.refs['property']
         def propName = prop.name
         v.out << '\n' << v.tabs << 'return ' << propName << ';'
     }
-    static def setterMethodBody(MMethod m, CodeEmitter v)
+    static def setterMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
         MProperty prop = (MProperty)m.refs['property']
         def propName = prop.name
         v.out << '\n' << v.tabs << 'this.' << propName << ' = ' << propName << ';'
     }
-    static def putterMethodBody(MMethod m, CodeEmitter v)
+    static def putterMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
         def prop = m.refs['property']
         def propName = prop.name
         assert m.params.size() == 2
         v.out << '\n' << v.tabs << 'this.' << propName << '.put(' << m.params[0].name << ', ' << m.params[1].name << ');'
     }
-    static def adderMethodBody(MMethod m, CodeEmitter v)
+    static def adderMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
         MProperty prop = (MProperty)m.refs['property']
         def propName = prop.name
@@ -295,7 +323,7 @@ class JavaPreEmitter extends CodeEmitter
     }
 
 
-    private def equalsMethodBody(MMethod m, CodeEmitter v)
+    private def equalsMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
 //		@Override
 //		public boolean equals(Object o)
@@ -309,7 +337,11 @@ class JavaPreEmitter extends CodeEmitter
 //		}
         def fields = m.parent.fields.values().findAll{ p -> !p.isStatic() }
         def type = m.parent.shortName()
-        v.out << '\n' << v.tabs << 'if (this == o) return true;'
+        if (hasSuper) {
+            v.out << '\n' << v.tabs << 'if (!super.equals(o)) return false;'
+        } else {
+            v.out << '\n' << v.tabs << 'if (this == o) return true;'
+        }
         v.out << '\n' << v.tabs << 'if (o == null || getClass() != o.getClass()) return false;'
         v.out << '\n' << v.tabs << "${type} other = (${type})o;"
         fields.each { f ->
@@ -333,7 +365,7 @@ class JavaPreEmitter extends CodeEmitter
         v.out << '\n' << v.tabs << 'return true;'
     }
 
-    private def hashCodeMethodBody(MMethod m, CodeEmitter v)
+    private def hashCodeMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
 //		@Override
 //		public int hashCode()
@@ -342,7 +374,9 @@ class JavaPreEmitter extends CodeEmitter
 //			result = 31 * result + (days != null ? days.hashCode() : 0);
 //			return result;
 //		}
-        v.out << '\n' << v.tabs << "int result = 1;"
+        v.out << '\n' << v.tabs << 'int result = '
+        v.out << (hasSuper ? 'super.hashCode()' : '1')
+        v.out << ';'
         def fields = m.parent.fields.values().findAll{ p -> !p.isStatic() }
         fields.each { f ->
             if (f.type.isPrimitive()) {

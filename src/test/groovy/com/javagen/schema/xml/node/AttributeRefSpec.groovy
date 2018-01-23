@@ -1,6 +1,6 @@
 package com.javagen.schema.xml.node
 
-import com.javagen.schema.java.SchemaToJava
+import com.javagen.schema.java.JavaGen
 import com.javagen.schema.model.MModule
 import com.javagen.schema.xml.QName
 import com.javagen.schema.xml.XmlSchemaNormalizer
@@ -13,7 +13,7 @@ class AttributeRefSpec extends Specification
         //<!DOCTYPE xs:xml PUBLIC "-//W3C//DTD XMLSCHEMA 200102//EN" "../example-x-java/src/main/resources/XMLSchema.dtd" >
 
         def xml = """<?xml version='1.0'?>
-<xs:xml targetNamespace="http://www.w3.org/XML/1998/namespace" xmlns:xs="http://www.w3.org/2001/XMLSchema" xml:lang="en">
+<xs:schema targetNamespace="http://www.w3.org/XML/1998/namespace" xmlns:xs="http://www.w3.org/2001/XMLSchema" xml:lang="en">
 
  <xs:attribute name="lang" type="xs:language" />
 
@@ -34,10 +34,10 @@ class AttributeRefSpec extends Specification
   <xs:attribute ref="xml:space"/>
  </xs:attributeGroup>
 
-</xs:xml>
+</xs:schema>
 """
         String ns = 'http://www.w3.org/XML/1998/namespace'
-        SchemaToJava schemaVisitor = new SchemaToJava()
+        JavaGen schemaVisitor = new JavaGen()
         when: "stage 1 - generate xml"
         Schema schema = new XmlSchemaNormalizer().buildSchema(xml)
         then: "normalized xml produced"

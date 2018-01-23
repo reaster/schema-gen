@@ -38,7 +38,8 @@ class KotlinEmitter extends CodeEmitter
 
 	/** supports grouping classes into single source file */
 	@Override
-	def visit(MModule m) {
+	def visit(MModule m)
+	{
 		List<MClass> classes = m.classes.findAll{ c -> !c.ignore }
 		if (m.isSource()) {
 			openWriter(m.sourceFile)
@@ -95,8 +96,8 @@ class KotlinEmitter extends CodeEmitter
 				if (i>0)
 					out << ', '
 				out << '\n' << tabs
-				f.annotations.each { String a ->
-					out << a << ' '
+				f.annotations.each {
+					out << it << ' '
 				}
 				out << (f.isFinal() ? 'val ' : 'var ')
 				out << f.name  << ':' << typeDeclaration(f)
@@ -160,8 +161,8 @@ class KotlinEmitter extends CodeEmitter
 			c.fields.values().eachWithIndex { MField f, int i ->
 				if (i>0)
 					out << ', '
-				f.annotations.each { String a ->
-					out << a << ' '
+				f.annotations.each {
+					out << it << ' '
 				}
 				out << (f.isFinal() ? 'val ' : 'var ')
 				out << f.name  << ':' << typeDeclaration(f)
@@ -273,11 +274,11 @@ class KotlinEmitter extends CodeEmitter
 		} else if (m.body!=null) {
 			if (m.singleExpr) {
 				out << ' = '
-				m.body(m, this)
+				m.body(m, this, m.parent.hasSuper())
 			} else {
 				out << ' {'
 				this++
-				m.body(m, this)
+				m.body(m, this, m.parent.hasSuper())
 				this--
 				out << '\n' << tabs << '}'
 			}

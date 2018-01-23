@@ -1,7 +1,7 @@
 package com.javagen.schema.model
 
 import com.javagen.schema.common.Gen
-import com.javagen.schema.java.SchemaToJava
+import com.javagen.schema.java.JavaGen
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -12,7 +12,7 @@ class MModuleSpec extends Specification
     def "fileName on class vs modules"()
     {
         given:
-        Gen gen = new SchemaToJava()
+        Gen gen = new JavaGen()
         MModule m1 = new MModule(name: 'm1')
         MClass c1 = new MClass(name:'C1')
         m1.addClass(c1)

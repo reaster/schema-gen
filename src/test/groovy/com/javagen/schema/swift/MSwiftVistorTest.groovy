@@ -45,6 +45,7 @@ class MSwiftVistorTest
 		visitor = new SwiftEmitter(gen: gen, openStreamLambda: { f -> new PrintStream(os) })
 
 		module = new MModule(name: 'com.hotspringsfinder.model')
+		module.sourceFile = new File('src/main/junk/Happy.swift') //trigger call to openStreamLambda
 		phone = new MClass(name: 'Phone').setStruct(true)
 		module.addClass(phone)
 		MType.registerType(phone)
@@ -154,6 +155,7 @@ class MSwiftVistorTest
 		module = new MModule(name: 'com.hotspringsfinder.model')
 		def phoneEnum = new MEnum(name: 'PhoneEnum', enumNames: ['CELL', 'HOME', 'WORK', 'FAX'], 'implements': ['String', 'Codable'])
 		module.addClass(phoneEnum)
+		module.sourceFile = new File('src/main/junk/Happy.swift') //trigger call to openStreamLambda
 		visitor.visit(module)
 
 		String output = os.toString("UTF8");
@@ -168,6 +170,7 @@ class MSwiftVistorTest
 	void testEnumWithValue()
 	{
 		module = new MModule(name: 'com.hotspringsfinder.model')
+		module.sourceFile = new File('src/main/junk/Happy.swift') //trigger call to openStreamLambda
 		def phoneEnum = new MEnum(name: 'PhoneEnum', enumNames: ['CELL', 'HOME', 'WORK', 'FAX'], enumValues: ['cell','home','work','fax'], 'implements': ['String','Codable'])
 		module.addClass(phoneEnum)
 		visitor.visit(module)
@@ -175,6 +178,7 @@ class MSwiftVistorTest
 		String output = os.toString("UTF8");
 		println output
 
+		assertTrue(output!=null)
 		assertTrue(output.contains('enum PhoneEnum: String, Codable'))
 		assertTrue(output.contains('case CELL = \"cell\"'))
 	}

@@ -23,6 +23,7 @@ abstract class Value extends Node
 {
     enum ProcessContents{lax, skip, strict}
     interface NS { String toString() }
+    /** extendable namespace enum class */
     enum Namespace implements NS {
         ANY('##any'),
         OTHER('##other'),
@@ -33,6 +34,7 @@ abstract class Value extends Node
         String toString() { ns }
         private static Map<String,NS> cache = values().collectEntries { [it.toString(),it] }
         private static class _NS implements NS { String ns; _NS(String ns) { this.ns=ns }; String toString() { ns } }
+        /** lookup singleton namespace in cache, if namespace is unkown, it will be added to the cache and returned (i.e. on the fly registration) */
         static NS lookup(String ns) {
             if (!ns) return null
             NS _ns = cache.get(ns);
