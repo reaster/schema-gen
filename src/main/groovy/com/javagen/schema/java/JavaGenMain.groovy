@@ -60,9 +60,8 @@ class JavaGenMain extends JavaGen
     {
         schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-1_1.xsd').toURI().toURL()
         packageName = 'com.hotspringsfinder.detail.model'
-        srcDir = new File('example-hsf-java/src/main/java-gen')
+        srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen')
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
-        pluralService = new PluralService(customPluralMappings)
         def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']
         def unknownEnum = 'Unknown'
         enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: javaEnumName(text, false) }
@@ -83,8 +82,8 @@ class JavaGenMain extends JavaGen
         //initKml()
         //schemaURL = new File('/Users/richard/dev/hs/xml-xml/example-x-java/src/main/resources/xAL.xsd').toURI().toURL()
         //schemaURL = new URL('http://docs.oasis-open.org/election/external/xAL.xsd')
-		initGpx()
-//		initHsf()
+		//initGpx()
+		initHsf()
     }
 
     static void main(String[] args) {

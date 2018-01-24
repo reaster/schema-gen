@@ -18,6 +18,7 @@ package com.javagen.schema.swift
 
 import com.javagen.schema.common.Gen
 import com.javagen.schema.common.GlobalFunctionsUtil
+import com.javagen.schema.common.PluralService
 import com.javagen.schema.model.MBase
 import com.javagen.schema.model.MBind
 import com.javagen.schema.model.MCardinality
@@ -130,6 +131,8 @@ class SwiftGen extends Gen implements XmlSchemaVisitor
 //        pipeline.each { visitor ->
 //            visitor.visit(rootModule)
 //        }
+		if (!pluralService)
+			pluralService = new PluralService(customPluralMappings) //pickup custom map
 		schema = new XmlSchemaNormalizer().buildSchema(schemaURL)
 		visit(schema)
 		MModule rootModule = getModel()

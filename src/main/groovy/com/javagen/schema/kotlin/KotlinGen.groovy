@@ -17,6 +17,7 @@
 package com.javagen.schema.kotlin
 
 import com.javagen.schema.common.CodeEmitter
+import com.javagen.schema.common.PluralService
 import com.javagen.schema.java.JavaGen
 import com.javagen.schema.model.MBind
 import com.javagen.schema.model.MCardinality
@@ -182,6 +183,8 @@ class KotlinGen extends JavaGen
 
     @Override def gen()
     {
+        if (!pluralService)
+            pluralService = new PluralService(customPluralMappings) //pickup custom map
         schema = new XmlSchemaNormalizer().buildSchema(schemaURL)
         visit(schema)
         MModule rootModule = getModel()

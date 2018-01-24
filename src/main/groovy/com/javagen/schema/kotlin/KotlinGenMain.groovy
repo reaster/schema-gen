@@ -49,7 +49,6 @@ class KotlinGenMain extends KotlinGen
         srcDir = new File('../schema-gen-hsf/hsf-kotlin/src/main/kotlin-gen')
         println "srcDir = ${srcDir.getAbsolutePath()}"
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
-        pluralService = new PluralService(customPluralMappings)
         def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']
         def unknownEnum = 'Unknown'
         enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: javaEnumName(text, false) }

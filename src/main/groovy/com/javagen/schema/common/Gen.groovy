@@ -55,7 +55,7 @@ abstract class Gen
     List<CodeEmitter> pipeline = []
 
     Map<String,String> typeOverrideMap = [:]
-    PluralService pluralService = new PluralService()
+    PluralService pluralService
     def customPluralMappings = [:] //needed for irregular nouns: tooth->teeth, person->people
     boolean useOptional = false //just effects Java code: Integer vs Optional<Integer>
     boolean printSchema = false
@@ -87,6 +87,8 @@ abstract class Gen
      */
     def gen()
     {
+        if (!pluralService)
+            pluralService = new PluralService(customPluralMappings) //pickup custom map
         MModule rootModule = getModel()
         pipeline.each { visitor ->
             visitor.visit(rootModule)
