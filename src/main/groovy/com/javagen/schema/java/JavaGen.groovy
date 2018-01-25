@@ -120,7 +120,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 
 	@Override def gen()
 	{
-		if (!pluralService)
+        if (!customPluralMappings.isEmpty())
 			pluralService = new PluralService(customPluralMappings) //pickup custom map
 		schema = new XmlSchemaNormalizer().buildSchema(schemaURL)
 		if (printSchema)

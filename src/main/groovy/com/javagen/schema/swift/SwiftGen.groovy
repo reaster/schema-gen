@@ -131,7 +131,7 @@ class SwiftGen extends Gen implements XmlSchemaVisitor
 //        pipeline.each { visitor ->
 //            visitor.visit(rootModule)
 //        }
-		if (!pluralService)
+        if (!customPluralMappings.isEmpty())
 			pluralService = new PluralService(customPluralMappings) //pickup custom map
 		schema = new XmlSchemaNormalizer().buildSchema(schemaURL)
 		visit(schema)

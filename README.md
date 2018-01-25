@@ -7,6 +7,8 @@ Producing concise, readable code is a top schema-gen priority and it takes namin
 
 This software is written in Groovy and is packaged as a Gradle plugin.
 
+[![Build Status](https://travis-ci.org/reaster/schema-gen.svg?branch=master)](https://travis-ci.org/reaster/schema-gen)
+
 ## Currently Supported Languages
 
 ### Java
