@@ -50,7 +50,7 @@ import static com.javagen.schema.model.MMethod.Stereotype.toString
  */
 class SwiftPreEmitter extends CodeEmitter
 {
-    EnumSet<MMethod.Stereotype> defaultMethods = EnumSet.of(hash) //noneOf(MMethod.Stereotype.class)
+    EnumSet<MMethod.Stereotype> defaultMethods = EnumSet.of(hash,constructor) //noneOf(MMethod.Stereotype.class)
 
     SwiftPreEmitter()
     {
@@ -82,6 +82,8 @@ class SwiftPreEmitter extends CodeEmitter
         c.classes.each {
             visit(it)
         }
+        if (c.imports.isEmpty())
+            c.imports << 'Foundation'
     }
 
     @Override
@@ -112,20 +114,21 @@ class SwiftPreEmitter extends CodeEmitter
         switch (m.stereotype) {
             case constructor:
                 m.name = m.parent.shortName()
-                switch (m.includeProperties) {
+                switch (m.includeProperties ?: allProperties) {
                     case finalProperties:
                         m.params = m.parent.fields.values().findAll { p -> p.isFinal() && !p.isStatic() }
                         break
                     case allProperties:
-                        m.params = m.parent.fields.values().findAll { p -> !p.isStatic() }
+                        m.params = m.parent.fields.values().findAll { p -> !p.isStatic() && !p.isFinal()}
                 }
+                m.includeDefaultValue = true
                 m.body = this.&constructorMethodBody
                 break
             case hash: //generate both equals and hash in an extension
                 MClass c = m.parent
                 MModule module = c.parentModule()
                 //extension Hashable:
-                MClass e = new MClass(name: c.name, extension: true)
+                MClass e = new MClass(name: c.name, extension: true, scope: 'internal')
                 module.addClass(e)
                 e.ignore = c.ignore
                 e.attr['targetClass'] = c

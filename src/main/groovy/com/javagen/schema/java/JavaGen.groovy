@@ -69,9 +69,13 @@ import static com.javagen.schema.model.MMethod.Stereotype.*
 import static com.javagen.schema.xml.node.Schema.DEFAULT_NS
 
 /**
+ * Translate XML schema to Java 1.8 code.
+ *
+ * <p>A XmlNodeCallback can be used to apply specific third-party library annotations to the object model (see
+ * JavaJacksonCallback as an example), allowing one to easily switch technologies.
+ *
  * This class is the entry point for Java code generation.
  *
- * TODO migrate SchemaToJava into this class
  *
  * @author Richard Easterling
  */
@@ -104,6 +108,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	JavaGen(boolean skipInit=false)
 	{
 		super()
+		//Java-specific config:
 		if (!skipInit) {
 			this.simpleXmlTypeToPropertyType = { typeName ->
 				JavaTypeRegistry.simpleXmlTypeToPropertyType[typeName]

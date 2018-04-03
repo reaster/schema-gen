@@ -62,6 +62,7 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.lowerCase
 import static com.javagen.schema.common.GlobalFunctionsUtil.upperCase
 import static com.javagen.schema.model.MCardinality.LIST
 import static com.javagen.schema.xml.node.Schema.DEFAULT_NS
+import static com.javagen.schema.swift.SwiftUtil.*
 
 /**
  * Translate XML schema to Swift 4 code.
@@ -115,9 +116,9 @@ class SwiftGen extends Gen implements XmlSchemaVisitor
 		fileExtension = 'swift'
 		srcDir = new File('src/main/swift-gen')
 		simpleXmlTypeToPropertyType = { typeName -> SwiftTypeRegistry.simpleXmlTypeToPropertyType[typeName] }
-		enumNameFunction = { text -> GlobalFunctionsUtil.swiftEnumName(text, false) }
-		propertyNameFunction = { text -> GlobalFunctionsUtil.legalSwiftName(lowerCase(text)) }
-		constantNameFunction = { text -> GlobalFunctionsUtil.swiftConstName(text) }
+		enumNameFunction = { text -> swiftEnumName(text, false) }
+		propertyNameFunction = { text -> legalSwiftName(lowerCase(text)) }
+		constantNameFunction = { text -> swiftConstName(text) }
 	}
 
 	@Override def gen()
@@ -423,7 +424,7 @@ class SwiftGen extends Gen implements XmlSchemaVisitor
 	}
 	MEnum swiftEnum(MEnum enumClass)
 	{
-		java.util.List<String> enumValues = enumClass.enumValues.sort()
+		java.util.List<String> enumValues = sortEnumValues ? enumClass.enumValues.sort() : enumClass.enumValues
 		def enumNames = []
 		def enumNameSet = [] as Set //look for and fix duplicate names
 		for(tag in enumValues) {
@@ -434,8 +435,18 @@ class SwiftGen extends Gen implements XmlSchemaVisitor
 			enumNameSet << enumName
 			enumNames << enumName
 		}
+		if (defaultEnumValue && !enumClass.enumDefault) {
+			if (!enumNameSet.contains(defaultEnumValue)) {
+				enumNames << defaultEnumValue
+				enumValues << defaultEnumValue
+			}
+			enumClass.enumDefault = defaultEnumValue
+		}
 		enumClass.enumNames = enumNames
 		enumClass.enumValues = enumValues
+		//static array for iterating
+		def val = '['; enumNames.eachWithIndex { e,i -> val += "${i>0 ? ', ' : ''}.$e"}; val += ']'
+		enumClass.addField( new MProperty(name: 'allValues', type:enumClass, cardinality:MCardinality.ARRAY, scope: 'public', 'static': true, 'final': true, val: val) )
 		//setup a private value addField
 		//enumClass.addField( new MProperty(name: enumValueFieldName, scope: 'private', 'final': true) )
 		//add a private constructor

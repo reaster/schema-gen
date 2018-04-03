@@ -78,7 +78,7 @@ class SwiftEmitter extends CodeEmitter
 			out << it
 		}
 		out << '\n' << tabs
-		if (c.scope && c.scope != 'public')
+		if (c.scope && c.scope != 'internal') //default access level
 			out << c.scope << ' '
 		if (c.isStatic())
 			out << 'static '
@@ -123,22 +123,27 @@ class SwiftEmitter extends CodeEmitter
 			out << it
 		}
 		out << '\n' << tabs
-		if (c.scope && c.scope != 'public')
+		if (c.scope && c.scope != 'internal') //default access level
 			out << c.scope << ' '
 		if (c.isStatic())
 			out << 'static '
 		if (c.isAbstract())
 			out << 'abstract '
 		out << 'enum ' << c.name
-		c.implements.eachWithIndex { String entry, int i ->
+		c.implements.unique().eachWithIndex { String entry, int i ->
 			out << (i==0 ? ': ' : ', ')
 			out << entry
 		}
 		out << '\n' << tabs << '{'
 		this++
+		boolean applyStringRawValue = !c.implements.isEmpty() && c.implements.contains('String') && !c.enumValues.isEmpty()
 		c.enumNames.eachWithIndex{ enumName, index ->
 			out << '\n' << tabs << 'case ' << enumName
-			if (!c.enumValues.isEmpty()) {
+			if (applyStringRawValue) { //only emmit value if different from name
+				if (enumName != c.enumValues[index]) {
+					out << ' = \"' << c.enumValues[index] << '\"'
+				}
+			} else if (!c.enumValues.isEmpty()) {
 				out << ' = \"' << c.enumValues[index] << '\"'
 			}
 		}
@@ -173,7 +178,7 @@ class SwiftEmitter extends CodeEmitter
 			out << it
 		}
 		out << '\n' << tabs
-		if (f.scope && f.scope != 'public')
+		if (f.scope && f.scope != 'internal') //f.parent.scope, gets access level of parent
 			out << f.scope << ' '
 		if (f.isStatic())
 			out << 'static '
@@ -201,7 +206,7 @@ class SwiftEmitter extends CodeEmitter
 		}
 		//if (!m.returnType) m.returnType = new MBind(type:MType.lookupType('Void'))
 		out << '\n' << tabs
-		if (m.scope && m.scope != 'public')
+		if (m.scope && m.scope != 'internal') //default access level
 			out << m.scope << ' '
 		if (m.isAbstract())
 			out << 'abstract '
@@ -217,6 +222,9 @@ class SwiftEmitter extends CodeEmitter
 		m.params.eachWithIndex { MBind p, int i ->
 			if (i>0) out << ', '
 			out << p.name << ': ' << typeDeclaration(p, m)
+			if (m.includeDefaultValue) {
+				out << ' = ' << (defaultValue(p) ?: 'nil')
+			}
 		}
 		out << ')'
 		if (!m.isVoidType()) {
@@ -281,8 +289,11 @@ class SwiftEmitter extends CodeEmitter
 
 	String defaultValue(MBind f, def val = null)
 	{
+		if (f.name == 'currency')
+			println "currency"
 		if (val!=null || f.isFinal()) {
 			final String valQuote = valueQuote(f, (String)val)
+			val = (f.type.class == MEnum && !f.cardinality.container) ? ".${gen.enumNameFunction.apply(val)}" : val
 			return f.cardinality.isContainer() ? val : "${valQuote}${val}${valQuote}"
 		}
 		if (!assignDefaultValues)
@@ -298,9 +309,19 @@ class SwiftEmitter extends CodeEmitter
 				if (val==null)
 					return null
 				final String valQuote = valueQuote(f, val)
+				if (f.type.class == MEnum) {
+					val = ".${gen.enumNameFunction.apply(val)}"
+				}
 				return "${valQuote}${val}${valQuote}"
 			default: // REQUIRED
-				val = f.type.val
+				if (f.type.class == MEnum) {
+					if (!val) {
+						val = f.type.enumDefault ?: f.type.enumNames[0]
+					}
+					val = ".${gen.enumNameFunction.apply(val)}"
+				} else {
+					val = f.type.val
+				}
 		}
 		final String valQuote = valueQuote(f, val)
 		"${valQuote}${val}${valQuote}"

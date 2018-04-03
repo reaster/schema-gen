@@ -29,7 +29,7 @@ class MClass extends MType implements MSource
 	private boolean struct
 	Map<String,MField> fields = [:]
 	List<MMethod> methods = []
-	def _implements = [] as Set<String>
+	List<String> _implements = []
 	String _extends = null
 
 	def MClass() {
@@ -85,7 +85,7 @@ class MClass extends MType implements MSource
 	def lookupField(String name) { fields[name] }
 	def fieldsWithAttr(String attrName) { fields.values().findAll { it.attr[attrName] } }
 	def fieldsWithoutAttr(String attrName) { fields.values().findAll { !it.attr[attrName] } }
-	Set<String> getImplements() { _implements }
+	List<String> getImplements() { _implements }
 	def setImplements(Set<String> _implements) { this._implements = _implements }
 	boolean isEnum() { false }
 }

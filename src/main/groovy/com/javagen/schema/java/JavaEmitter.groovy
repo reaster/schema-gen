@@ -86,7 +86,7 @@ class JavaEmitter extends CodeEmitter
 		out << (c.isInterface() ? 'interface ' : 'class ') << c.name << ' '
 		if (c.getExtends())
 			out << 'extends ' << c.getExtends()
-		c.implements.eachWithIndex { e, i ->
+		c.implements.unique().eachWithIndex { e, i ->
 			out << (i==0) ? 'extends ' : ', '
 			out << e.name
 		}

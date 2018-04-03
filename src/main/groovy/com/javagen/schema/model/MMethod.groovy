@@ -34,6 +34,8 @@ class MMethod extends MBase
 	protected boolean _final
 	boolean singleExpr = false
 	boolean override = false
+	/** include default value in param declarations */
+	boolean includeDefaultValue = false
 	/** signature takes two params: lambda(MMethod m, MVisitor v) and writes text to v.out */
 	Closure body = null
 
