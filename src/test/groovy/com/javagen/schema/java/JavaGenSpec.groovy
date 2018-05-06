@@ -62,6 +62,50 @@ class JavaGenSpec extends Specification
         foo.fullName() == 'com.topografix.gpx.Foo'
     }
 
+    def "test polymorphic any declaration"() {
+        given:
+        def xml = """<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://joe.org/schemmata" targetNamespace="http://joe.org/schemmata" elementFormDefault="qualified">
+            <xsd:element name="reference" type="referenceType"/>
+            <xsd:complexType name="referenceType">
+                <xsd:attribute name="href" type="xsd:string"/>
+                <xsd:attribute name="id" type="xsd:nonNegativeInteger"/>
+                <xsd:attribute name="published" type="xsd:boolean"/>
+            </xsd:complexType>
+            <xsd:element name="list">
+                <xsd:annotation><xsd:documentation>URL list of references to media (pictures, video, audio, ducuments).</xsd:documentation></xsd:annotation>
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:annotation><xsd:documentation>Polymorphic collection with referenceType as a base type.</xsd:documentation></xsd:annotation>
+                        <xsd:any id="polymorphic-referenceType" minOccurs="0" maxOccurs="unbounded" processContents="lax"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+                    </xsd:schema>"""
+        JavaGen schemaVisitor = new JavaGen()
+        when: "stage 1 - generate xml"
+        Schema schema = new XmlSchemaNormalizer().buildSchema(xml)
+        schemaVisitor.visit(schema)
+        MModule module = schemaVisitor.model
+        then: "root module generated containing classes"
+        module != null
+        module.classes.size() > 0
+        module.classes.each { println it }
+//        when: "ComplexType"
+//        MClass joeClass = module.lookupClass('Joe')
+//        then: "map to Java Class with properties"
+//        joeClass != null
+//        joeClass.fields.size() > 0
+//        joeClass.fields.values().each { println it }
+//        when: "maxOccurs=unbounded choice mapping"
+//        MProperty names = joeClass.fields['names']
+//        MProperty places = joeClass.fields['places']
+//        then: "map to optional property"
+//        names != null
+//        names.cardinality == MCardinality.LIST
+//        places != null
+//        places.cardinality == MCardinality.LIST
+    }
+
     def "test compositor variations"() {
         given:
         def xml = """<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://joe.org/schemmata" targetNamespace="http://joe.org/schemmata" elementFormDefault="qualified">

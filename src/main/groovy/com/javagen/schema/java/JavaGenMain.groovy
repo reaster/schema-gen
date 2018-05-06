@@ -28,12 +28,18 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.javaEnumName
  */
 class JavaGenMain extends JavaGen
 {
+    def initXHTML()
+    {
+        schemaURL = new File('/Users/richard/dev/hs/hsf-data/xhtml1-strict-subset.xsd').toURI().toURL()
+        packageName = 'com.hotspringsfinder.xhtml.model'
+        srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen2')
+    }
     def initAtom()
     {
-		srcDir = new File('../schema-gen-examples/java-atom/src/main/java-gen')
-		schemaURL = new File('../schema-gen-examples/java-atom/src/main/resources/atom.xsd').toURI().toURL()
+        srcDir = new File('../schema-gen-examples/java-atom/src/main/java-gen')
+        schemaURL = new File('../schema-gen-examples/java-atom/src/main/resources/atom.xsd').toURI().toURL()
         packageName = 'org.w3.atom.java'
-		addSuffixToEnumClass = null
+        addSuffixToEnumClass = null
         anyPropertyName = 'text'
     }
 
@@ -66,6 +72,16 @@ class JavaGenMain extends JavaGen
         def unknownEnum = 'Unknown'
         enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: javaEnumName(text, false) }
     }
+    def initHsf2()
+    {
+        schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-2_0.xsd').toURI().toURL()
+        packageName = 'com.hotspringsfinder.detail.model2'
+        srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen')
+        customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
+        def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']
+        def unknownEnum = 'Unknown'
+        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: javaEnumName(text, false) }
+    }
     def initKml()
     {
         schemaURL = new URL('file:../schema-gen-examples/java-x/src/main/resources/ogckml22.xsd')
@@ -83,7 +99,8 @@ class JavaGenMain extends JavaGen
         //schemaURL = new File('/Users/richard/dev/hs/xml-xml/example-x-java/src/main/resources/xAL.xsd').toURI().toURL()
         //schemaURL = new URL('http://docs.oasis-open.org/election/external/xAL.xsd')
 		//initGpx()
-		initHsf()
+		initHsf2()
+        //initXHTML()
     }
 
     static void main(String[] args) {

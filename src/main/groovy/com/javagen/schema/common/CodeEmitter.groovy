@@ -33,7 +33,7 @@ import groovy.text.SimpleTemplateEngine
  *
  * @author Richard Easterling
  */
-class CodeEmitter
+abstract class CodeEmitter
 {
 	Gen gen
 	def out = new PrintWriter(System.out)

@@ -13,7 +13,7 @@
         </choice>
     </complexType>
     <simpleType name="WordType">
-        <restriction>
+        <restriction base="xs:token">
             <enumeration value="FEE"/>
             <enumeration value="FI"/>
             <enumeration value="FO"/>

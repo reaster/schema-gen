@@ -99,6 +99,7 @@ class JavaJacksonCallback extends XmlNodeCallback
             property.annotations << '@JacksonXmlCData'
             property.parent.imports << 'com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlCData'
         }
+        applyRestrictions(property, body.type?.restrictions)
     }
     @Override void gen(TextOnlyType textOnlyType, MEnum enumClass)
     {

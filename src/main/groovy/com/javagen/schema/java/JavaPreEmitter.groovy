@@ -40,7 +40,6 @@ import static com.javagen.schema.model.MMethod.Stereotype.hash
 import static com.javagen.schema.model.MMethod.Stereotype.setter
 import static com.javagen.schema.model.MMethod.Stereotype.toString
 import static com.javagen.schema.model.MMethod.Stereotype.toStringBuilder
-import static java.util.EnumSet.of
 import static com.javagen.schema.common.GlobalFunctionsUtil.*
 
 /**
@@ -50,11 +49,23 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.*
  */
 class JavaPreEmitter extends CodeEmitter
 {
-    final EnumSet<MMethod.Stereotype> CLASS_METHODS = of(equals, hash, toString, toStringBuilder)
-    EnumSet<MMethod.Stereotype> defaultMethods = of(equals, hash, toString, toStringBuilder, getter, setter, adder)
+    EnumSet<MMethod.Stereotype> CLASS_METHODS = EnumSet.noneOf(MMethod.Stereotype) //EnumSet.of(equals, hash, toString, toStringBuilder)
+    EnumSet<MMethod.Stereotype> defaultMethods = EnumSet.noneOf(MMethod.Stereotype) //EnumSet.of(equals, hash, toString, toStringBuilder, getter, setter, adder)
 
     JavaPreEmitter()
     {
+        //HACK to fix EnumSet.of() bug
+        CLASS_METHODS.add(equals)
+        CLASS_METHODS.add(hash)
+        CLASS_METHODS.add(toString)
+        CLASS_METHODS.add(toStringBuilder)
+        defaultMethods.add(equals)
+        defaultMethods.add(hash)
+        defaultMethods.add(toString)
+        defaultMethods.add(toStringBuilder)
+        defaultMethods.add(getter)
+        defaultMethods.add(setter)
+        defaultMethods.add(adder)
         if ( ! MTypeRegistry.isInitialized() )
             new JavaTypeRegistry()
     }
@@ -112,7 +123,7 @@ class JavaPreEmitter extends CodeEmitter
         EnumSet<MMethod.Stereotype> accessors = EnumSet.noneOf(MMethod.Stereotype.class)//.of(equals, hash)
         if (!p.isFinal() && defaultMethods.contains(setter))
             accessors.add(setter)
-        if (p.isContainerType(of(LIST, SET)) && defaultMethods.contains(adder))
+        if (p.isContainerType(EnumSet.of(LIST, SET)) && defaultMethods.contains(adder))
             accessors.add(adder)
         if (defaultMethods.contains(getter))
             accessors.add(getter)

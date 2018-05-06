@@ -22,17 +22,30 @@ package com.javagen.schema.xml.node
 class SimpleType extends TextOnlyType implements AttributeHolder
 {
     boolean mixedContent = false
-    /** signals an empty element. TODO not sure this is implemented correctly */
-    @Override boolean isEmpty() { base == null }
     /** @return true if contains a single value, text only content. */
     @Override boolean isSimpleType() { false }
     /** @return true if contains text only content and attributes. */
     @Override boolean isSimpleContent() { true }
     /** @return true if contains child elements and attributes. */
     @Override boolean isComplextContent() { false }
+    /**
+     * Signals an empty element body with no child elements or text content (i.e. empty tag or attributes only).
+     * TODO not sure this is implemented correctly
+     */
+    @Override boolean isEmpty() { base == null || base.isEmpty() }
 
     /** a Body is a virtual modeling element that helps make mapping more explicit */
     Body getBody() { new Body(parent:this, type:base, mixedContent:mixedContent) }
-    @Override boolean isBody() { !isEmpty() }
+    @Override boolean isBody() {
+        !isEmpty()
+//        if (isEmpty())
+//            return false
+//        boolean result = base.isSimpleContent()
+//        //boolean result = base.isBuiltInType() //.isComplextContent()
+//        if (qname.name == 'mediaReferenceType' || qname.name == 'phoneNumberType')
+//            println 'mediaReferenceType'
+//
+//        result
+    }
     @Override boolean isMixed() { isBody() && mixedContent }
 }

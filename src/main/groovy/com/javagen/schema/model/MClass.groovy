@@ -86,6 +86,6 @@ class MClass extends MType implements MSource
 	def fieldsWithAttr(String attrName) { fields.values().findAll { it.attr[attrName] } }
 	def fieldsWithoutAttr(String attrName) { fields.values().findAll { !it.attr[attrName] } }
 	List<String> getImplements() { _implements }
-	def setImplements(Set<String> _implements) { this._implements = _implements }
+	def setImplements(List<String> _implements) { this._implements = _implements }
 	boolean isEnum() { false }
 }

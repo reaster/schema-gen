@@ -12,14 +12,14 @@ This software is written in Groovy and is packaged as a Gradle plugin.
 ## Currently Supported Languages
 
 ### Java
-**Features:** Generated POJOs contain [Jackson](https://github.com/FasterXML/jackson-dataformat-xml) annotations supporting reading and writing both JSON and XML documents. XML Schema restrictions are also translated into [Bean Validation 2.0](http://beanvalidation.org/) annotations. Equals, hashCode and toString methods are also generated to facilitate testing. See the [java-gpx](https://github.com/reaster/schema-gen-examples/tree/master/java-gpx) sample project.
+**Features:** Generated POJOs contain [Jackson](https://github.com/FasterXML/jackson-dataformat-xml) annotations supporting reading and writing both JSON and XML documents. XML Schema restrictions are translated into [Bean Validation 2.0](http://beanvalidation.org/) annotations. Equals, hashCode and toString methods are also generated to facilitate testing. See the [java-gpx](https://github.com/reaster/schema-gen-examples/tree/master/java-gpx) sample project.
 
 **Usage:** The main entry point is [com.javagen.schema.java.JavaGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/java/JavaGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/java-gen folder to keep it separate from hand-written code.
 
 **Limitations:** A limitation of the Java langauge is that it does not support the extension features of more recent languages, making it harder to maintain a clean separation between hand-written and generated code. You may be forced to put your business logic in the generated files with the downside being, if you ever have to regenerate, you'll have to manually merge your code back in.
 
 ### Kotlin
-**Features:** By leveraging [data classes](https://kotlinlang.org/docs/reference/data-classes.html), Kotlin generated code is very concise. Classes contain [Jackson](https://github.com/FasterXML/jackson-dataformat-xml) annotations supporting reading and writing both JSON and XML documents. XML Schema restrictions are also translated into [Bean Validation 2.0](http://beanvalidation.org/) annotations. Extending generated code with business logic can be acheived using [extensions](https://kotlinlang.org/docs/reference/extensions.html). See the [kotlin-gpx](https://github.com/reaster/schema-gen-examples/tree/master/kotlin-gpx) sample project.
+**Features:** By leveraging [data classes](https://kotlinlang.org/docs/reference/data-classes.html), Kotlin generated code is very concise. Classes contain [Jackson](https://github.com/FasterXML/jackson-dataformat-xml) annotations supporting reading and writing both JSON and XML documents. XML Schema restrictions are translated into [Bean Validation 2.0](http://beanvalidation.org/) annotations. Extending generated code with business logic can be acheived using [extensions](https://kotlinlang.org/docs/reference/extensions.html). See the [kotlin-gpx](https://github.com/reaster/schema-gen-examples/tree/master/kotlin-gpx) sample project.
 
 **Usage:** The main entry point is [com.javagen.schema.kotlin.KotlinGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/kotlin/KotlinGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/kotlin-gen folder to keep it separate from hand-written code.
 
@@ -77,16 +77,31 @@ schema-gen-examples> gradle genClean gen test
 ```
 ### Running the Generators in your IDE
 
-For code generator development work, you'll want to run the target language gen class (JavaGen, KotlinGen, SwiftGen) directly.  If you place your project (say, kotlin-atom) in the same parent directory as [schema-gen](https://github.com/reaster/schema-gen), you can hard-code your configuration in the [KotlinGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/kotlin/KotlinGen.groovy) constructor as follows:
+For code generator development work, you'll want to run the target language gen class (JavaGen, KotlinGen, SwiftGen) directly.  There are three main launcher classes you can adpot for this purpose (JavaGenMain, KotlinGenMain, SwiftGenMain). If you place your project (say, java-atom) in the same parent directory as [schema-gen](https://github.com/reaster/schema-gen), you can hard-code your configuration in the [JavaGenMain](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/java/JavaGenMain.groovy) class as follows:
 ```
-KotlinGen()
+class JavaGenMain extends JavaGen
 {
-    ...
-    schemaURL = new URL('file:../kotlin-atom/src/main/resources/atom.xsd')
-    srcDir = new File('../kotlin-atom/src/main/kotlin-gen')
-} 
+    def initAtom()
+    {
+        schemaURL = new URL('file:../java-atom/src/main/resources/atom.xsd')
+        srcDir = new File('../java-atom/src/main/java-gen')
+        packageName = 'org.w3.atom.java'
+        addSuffixToEnumClass = null
+        anyPropertyName = 'text'
+    }
+
+    JavaGenMain()
+    {
+        super()
+        initAtom()
+    }
+
+    static void main(String[] args) {
+        new JavaGenMain().gen()
+    }
+}
 ```
-Then you can point your IDE at KotlinGen in the  [schema-gen](https://github.com/reaster/schema-gen) project and the generated code will be put in your kotlin-atom project.
+Then you can point your IDE at JavaGenMain in the  [schema-gen](https://github.com/reaster/schema-gen) project and the generated code will be put in your java-atom project. See [schema-gen-examples/java-atom](https://github.com/reaster/schema-gen-examples/tree/master/java-atom) for working atom.xsd and xml.xsd files.
 
 #### Configuration
 The code generator is designed to be highly customizable. In particular, how it names classes, properties, and enumerations is all encoded in configurable properties and lambdas. Here is a sampling of the properties that can be overridden in the `Gen` base class:

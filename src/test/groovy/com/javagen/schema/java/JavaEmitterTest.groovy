@@ -150,7 +150,7 @@ class JavaEmitterTest
 		println output
 
 		assertTrue( output.contains('CELL("cell"),'))
-7890		assertTrue( output.contains('private final String value;'))
+		assertTrue( output.contains('private final String value;'))
 	}
 
 	@Test

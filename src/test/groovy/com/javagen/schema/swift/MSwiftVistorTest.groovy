@@ -102,9 +102,10 @@ class MSwiftVistorTest
 	@Test
 	void testConstructor()
 	{
-		address.addMethod(new MMethod(stereotype: constructor))
-		address.addMethod(new MMethod(stereotype: constructor, includeProperties: allProperties))
-		address.addMethod(new MMethod(stereotype: constructor, includeProperties: finalProperties))
+		//SwiftPreEmitter.defaultMethods = EnumSet.of(hash,constructor) and defaults to allProperties if not specified
+		//address.addMethod(new MMethod(stereotype: constructor))
+		//address.addMethod(new MMethod(stereotype: constructor, includeProperties: allProperties))
+		//address.addMethod(new MMethod(stereotype: constructor, includeProperties: finalProperties))
 
 		new SwiftPreEmitter(gen:gen).visit(module)
 		visitor.visit(module)
@@ -112,11 +113,80 @@ class MSwiftVistorTest
 		String output = os.toString("UTF8");
 		println output
 
-		assertTrue( output.contains('init() {'))
-		assertTrue( output.contains('init(street1: String?, zip: Int, planet: String, phones: [Phone]) {'))
-		assertTrue( output.contains('init(planet: String)'))
+		//assertTrue( output.contains('init() {'))
+		assertTrue( output.contains('public init(number: String = "")'))
+		assertTrue( output.contains('public init(street1: String? = nil, zip: Int = 99999, phones: [Phone] = [])'))
 	}
+/*
 
+
+
+import Foundation
+
+public struct Phone
+{
+    public var number: String = ""
+
+    public init(number: String = "") {
+        self.number = number
+    }
+}
+
+public struct Address
+{
+    public static var city: String = ""
+    public var street1: String?
+    public var zip: Int = 99999
+    public let planet: String = "Earth"
+    public var phones: [Phone] = []
+
+    public static func getCity() {
+        //TODO
+    }
+    public func addressLabel() {
+        //TODO
+    }
+    public init(street1: String? = nil, zip: Int = 99999, phones: [Phone] = []) {
+        self.street1 = street1
+        self.zip = zip
+        self.phones = phones
+    }
+}
+
+extension Phone: Hashable
+{
+    public var hashValue: Int {
+        var result = 1
+        result = 31 * result + number.hashValue
+        return result;
+    }
+
+    public static func ==(rhs: Phone, lhs: Phone) -> Bool {
+        guard lhs.number == rhs.number else { return false }
+        return true;
+    }
+}
+
+extension Address: Hashable
+{
+    public var hashValue: Int {
+        var result = 1
+        if let street1 = street1 { result = 31 * result + street1.hashValue }
+        result = 31 * result + zip.hashValue
+        result = 31 * result + planet.hashValue
+        result = 31 * result + phones.count
+        return result;
+    }
+
+    public static func ==(rhs: Address, lhs: Address) -> Bool {
+        guard lhs.street1 == rhs.street1 else { return false }
+        guard lhs.zip == rhs.zip else { return false }
+        guard lhs.planet == rhs.planet else { return false }
+        guard lhs.phones == rhs.phones else { return false }
+        return true;
+    }
+}
+ */
 	@Test
 	void testEquatable()
 	{

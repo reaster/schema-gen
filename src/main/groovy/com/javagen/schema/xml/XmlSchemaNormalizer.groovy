@@ -96,12 +96,14 @@ class XmlSchemaNormalizer
                 throw new IllegalStateException("no element tag found for ${node}")
             String name = child.@name?.text()
             String ref = child.@ref?.text()
-            String id = child.@ID?.text()
+            String id = child.@id?.text()
             String typeWithPrefix = child.@type?.text()
             Type type = typeWithPrefix ? schema.getGlobal(qnameRef(typeWithPrefix)) : null
             if (typeWithPrefix && !type) {
                 throw new IllegalStateException("${tag} @name='${name}' has @type='${typeWithPrefix}' but NO global type was found")
             }
+//            if (name == 'phoneNumberType' || name == 'phoneType')
+//                println name
             switch (tag) {
                 case 'simpleType':
                     name = name ?: node.@name?.text()
@@ -368,10 +370,20 @@ class XmlSchemaNormalizer
                 case 'extension':
                     //<element name="PremiseNumberPrefix"><complexType><simpleContent><extension base="xs:string"><attribute...
                     String base = child.@base?.text()
+//                    if (base.endsWith(':string'))
+//                        println base
                     Type baseType = base ? schema.getGlobal( qnameRef(base) ) : null
                     if (baseType) {
                         Type parentType = findParentType(child)
                         parentType.base = baseType
+                    } else {
+                        throw new IllegalStateException("${tag} @name='${name}' has @base='${base}' missing @base attribute or NO global type was found")
+//                        QName qname2 = qnameRef(base)
+//                        baseType = schema.getGlobal( qname2 )
+//                        QName qname3 = qnameRef( 'xsd:string' )
+//                        baseType = schema.getGlobal( qname3 )
+//                        //String schemaTypeName = gen.simpleXmlTypeToPropertyType.apply(t.qname.name)
+//                        println "Can't find baseType for base: ${base}"
                     }
                     traverseElements(child)
                     break
@@ -406,6 +418,8 @@ class XmlSchemaNormalizer
     {
         for(node in schemaNode.simpleType.list()) {
             QName qname = qname(node.@name.text())
+//            if (qname.name == 'phoneNumberType')
+//                println qname.name
             simpleTypeNodeLookup[qname] = node
             schema.putGlobal(qname, isTextOnlyType(node) ? new TextOnlyType(qname:qname) : new SimpleType(qname:qname))
         }
@@ -650,8 +664,8 @@ class XmlSchemaNormalizer
         throw new IllegalStateException("can't find parent Type")
     }
 
-    Schema buildSchema(URL xmlSchemaURL) {
-        final Map<String,String> namespaces = loadNamespaces(xmlSchemaURL)
+    Schema buildSchema(final URL xmlSchemaURL, final String overrideNamespace=null) {
+        final Map<String,String> namespaces = overrideNamespaces( loadNamespaces(xmlSchemaURL), overrideNamespace )
         //println "PUSH: ${namespaces}"
         prefixToNamespaceMap.push(namespaces)
         Schema schema = buildSchema(xmlSchemaURL.openStream(), xmlSchemaURL)
@@ -694,7 +708,14 @@ class XmlSchemaNormalizer
             String location = imprt.@schemaLocation.text()
             //String namespace = imprt.@namespace.text()
             URL url = new URL(context, location)
-            buildSchema(url)
+            buildSchema(url) //import preserves namespaces
+        }
+        for(include in xmlSchema.'include'.list()) {
+            String location = include.@schemaLocation.text()
+            //String namespace = include.@namespace.text()
+            URL url = new URL(context, location)
+            String targetNamespace = prefixToNamespaceMap.peek()['targetNamespace']
+            buildSchema(url, targetNamespace)  //import overrides namespaces with its own namespace
         }
         //need to index global elements so they can be ref(erenced)
         indexGlobalNodes(xmlSchema)

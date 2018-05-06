@@ -33,5 +33,5 @@ class TextOnlyType extends Type
         restrictions.each{ set.add(it.type) };
         set
     }
-    boolean isEmpty() { false }
+    //boolean isEmpty() { false }
 }

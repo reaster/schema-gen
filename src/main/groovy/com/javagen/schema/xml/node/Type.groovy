@@ -31,6 +31,16 @@ abstract class Type extends Node
     boolean isComplextContent() { false }
     boolean isBody() { false }
     boolean isMixed() { false }
+    /**
+     * Signals an empty element body with no child elements or text content (i.e. empty tag or attributes only).
+     */
+    boolean isEmpty() { false }
+    /**
+     * Indicates when to implement inheritance in mapping class relationships. When false element body is
+     * typicaly mapped to a property.
+     * @return true if inheriting from anything but a simple type
+     */
+    boolean isInheritedBaseType() { !isEmpty() && !base.isSimpleType() }
     boolean isWrapperElement() { false }
     TextOnlyType wrapperType() { null }
 //    void setBase(String base) { this.base = new QName(name:base) }

@@ -141,7 +141,10 @@ trait XmlSchemaVisitor
         for (Attribute attribute : simpleType.attributes) {
             visit(attribute)
         }
-        if (simpleType.isBody()) {
+        boolean bodyWithBuiltInType = !simpleType.isInheritedBaseType()
+//        if (simpleType.qname.name == 'mediaReferenceType' || simpleType.qname.name == 'phoneNumberType')
+//            println simpleType.qname.name
+        if (bodyWithBuiltInType) {
             visit(simpleType.getBody())
         }
     }

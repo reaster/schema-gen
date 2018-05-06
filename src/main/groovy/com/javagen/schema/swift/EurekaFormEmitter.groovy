@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Outsource Cafe, Inc.
+ * Copyright (c) 2018 Outsource Cafe, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,28 +17,12 @@
 package com.javagen.schema.swift
 
 import com.javagen.schema.common.CodeEmitter
-import com.javagen.schema.model.MBind
-import com.javagen.schema.model.MClass
-import com.javagen.schema.model.MEnum
-import com.javagen.schema.model.MField
-import com.javagen.schema.model.MMethod
-import com.javagen.schema.model.MModule
-import com.javagen.schema.model.MProperty
-import com.javagen.schema.model.MReference
-import com.javagen.schema.model.MType
-import com.javagen.schema.model.MTypeRegistry
+import com.javagen.schema.model.*
 
-import static com.javagen.schema.model.MCardinality.ARRAY
-import static com.javagen.schema.model.MCardinality.LIST
-import static com.javagen.schema.model.MCardinality.MAP
-import static com.javagen.schema.model.MCardinality.OPTIONAL
-import static com.javagen.schema.model.MCardinality.SET
+import static com.javagen.schema.model.MCardinality.*
 import static com.javagen.schema.model.MMethod.IncludeProperties.allProperties
 import static com.javagen.schema.model.MMethod.IncludeProperties.finalProperties
-import static com.javagen.schema.model.MMethod.Stereotype.constructor
-import static com.javagen.schema.model.MMethod.Stereotype.equals
-import static com.javagen.schema.model.MMethod.Stereotype.hash
-import static com.javagen.schema.model.MMethod.Stereotype.toString
+import static com.javagen.schema.model.MMethod.Stereotype.*
 
 /**
  * Generates constructors, hash and equals extension classes.
@@ -48,12 +32,11 @@ import static com.javagen.schema.model.MMethod.Stereotype.toString
  *
  * @author Richard Easterling
  */
-class SwiftPreEmitter extends CodeEmitter
+class EurekaFormEmitter extends CodeEmitter
 {
-    static EnumSet<MMethod.Stereotype> DEFAULT_METHODS = EnumSet.of(hash,constructor) //noneOf(MMethod.Stereotype.class)
-    EnumSet<MMethod.Stereotype> defaultMethods = DEFAULT_METHODS
+    //EnumSet<MMethod.Stereotype> defaultMethods = EnumSet.of(hash,constructor) //noneOf(MMethod.Stereotype.class)
 
-    SwiftPreEmitter()
+    EurekaFormEmitter()
     {
         if ( ! MTypeRegistry.isInitialized() )
             new SwiftTypeRegistry()

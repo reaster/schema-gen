@@ -110,6 +110,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		super()
 		//Java-specific config:
 		if (!skipInit) {
+			//assign simpleXmlTypeToPropertyType function to lambda
 			this.simpleXmlTypeToPropertyType = { typeName ->
 				JavaTypeRegistry.simpleXmlTypeToPropertyType[typeName]
 			}
@@ -184,12 +185,37 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	{
 		String name = anyPropertyName
 //        any.type = xml.getGlobal(DEFAULT_NS, anyType) - can't modify after vistor activated - causes bugs
-		//println "any:${any.type.qname.name} -> ${name} property"
+//		println "any:${any.type.qname.name} -> ${name} property"
 		TextOnlyType parentType = nestedStack.peek().attr['nodeType']
 		//Compositor compositor = compositorStack.peek()
-		if ( !parentType.isBody() && !parentType.isWrapperElement()) {
+		boolean isBody = parentType.isBody()
+		boolean isWrapper = parentType.isWrapperElement()
+		if ( !isBody && !isWrapper) {
 			genAny(name, any)
+		} else if (isWrapper) {
+			anyWrapper(any)
 		}
+	}
+
+	private void anyWrapper(Any any)
+	{
+		MCardinality container = container(any)
+		String name = anyPropertyName
+		Type schemaType = null
+		if (any.id?.contains('polymorphic-')) {
+			int index = any.id.indexOf('polymorphic-') + 'polymorphic-'.length()
+			String typeName = any.id.substring(index)
+			schemaType = schema.getGlobal(typeName)
+		}
+		String type = schemaTypeToPropertyType(schemaType ?: schema.getGlobal(DEFAULT_NS,anyType), container)
+		MProperty property = new MProperty(name:name, type:type)
+		setNotNull(property)
+		optionalToPrimitiveWrapper(property)
+		MClass clazz = nestedStack.peek()
+		clazz.addField(property)
+		callback.gen(any, property)
+		println "any -> ${name}: ${type}"
+
 	}
 	@Override def visit(AnyAttribute anyAttribute)
 	{
@@ -300,7 +326,10 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		clazz.ignore = complexType.isWrapperElement()
 		clazz.abstract = complexType.abstract
 		if (complexType.base) {
-			String className = classNameFunction.apply(complexType.base.qname.name)
+			String typeName = complexType.base.qname.name
+//			if (typeName == 'mediaReferenceType')
+//				println 'mediaReferenceType'
+			String className = classNameFunction.apply(typeName)
 			clazz.extends = className
 		}
 	}
@@ -331,12 +360,23 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	}
 	@Override def visit(SimpleType simpleType)
 	{
+		String name = simpleType.qname.name
+		if (name == 'mediaReferenceType' || name == 'phoneNumberType')
+			println name
 		String className = classNameFunction.apply(simpleType.qname.name)
 		MClass clazz = lookupOrCreateClass(className)
 		clazz.attr['nodeType'] = simpleType
 		this << clazz
 		XmlSchemaVisitor.super.visit(simpleType)
 		this >> clazz
+		if (simpleType.isInheritedBaseType()) {
+			String typeName = simpleType.base.qname.name
+//			if (typeName == 'mediaReferenceType')
+//				println 'mediaReferenceType'
+			String baseClassName = classNameFunction.apply(typeName)
+			clazz.extends = baseClassName
+		}
+
 		callback.gen(simpleType, clazz)
 	}
 	@Override def visit(TextOnlyType textOnlyType)
@@ -395,13 +435,28 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	// xml methods
 	////////////////////////////////////////////////////////////////////////////
 
+	private Type polymporphicType(Any any)
+	{
+		Type schemaType = null
+		if (any.id?.contains('polymorphic-')) {
+			int index = any.id.indexOf('polymorphic-') + 'polymorphic-'.length()
+			String typeName = any.id.substring(index)
+			schemaType = schema.getGlobal(typeName)
+		}
+		return schemaType
+	}
+
 	MProperty genAny(String propertyName, Any any)
 	{
 		println "any @name=${any.qname?.name}"
 		MCardinality container = container(any)
-		MType type = schemaTypeToPropertyType(any.type ?: schema.getGlobal(DEFAULT_NS, anyType), container)
+		Type polymorphicType = polymporphicType(any) ?: any.type // any.type is not allowed in XML Schema?
+		MType type = schemaTypeToPropertyType(polymorphicType ?: schema.getGlobal(DEFAULT_NS, anyType), container)
 		MProperty property
-		if (container == MCardinality.LIST) {
+		if (polymorphicType) {
+			String val = any.fixed ?: any.'default' ?: (container == MCardinality.LIST) ? 'new java.util.ArrayList<>()' : null
+			property = new MProperty(name:propertyName, type:type, cardinality:container, final:any.fixed!=null, val:val)
+		} else if (container == MCardinality.LIST) {
 			container = MCardinality.MAP
 			MBind mapRType = new MBind(cardinality:container,type:type)
 			String val = 'new java.common.TreeMap<>()'
