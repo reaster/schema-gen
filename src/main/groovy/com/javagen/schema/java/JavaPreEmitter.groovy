@@ -185,6 +185,9 @@ class JavaPreEmitter extends CodeEmitter
     private def toStringBuilderMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
         def fields = m.parent.fields.values().findAll{ p -> !p.isStatic() }
+        if (hasSuper) {
+            v.out << '\n' << v.tabs << 'super.toString(sb);'
+        }
         fields.eachWithIndex { f, i ->
             v.out << '\n' << v.tabs << "sb.append(\"${(i>0 || hasSuper ? ', ' : '')}${f.name}=\").append(${f.name})" << ';'
         }
@@ -194,9 +197,6 @@ class JavaPreEmitter extends CodeEmitter
     {
         def name = m.parent.shortName()
         v.out << '\n' << v.tabs << "StringBuilder sb = new StringBuilder(\"${name}[\");"
-        if (hasSuper) {
-            v.out << '\n' << v.tabs << 'super.toString(sb);'
-        }
         v.out << '\n' << v.tabs << 'toString(sb);'
         v.out << '\n' << v.tabs << 'return sb.append(\"]\").toString();'
     }

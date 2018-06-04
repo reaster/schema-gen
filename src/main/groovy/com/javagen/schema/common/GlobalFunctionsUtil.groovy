@@ -91,7 +91,7 @@ final class GlobalFunctionsUtil
 	{
 		if (anyString==null || anyString.trim().length()==0)
 			return null
-		String normalized = replaceSpecialChars(anyString, ' ,_-&/', (char)'_')
+		String normalized = replaceSpecialChars(anyString, ' ,._+-&/', (char)'_')
 		return allUpperCase ? legalJavaName(normalized.toUpperCase()) : camelBackJavaClass(normalized)
 	}
 
@@ -377,7 +377,7 @@ final class GlobalFunctionsUtil
 	{
 		if (nodeType==null || nodeType.trim().length()==0)
 			return null
-		String normalized = replaceSpecialChars(nodeType, ' ,_-&/', (char)'_')
+		String normalized = replaceSpecialChars(nodeType, ' ,_+-&/', (char)'_')
 		addSuffix( upperCase(normalized), suffix)
 	}
 

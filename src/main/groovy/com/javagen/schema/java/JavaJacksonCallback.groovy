@@ -115,8 +115,18 @@ class JavaJacksonCallback extends XmlNodeCallback
     {
         if (!clazz)
             throw new IllegalStateException("class can't be null for root element: ${element}")
-        clazz.annotations << '@JsonIgnoreProperties(value = {"schemaLocation"})'
+//        if (clazz.name == 'Thing')
+//            println clazz.name
+//        if (clazz.ignore)
+//            return
+        if (!clazz.annotations.contains('@JsonIgnoreProperties(value = {"schemaLocation"})'))
+            clazz.annotations << '@JsonIgnoreProperties(value = {"schemaLocation"})'
         clazz.imports << 'com.fasterxml.jackson.annotation.JsonIgnoreProperties'
+        final String tag = element.qname.name
+        final String anno = "@JacksonXmlRootElement(localName = \"${tag}\")"
+        if (!clazz.annotations.any { it.startsWith('@JacksonXmlRootElement')})
+            clazz.annotations << anno
+        clazz.imports << 'com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement'
     }
 
     private void applyRestrictions(MField field, List<Restriction> restrictions)

@@ -364,6 +364,8 @@ class XmlSchemaNormalizer
                 case 'fractionDigits':
                 case 'totalDigits':
                     String value = child.@value?.text()
+                    if (!value)
+                        throw new IllegalStateException("simpleType @name='${simpleTypeStack.peek().qname?.name}' ${tag} child element missing @value attribute")
                     simpleTypeStack.peek().restrictions << new Restriction(tag,value)
                     break
                 case 'restriction':

@@ -25,7 +25,6 @@ class MAnnotation
      *     List<@Email String> vs @Email List<String>
      * </pre>
      */
-
     boolean onGenericParam = false
     String toString() { expr }
 }

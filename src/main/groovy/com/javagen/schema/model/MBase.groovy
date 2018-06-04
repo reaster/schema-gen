@@ -53,6 +53,14 @@ class MBase {
 		boolean isEmpty() { list.isEmpty() }
 		def each(Closure c) { list.each(c) }
 		int size() { list.size() }
+		boolean startsWith(String annotationPrefix)
+		{
+			list.find{ it.toString().startsWith(annotationPrefix) }
+		}
+		boolean contains(String annotation)
+		{
+			list.find{ it.toString() == annotation }
+		}
 		//def findAll(Closure c) { list.findAll{c} }
 	}
 

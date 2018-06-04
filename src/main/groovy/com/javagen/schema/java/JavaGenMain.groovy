@@ -75,7 +75,7 @@ class JavaGenMain extends JavaGen
     def initHsf2()
     {
         schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-2_0.xsd').toURI().toURL()
-        packageName = 'com.hotspringsfinder.detail.model2'
+        packageName = 'com.hotspringsfinder.model.v2'
         srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen')
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
         def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']

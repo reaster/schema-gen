@@ -72,6 +72,8 @@ class JavaEmitter extends CodeEmitter
 	@Override
 	def visit(MClass c)
 	{
+		if (c.ignore)
+			return
 		c.annotations.each {
 			out << '\n' << tabs
 			out << it
