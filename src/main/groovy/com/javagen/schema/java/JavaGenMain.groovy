@@ -55,6 +55,11 @@ class JavaGenMain extends JavaGen
         schemaURL = new URL('file:../schema-gen-examples/java-x/src/main/resources/ab.xsd')
         srcDir = new File('../schema-gen-examples/java-x/src/main/java-gen')
     }
+    def initFactionDigits()
+    {
+        schemaURL = new URL('file:./src/test/resources/fractions-digits.xsd')
+        srcDir = new File('../schema-gen-examples/java-x/src/main/java-gen')
+    }
 
     def initGpx()
     {
@@ -99,7 +104,8 @@ class JavaGenMain extends JavaGen
         //schemaURL = new File('/Users/richard/dev/hs/xml-xml/example-x-java/src/main/resources/xAL.xsd').toURI().toURL()
         //schemaURL = new URL('http://docs.oasis-open.org/election/external/xAL.xsd')
 		//initGpx()
-		initHsf2()
+		//initHsf2()
+        initFactionDigits()
         //initXHTML()
     }
 

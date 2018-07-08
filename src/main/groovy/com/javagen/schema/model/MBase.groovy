@@ -52,6 +52,7 @@ class MBase {
 		}
 		boolean isEmpty() { list.isEmpty() }
 		def each(Closure c) { list.each(c) }
+		MAnnotation find(Closure c) { list.find(c) }
 		int size() { list.size() }
 		boolean startsWith(String annotationPrefix)
 		{

@@ -254,7 +254,7 @@ class JavaGenSpec extends Specification
         MProperty lon = wptClass.fields['lon']
         then: "map to optional property"
         lon != null
-        when: "using Optional setting, primatives are put in primitva wrapper classes and placed in java.common.Optional instances"
+        when: "using Optional setting, primatives are put in primitve wrapper classes and placed in java.common.Optional instances"
         schemaVisitor.useOptional == true
         then:
         lon.cardinality == MCardinality.OPTIONAL

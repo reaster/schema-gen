@@ -176,7 +176,7 @@ class JavaJacksonCallback extends XmlNodeCallback
                             max = stripDecimals(value)
                             break
                         case fractionDigits:
-                            fractionDigitsVal = val
+                            fractionDigitsVal = value
                             break
                         case totalDigits:
                             totalDigitsVal = value
@@ -193,7 +193,7 @@ class JavaJacksonCallback extends XmlNodeCallback
         }
         if (fractionDigitsVal && totalDigitsVal) {
             String integerDigits = String.valueOf( Integer.parseInt(totalDigitsVal) - Integer.parseInt(fractionDigitsVal) )
-            field.annotations << new MAnnotation(expr:"@Digits(integer=${integerDigits},fraction=${fractionDigitsVal}))", onGenericParam:true)
+            field.annotations << new MAnnotation(expr:"@Digits(integer=${integerDigits},fraction=${fractionDigitsVal})", onGenericParam:true)
             field.imports << 'javax.validation.constraints.Digits'
         }
         //boolean primitiveOrWrapper = JavaTypeRegistry.isPrimitive(field.type.name) || JavaTypeRegistry.isWrapper(field.type.name)
