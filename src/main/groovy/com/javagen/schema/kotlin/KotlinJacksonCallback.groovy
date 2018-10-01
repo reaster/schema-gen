@@ -185,7 +185,7 @@ class KotlinJacksonCallback extends XmlNodeCallback {
                         max = stripDecimals(value)
                         break
                     case fractionDigits:
-                        fractionDigitsVal = val
+                        fractionDigitsVal = value
                         break
                     case totalDigits:
                         totalDigitsVal = value
