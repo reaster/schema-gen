@@ -16,9 +16,13 @@
 
 package com.javagen.schema.model
 
+/**
+ * @Depricated use MField isReference() method instead
+ */
 
 class MReference extends MProperty
 {
 	//boolean owner = false
     MReference() { super() }
+    @Override boolean isReference() { return true }
 }

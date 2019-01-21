@@ -21,13 +21,18 @@ class MType extends MBase
 {
 	boolean primitive = false
 	boolean builtIn = false
+	boolean generic = false
 	int arrayDimensions = 0 //needed to handle Java array types: byte[], byte[][], etc.
 	String val // default value
 
 	String toString() { name }
-	
+
 	static MType lookupType(String name) {
 		MTypeRegistry.instance().lookupType(name)
+	}
+	/** not cashed */
+	static MType createGenericType(String name) {
+		new MType(name:name, generic:true)
 	}
 	static void registerType(String name, MType type) {
 		MTypeRegistry.instance().registerType(name, type)

@@ -25,7 +25,9 @@ class MField extends MBind
 	String scope
 	def val
 	private boolean _static
-	MClass parent
+	/** set true to have code generator ignore this field or property */
+	boolean genIgnore = false
+	def parent
 	private Imports imports = new Imports(this)
 
 	MField() {

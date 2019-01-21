@@ -101,6 +101,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	String bodyPropertyName = 'text'
 	String enumValueFieldName = 'value'
 	String anyPropertyName = 'any'
+	String anyPropeertyNameWrapped = 'map'
 	String anyType = 'string'
 	boolean useOptional = false
 
@@ -183,14 +184,14 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 
 	@Override def visit(Any any)
 	{
-		String name = anyPropertyName
-//        any.type = xml.getGlobal(DEFAULT_NS, anyType) - can't modify after vistor activated - causes bugs
+//      any.type = xml.getGlobal(DEFAULT_NS, anyType) - can't modify after vistor activated - causes bugs
 //		println "any:${any.type.qname.name} -> ${name} property"
 		TextOnlyType parentType = nestedStack.peek().attr['nodeType']
 		//Compositor compositor = compositorStack.peek()
 		boolean isBody = parentType.isBody()
 		boolean isWrapper = parentType.isWrapperElement()
 		if ( !isBody && !isWrapper) {
+			String name = parentType.isWrapperElement(true) ?  anyPropeertyNameWrapped : anyPropertyName
 			genAny(name, any)
 		} else if (isWrapper) {
 			anyWrapper(any)
@@ -200,7 +201,9 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	private void anyWrapper(Any any)
 	{
 		MCardinality container = container(any)
-		String name = anyPropertyName
+		if (container.isContainer())
+			container = MCardinality.LINKEDMAP
+		String name = container.isContainer() ? anyPropertyName : anyPropeertyNameSingular
 		Type schemaType = null
 		if (any.id?.contains('polymorphic-')) {
 			int index = any.id.indexOf('polymorphic-') + 'polymorphic-'.length()
@@ -214,12 +217,12 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		MClass clazz = nestedStack.peek()
 		clazz.addField(property)
 		callback.gen(any, property)
-		println "any -> ${name}: ${type}"
+		//println "any -> ${name}: ${type}"
 
 	}
 	@Override def visit(AnyAttribute anyAttribute)
 	{
-		println "anyAttribute @name=${anyAttribute?.qname?.name ?: anyAttributeName}"
+		//println "anyAttribute @name=${anyAttribute?.qname?.name ?: anyAttributeName}"
 		MCardinality container = container(anyAttribute)
 		String name = propertyNameFunction.apply(anyAttribute?.qname?.name ?: anyAttributeName)
 		String type = schemaTypeToPropertyType(anyAttribute.type ?: schema.getGlobal(DEFAULT_NS,anyAttributeType), container)
@@ -232,7 +235,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	}
 	@Override def visit(Attribute attribute)
 	{
-		println "attribute @name=${attribute.qname.name} @type=${attribute.type}"
+		//println "attribute @name=${attribute.qname.name} @type=${attribute.type}"
 		MCardinality container = container(attribute)
 		String name = propertyFromAttributeFunction.apply(attribute.qname, container)
 		if (!attribute.type)
@@ -249,15 +252,15 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	}
 	@Override def visit(AttributeGroup attributeGroup)
 	{
-		println "attributeGroup @name=${attributeGroup.qname.name}"
+		//println "attributeGroup @name=${attributeGroup.qname.name}"
 	}
 	@Override def visit(Element element)
 	{
 		MClass clazz = nestedStack.peek()
 		TextOnlyType textOnlyType= clazz.attr['nodeType']
-        if (element.qname.name == 'color'){//} && clazz.name == 'Trkseg'){//&& textOnlyType.qname.name == ' Trkseg') {
-            println "element @name=${element.qname.name} @type=${element.type} -> ${clazz.name}"
-        }
+//        if (element.qname.name == 'color'){//} && clazz.name == 'Trkseg'){//&& textOnlyType.qname.name == ' Trkseg') {
+//            println "element @name=${element.qname.name} @type=${element.type} -> ${clazz.name}"
+//        }
 		//Compositor compositor = compositorStack.peek()
 		MCardinality container = container(element)
 		String name = propertyFromElementFunction.apply(element.qname, container)
@@ -361,8 +364,8 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	@Override def visit(SimpleType simpleType)
 	{
 		String name = simpleType.qname.name
-		if (name == 'mediaReferenceType' || name == 'phoneNumberType')
-			println name
+//		if (name == 'mediaReferenceType' || name == 'phoneNumberType')
+//			println name
 		String className = classNameFunction.apply(simpleType.qname.name)
 		MClass clazz = lookupOrCreateClass(className)
 		clazz.attr['nodeType'] = simpleType
@@ -399,11 +402,11 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 				throw new IllegalStateException("no clazz generated for TextOnlyType: ${textOnlyType}")
 			}
 			this << clazz
-			println "textOnlyType @name=${textOnlyType.qname.name} -> ${clazz}"
+			//println "textOnlyType @name=${textOnlyType.qname.name} -> ${clazz}"
 			this >> clazz
 			callback.gen(textOnlyType, clazz)
 		} else {
-			println "textOnlyType @name=${textOnlyType.qname.name} -> will map to simple type: ${textOnlyType}, cardinality:${MCardinality.REQUIRED}"
+			//println "textOnlyType @name=${textOnlyType.qname.name} -> will map to simple type: ${textOnlyType}, cardinality:${MCardinality.REQUIRED}"
 		}
 	}
 	@Override def visit(Union union)
@@ -421,7 +424,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		MClass clazz = rootModule.lookupClass(className)
 		int count = 0
 		if (!rootElementsDefined || rootElements.contains(rootElement.qname.name)) {
-			println "root node: ${root}"
+			//println "root node: ${root}"
 //			if (clazz.name == 'AddressDetails') {
 //				println "${clazz.name} #${count}"
 //				printStackTrace()
@@ -435,7 +438,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	// xml methods
 	////////////////////////////////////////////////////////////////////////////
 
-	private Type polymporphicType(Any any)
+	protected Type polymporphicType(Any any)
 	{
 		Type schemaType = null
 		if (any.id?.contains('polymorphic-')) {
@@ -448,7 +451,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 
 	MProperty genAny(String propertyName, Any any)
 	{
-		println "any @name=${any.qname?.name}"
+		//println "any @name=${any.qname?.name}"
 		MCardinality container = container(any)
 		Type polymorphicType = polymporphicType(any) ?: any.type // any.type is not allowed in XML Schema?
 		MType type = schemaTypeToPropertyType(polymorphicType ?: schema.getGlobal(DEFAULT_NS, anyType), container)
@@ -459,7 +462,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		} else if (container == MCardinality.LIST) {
 			container = MCardinality.MAP
 			MBind mapRType = new MBind(cardinality:container,type:type)
-			String val = 'new java.common.TreeMap<>()'
+			String val = 'new java.util.LinkedHashMap<>()'
 			property = new MProperty(name:propertyName, type:type, cardinality:container, final:any.fixed!=null, val:val, attr:['keyType':'String'])
 			property.methods[putter] = new MMethod(name: "put${upperCase(propertyName)}", params: [new MBind(name:'key', type: 'String'), new MBind(name: 'value', type: type)], body: JavaPreEmitter.&putterMethodBody, stereotype: putter, refs: ['property':property])
 			property.methods[getter] = new MMethod(name: "get${upperCase(propertyName)}", type:mapRType, body: JavaPreEmitter.&getterMethodBody, stereotype: getter, refs: ['property':property])
@@ -489,7 +492,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	MClass genUnion(TextOnlyType unionType)
 	{
 		Union union = unionType.base
-		println "union @name=${unionType.qname.name}"
+		//println "union @name=${unionType.qname.name}"
 		boolean isEnumUnion = mapToEnum(unionType)
 		if (isEnumUnion) {
 			Set<String> enumValues = [] as Set
@@ -658,18 +661,23 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	{
 		if (!type)
 			throw new Error("Missing type")
+//		if (type.qname.name == 'decimal')
+//			print('decimal')
 		String typeName = schemaTypeToPropertyTypeName(type) // defaults to primitives
-		if (MTypeRegistry.instance().containerRequiresPrimitiveWrapper(container)) {
-			typeName = useWrapper(typeName)
-		}
-		MType javaType = MType.lookupType(typeName) //global type?
-		if (!javaType) {
+		MType langType = MType.lookupType(typeName) //global type?
+		if (!langType) {
 			visit(type) //nested type?
-			javaType = nestedStack.peek().lookupClass(typeName)
+			langType = nestedStack.peek().lookupClass(typeName)
 		}
-		if (!javaType)
+		if (!langType)
 			throw new Error("No type registed for ${typeName}")
-		javaType
+		if (container == MCardinality.OPTIONAL && langType.isPrimitive()) {
+			String wrapper = JavaTypeRegistry.useWrapper(typeName)
+			if (typeName != wrapper) {
+				return MType.lookupType(wrapper)
+			}
+		}
+		langType
 	}
 	/** Handle typeless abstract elements - lookup type, if not found create a new interface */
 	MClass schemaAbstractTypeToPropertyType(Element element)

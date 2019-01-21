@@ -198,6 +198,7 @@ class JavaGenSpec extends Specification
                     </xsd:schema>"""
         JavaGen schemaVisitor = new JavaGen()
         schemaVisitor.useOptional = true
+
         when: "stage 1 - generate xml"
         Schema schema = new XmlSchemaNormalizer().buildSchema(xml)
         then: "normalized xml produced"
@@ -211,6 +212,7 @@ class JavaGenSpec extends Specification
         then: "should have sequence with 6 elements"
         sequence != null
         sequence.elements.size() == 6
+
         when: "stage 2 - generate object model from xml"
         schemaVisitor.visit(schema)
         MModule module = schemaVisitor.model

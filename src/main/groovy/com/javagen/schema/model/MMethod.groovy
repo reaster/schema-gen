@@ -20,11 +20,11 @@ import com.javagen.schema.common.CodeEmitter
 
 class MMethod extends MBase
 {
-	enum Stereotype {unknown, constructor, getter, setter, adder, putter, toString, toStringBuilder, equals, hash}
+	enum Stereotype {unknown, constructor, getter, setter, adder, putter, toString, toStringBuilder, equals, hash, toJson, fromJson, equalsList, equalsMap, equalsSet}
 	enum IncludeProperties {noProperties, finalProperties, allProperties}
 	Stereotype stereotype = Stereotype.unknown
 	IncludeProperties includeProperties
-	MClass parent
+	def parent //MClass
 	def refs = [:]
 	private MBind type
 	List<MBind> params = []
@@ -34,6 +34,10 @@ class MMethod extends MBase
 	protected boolean _final
 	boolean singleExpr = false
 	boolean override = false
+	boolean factory = false
+	boolean operator = false //operator overload in Dart and Kotlin
+	boolean getter = false //just emits 'set' Dart modifier
+	boolean setter = false //just emits 'get' Dart modifier
 	/** include default value in param declarations */
 	boolean includeDefaultValue = false
 	/** signature takes two params: lambda(MMethod m, MVisitor v) and writes text to v.out */
@@ -55,7 +59,7 @@ class MMethod extends MBase
 	void setType(MType type) { this.type = new MBind(type: type) }
 	void setType(String typeName) {
 		MType type = MType.lookupType(typeName);
-		if (!type) throw new IllegalArgumentException("no type registered under '${typeName}'")
+		if (!type) throw new IllegalArgumentException("no type registered under '${typeName}' in ${parent.name}.${name}")
 		setType(type)
 	}
 	MBind getType() {

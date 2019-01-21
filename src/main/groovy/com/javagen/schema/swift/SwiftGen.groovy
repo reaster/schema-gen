@@ -331,16 +331,16 @@ class SwiftGen extends Gen implements XmlSchemaVisitor
 				swiftEnum( clazz )
 			}
 			this << clazz
-			println "textOnlyType @name=${textOnlyType.qname.name} -> ${clazz}"
+			//println "textOnlyType @name=${textOnlyType.qname.name} -> ${clazz}"
 			this >> clazz
 			callback.gen(textOnlyType, clazz)
 		} else {
-			println "textOnlyType @name=${textOnlyType.qname.name} -> will map to simple type: ${textOnlyType}, cardinality:${MCardinality.REQUIRED}"
+			//println "textOnlyType @name=${textOnlyType.qname.name} -> will map to simple type: ${textOnlyType}, cardinality:${MCardinality.REQUIRED}"
 		}
 	}
 	def visit(Union union)
 	{
-		println "union @name=${union.qname.name}"
+		//println "union @name=${union.qname.name}"
 		union.simpleTypes.eachWithIndex { SimpleType type, int i ->
 			"${i==0 ? ':' : ','} ${type.qname?.name}"
 		}
@@ -352,7 +352,7 @@ class SwiftGen extends Gen implements XmlSchemaVisitor
 		String className = classNameFunction.apply(rootElement.type.qname.name)
 		MClass clazz = rootModule.lookupClass(className)
 		if (!rootElementsDefined || rootElements.contains(rootElement.qname.name)) {
-			println "root node: ${root}"
+			//println "root node: ${root}"
 			callback.gen(rootElement, clazz)
 		}
 	}
@@ -363,7 +363,7 @@ class SwiftGen extends Gen implements XmlSchemaVisitor
 
 	MProperty genAny(String propertyName, Any any)
 	{
-		println "any @name=${any.qname?.name}"
+		//println "any @name=${any.qname?.name}"
 		MCardinality container = container(any)
 		Type xtype = any.type ?: schema.getGlobal(DEFAULT_NS, anyType)
 		MType type = schemaTypeToPropertyType(xtype, container)

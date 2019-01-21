@@ -450,8 +450,8 @@ class XmlSchemaNormalizer
         }
         for(node in schemaNode.element.list()) {
             final String name = node.@name.text()
-            if (name == 'AbstractColorStyleGroup')
-                println name
+            //if (name == 'AbstractColorStyleGroup')
+            //    println name
             QName qname = qname(name)
             globalElementNodeLookup[qname] = node
             Type type = generateGlobalTypeForElementIfEmbeddedType(qname, node)
@@ -466,8 +466,8 @@ class XmlSchemaNormalizer
      */
     Type generateGlobalTypeForElementIfEmbeddedType(QName qname, def node)
     {
-        if (qname.name == 'AbstractColorStyleGroup')
-            println(qname.name)
+//        if (qname.name == 'AbstractColorStyleGroup')
+//            println(qname.name)
         Type type = null
         String typeDecl = node.@type?.text()
         if ( ! typeDecl ) {
@@ -642,7 +642,7 @@ class XmlSchemaNormalizer
         }
         for (attrGroup in node.attributeGroup?.list()) {
             def name = attrGroup.@ref.text()
-            println "name = ${name}"
+            //println "name = ${name}"
             def group = attributeGroupNodeLookup[name]
             count += group.attribute.list()?.size() ?: 0
         }

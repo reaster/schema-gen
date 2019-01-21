@@ -1,9 +1,9 @@
 # schema-gen
 schema-gen is a multi-language, interoperable, XML Schema code generator. 
 The generated code allows reading, writing, manipulating, and transmitting data in the two most widely used industry formats: XML and JSON. 
-Currently supported languages are Java, Kotlin, and Swift 4 and the code is interoperable, meaning it's well suited for developing cross-language, mobile, client-server applications.
+Currently supported languages are Java 8, Kotlin 1, Swift 4 and Dart 2.1. The code is interoperable, meaning it's well suited for developing cross-language, mobile, client-server applications.
 
-Producing concise, readable code is a top schema-gen priority and it takes naming conventions seriously, providing a high level of flexibility and configurability.
+Producing concise, readable code is a top schema-gen priority, providing a high level of flexibility and configurability.
 
 This software is written in Groovy and is packaged as a Gradle plugin.
 
@@ -19,22 +19,31 @@ This software is written in Groovy and is packaged as a Gradle plugin.
 **Limitations:** A limitation of the Java langauge is that it does not support the extension features of more recent languages, making it harder to maintain a clean separation between hand-written and generated code. You may be forced to put your business logic in the generated files with the downside being, if you ever have to regenerate, you'll have to manually merge your code back in.
 
 ### Kotlin
-**Features:** By leveraging [data classes](https://kotlinlang.org/docs/reference/data-classes.html), Kotlin generated code is very concise. Classes contain [Jackson](https://github.com/FasterXML/jackson-dataformat-xml) annotations supporting reading and writing both JSON and XML documents. XML Schema restrictions are translated into [Bean Validation 2.0](http://beanvalidation.org/) annotations. Extending generated code with business logic can be acheived using [extensions](https://kotlinlang.org/docs/reference/extensions.html). See the [kotlin-gpx](https://github.com/reaster/schema-gen-examples/tree/master/kotlin-gpx) sample project.
+**Features:** By leveraging [data classes](https://kotlinlang.org/docs/reference/data-classes.html), Kotlin generated code is very concise. Classes contain [Jackson](https://github.com/FasterXML/jackson-dataformat-xml) annotations supporting reading and writing both JSON and XML documents. XML Schema restrictions are translated into [Bean Validation 2.0](http://beanvalidation.org/) annotations. Extending generated code with business logic can be achieved using [extensions](https://kotlinlang.org/docs/reference/extensions.html). See the [kotlin-gpx](https://github.com/reaster/schema-gen-examples/tree/master/kotlin-gpx) sample project.
 
 **Usage:** The main entry point is [com.javagen.schema.kotlin.KotlinGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/kotlin/KotlinGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/main/kotlin-gen folder to keep it separate from hand-written code.
 
 **Limitations:** The code generator attempts to create no-argument constructors by setting default values on every property, which in some cases can cause problems. To minimize unessasary annotations, the generated code requires Java 8 parameter name support. See the build.gradle and unit tests in [kotlin-gpx](https://github.com/reaster/schema-gen-examples/tree/master/kotlin-gpx) for proper setup and configuration.
 
 ### Swift
-**Features:** schema-gen generates code utilizing the built-in Encodable and Decodable JSON support introduced in Swift 4. Extending generated code with business logic can be acheived using Extensions. See the [swift-gpx](https://github.com/reaster/schema-gen-examples/tree/master/swift-gpx) sample project.
+**Features:** schema-gen generates code utilizing the built-in Encodable and Decodable JSON support introduced in Swift 4. Extending generated code with business logic can be achieved using Extensions. See the [swift-gpx](https://github.com/reaster/schema-gen-examples/tree/master/swift-gpx) sample project.
 
 **Usage:** The main entry point is [com.javagen.schema.swift.SwiftGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/swift/SwiftGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the src/swift-gen folder to keep it separate from hand-written code.
 
 **Limitations:** Swift only supports JSON serialization. Assuming you're server is written in Kotlin or Java, communication with a Swift client can utilize JSON, even if the documents are stored as XML, thanks to Jackson's support of both. However, given a good XMLEncoder, XML support should be straight forward to add. The author wrote [saxy](https://github.com/reaster/saxy) in Objective-C the last time around and it's somebody else's turn to do this for Swift ;-)
 
+### Dart
+**Features:** schema-gen generates model code decorated with [json_annotation](https://pub.dartlang.org/packages/json_annotation) JSON directives. Extending generated code with business logic can be achieved using Dart's **part** support.
+
+**Usage:** The main entry point is [com.javagen.schema.dart.DartGen](https://github.com/reaster/schema-gen/blob/master/src/main/groovy/com/javagen/schema/dart/DartGen.groovy) which can be invoked directly or via the gradle plugin. By default, the generated code is placed in the *lib* folder.
+
+**Limitations:** Dart only supports JSON serialization. Assuming you're server is written in Kotlin or Java, communication with a Dart client can utilize JSON, even if the documents are stored as XML, thanks to Jackson's support of both. 
+
 ## Usage
 
 ### Gradle Plugin
+**Note: currently not being supported.**
+
 schema-gen includes a Gradle Plugin which can be added to your gradle.build file by including it in your buildscript, and applying and configuring it:
   
 ```
@@ -190,4 +199,4 @@ First release. Language support: Java, Kotlin and Swift 4. Tested XML schemas: G
 ___
 
 ## Support
-The author has multiple projects in the pipeline, other passions and bills to pay, but will try his best to support the community as time allows. In particular, if anybody would like to add language support (Python, C# or Go), test new schemas, contribute bug fixes, expand the documentation, or add test coverage, I'd be happy to support you. Finally, I'm available for contracting/consulting, especially if it involves expanding the framework to support your needs.
+Pull requests are welcome! Professional support is available from the Outsource Cafe, Inc.

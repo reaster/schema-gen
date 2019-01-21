@@ -46,6 +46,8 @@ abstract class CodeEmitter
 	File openFile = null
 	/** hook to allow unit testing by inserting a ByteArrayOutputStream to capture generated code. */
 	Closure<PrintWriter> openStreamLambda = { File file -> new PrintWriter(file) }
+	/** emit a single tab */
+	def tab()  { ' ' * tabSize }
 
 	//entry point
 	//def xml() { visit( xml.getModel() ) }
@@ -69,13 +71,13 @@ abstract class CodeEmitter
 			if (out)
 				out.close()
 			try {
+				//println "OUTPUT: ${sourceFile}"
 				out = openStreamLambda( sourceFile )
 			} catch(FileNotFoundException ) { // mkdirs and try again
 				sourceFile.parentFile.mkdirs()
 				out = openStreamLambda( sourceFile )
 			}
 			openFile = sourceFile
-			println '>'+sourceFile.toString()
 		}
 	}
 

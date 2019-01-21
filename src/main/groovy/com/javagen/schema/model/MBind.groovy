@@ -27,12 +27,19 @@ class  MBind extends MBase
 	MType type
 	MCardinality cardinality = MCardinality.REQUIRED
 	MRestriction[] restrictions = []
+	MMethod.Stereotype stereotype = null
+	boolean _const = false
+	MBind setConst(f) { _const = f; return this }
+	boolean isConst() { _const }
 	private boolean _final
 	MBind setFinal(f) { _final = f; return this }
 	boolean isFinal() { _final }
 	boolean isOptional() { cardinality ==  MCardinality.OPTIONAL || isOptionalContainerType() }
 	String toString() { (isFinal() ? 'final ' : '')+(name ? name+' ' : '')+(cardinality == MCardinality.REQUIRED) ? type : cardinality.toString()+'<'+type+'>' }
-	boolean isArray() { (cardinality ==  MCardinality.ARRAY) }
+	boolean isArray() { (cardinality == MCardinality.ARRAY) }
+	boolean isList() { (cardinality == MCardinality.LIST) }
+	boolean isSet() { (cardinality == MCardinality.SET) }
+	boolean isMap() { (cardinality == MCardinality.MAP || cardinality == MCardinality.LINKEDMAP) }
 	boolean isContainerType() { (cardinality != MCardinality.REQUIRED) }
 	boolean isOptionalContainerType() {
 		def min = getRestrictionValue(MRestriction.Type.min)

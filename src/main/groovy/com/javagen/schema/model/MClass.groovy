@@ -23,6 +23,7 @@ class MClass extends MType implements MSource
 	private boolean _static
 	private boolean _interface
 	private boolean extension //Swift and Kotlin
+	private boolean mixin = false //Dart
 	private boolean data
 	boolean ignore = false //do not emmit class
 	protected def scope = 'public'

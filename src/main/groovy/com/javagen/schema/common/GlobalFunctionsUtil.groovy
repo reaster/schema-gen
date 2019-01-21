@@ -209,7 +209,7 @@ final class GlobalFunctionsUtil
 				int index = attributes.getIndex(targetNamespaceKey)
 				if (index >= 0) {
 					namespaces[targetNamespaceKey] = attributes.getValue(index)
-					System.out.println("<${qName} targetNamespace='${attributes.getValue(index)}'>");
+					println("<${qName} targetNamespace='${attributes.getValue(index)}'>");
 				}
 				targetFound = true
 			}

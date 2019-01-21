@@ -103,9 +103,9 @@ class JavaGenMain extends JavaGen
         //initKml()
         //schemaURL = new File('/Users/richard/dev/hs/xml-xml/example-x-java/src/main/resources/xAL.xsd').toURI().toURL()
         //schemaURL = new URL('http://docs.oasis-open.org/election/external/xAL.xsd')
-		//initGpx()
+		initGpx()
 		//initHsf2()
-        initFactionDigits()
+        //initFactionDigits()
         //initXHTML()
     }
 

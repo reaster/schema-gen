@@ -19,6 +19,10 @@ package com.javagen.schema.model
 class MModule extends MBase implements MSource
 {
 	Map<String,MModule> children = [:]
+	Map<String,MField> fields = [:]
+	List<MMethod> methods = []
+	String partOf //Dart
+
 
 	MModule() {
 		name = ''
@@ -27,12 +31,28 @@ class MModule extends MBase implements MSource
 	String fullName() {
 		parent ? parent.fullName()+'.'+name : name
 	}
+	boolean isRoot() {
+		parent == null
+	}
 	def child(MModule m) {
 		children[m.name] = m
+		m.parent = this
 	}
 	String nestedAttr(String key)
 	{
 		attr[key] ?: parent?.nestedAttr(key)
 	}
+
+	def addField(MField f) {
+		fields[f.name] = f
+		f.parent = this
+	}
+	def addMethod(MMethod m) {
+		methods << m
+		m.parent = this
+	}
+	//make it play nice with some of the class methods
+	boolean hasSuper() { false }
+	boolean isInterface() { false }
 
 }

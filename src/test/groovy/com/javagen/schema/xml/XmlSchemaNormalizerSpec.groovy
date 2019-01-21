@@ -32,7 +32,7 @@ class XmlSchemaNormalizerSpec extends Specification
     def "test multi file namespace handling"() {
         given:
         Schema s = new XmlSchemaNormalizer().buildSchema(new File('src/test/resources/fo.xsd').toURI().toURL())
-        println s //uncomment to see schema model we're validating
+        //println s //uncomment to see schema model we're validating
         when: "element assigned"
         Element fee = s.lookupElement(new QName(namespace:'http://javagen.com/fee', name:'fee'))
         Element fo = s.lookupElement(new QName(namespace:'http://javagen.com/fo', name:'fo'))

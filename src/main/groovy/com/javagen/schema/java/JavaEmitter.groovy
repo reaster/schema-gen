@@ -54,6 +54,7 @@ class JavaEmitter extends CodeEmitter
 		List<MClass> classes = m.classes.findAll{ c -> !c.ignore }
 		classes.each { c -> //visit declared classes and interfaces
 			File sourceFile = gen.classOutputFileFunction.apply(gen,c)
+			System.out.println "OUTPUT: ${sourceFile}"
 			openWriter(sourceFile)
 			out << 'package ' << m.fullName() << ';\n'
 			c.imports.each {
@@ -150,6 +151,8 @@ class JavaEmitter extends CodeEmitter
 	@Override
 	def visit(MField f)
 	{
+		if (f.name == 'map')
+			println 'map'
 		f.annotations.list.findAll{ !it.onGenericParam || NON_GENERIC_PARAMS.contains(f.cardinality)}.each {
 			out << '\n' << tabs
 			out << it
@@ -299,6 +302,8 @@ class JavaEmitter extends CodeEmitter
 			case MCardinality.LIST:
 			case MCardinality.MAP:
 			case MCardinality.SET:
+				if (val)
+					return val
 				val = MTypeRegistry.instance().lookupDefaultValue(container)
 				if (val)
 					return val

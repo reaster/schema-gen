@@ -16,10 +16,14 @@
 
 package com.javagen.schema.model
 
+/**
+ * TODO needs to be refactored to take a collection of instances.
+ */
 class MEnum extends MClass
 {
     def enumNames = []
     def enumValues = []
+    def annotationValues = []
     def enumDefault
     @Override boolean isEnum() { true }
 }

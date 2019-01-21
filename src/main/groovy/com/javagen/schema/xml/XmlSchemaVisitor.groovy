@@ -32,8 +32,8 @@ trait XmlSchemaVisitor
         if (printTrace) println "xml @targetNamespace=${schema.prefixToNamespaceMap[Schema.targetNamespace]}"
         for (Type type : schema.globalTypes.values()) {
             if (!type.builtInType) {
-                if (type.qname.name == 'extensionsType')
-                    println 'extensionsType'
+                //if (type.qname.name == 'extensionsType')
+                //    println 'extensionsType'
                 visit(type)
             }
         }

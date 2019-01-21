@@ -30,6 +30,7 @@ trait MSource
     def parent //MModule or MClass
     List<MClass> classes = []
     private Imports imports
+    private Parts parts
 
     abstract String nestedAttr(String key)
 
@@ -41,6 +42,12 @@ trait MSource
         imports
     }
 
+    def getParts() {
+        if (!this.parts)
+            this.parts = new Parts(this)
+        this.parts
+    }
+
     def addClass(c) {
         if (c) {
             classes << c
@@ -50,22 +57,22 @@ trait MSource
     MClass lookupClass(String name) { classes.find { name == it.name } }
 
     /**
-     * passes imports down to base classes
+     * collect a unique set of imports from child classes
      */
     List<String> gatherSourceImports()
     {
-        List<String> results = []
-        if (sourceFile) {
-            Set<String> set = [] as Set
-            classes.each { MClass c ->
-                c.imports.list.each {
-                    set << it
-                }
-            }
-            results = set.sort().collect()
-        }
-        results
+        gather(true)
     }
+
+
+    /**
+     * collect a unique set of parts from child classes
+     */
+    List<String> gatherSourceParts()
+    {
+        gather(false)
+    }
+
     /**
      * gathers imports from child classes and modules
      */
@@ -86,4 +93,47 @@ trait MSource
         boolean isEmpty() { list.isEmpty() }
         def each(Closure c) { list.each(c) }
     }
+
+    /**
+     * gathers Dart parts from child classes and modules
+     */
+    static class Parts
+    {
+        Set<String> list = [] as Set
+        def owner
+        Parts(owner) { this.owner=owner }
+        def leftShift(item) {
+            def parent = owner.parent
+            //println "Parts.leftShift owner=${owner}, owner.parent=${parent} , this=${this} "
+            if (parent == null || (parent instanceof MModule)) {
+                list << item
+            } else {
+                parent.parts << item
+            }
+        }
+        boolean isEmpty() { list.isEmpty() }
+        def each(Closure c) { list.each(c) }
+    }
+
+    private List<String> gather(boolean useImports=true)
+    {
+        List<String> results = []
+        if (sourceFile) {
+            Set<String> set = [] as Set
+            classes.each { MClass c ->
+                if (useImports) {
+                    c.imports.list.each {
+                        set << it
+                    }
+                } else {
+                    c.parts.list.each {
+                        set << it
+                    }
+                }
+            }
+            results = set.sort().collect()
+        }
+        results
+    }
+
 }

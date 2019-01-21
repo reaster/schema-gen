@@ -44,11 +44,11 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.lowerCase
 import static com.javagen.schema.common.GlobalFunctionsUtil.upperCase
 
 /**
- * Translate XML schema to Swift 4 code.
+ * Translate XML schema to Kotlin code.
  *
  * <p>A XmlNodeCallback can be used to apply specific third-party library annotations to the object model, allowing one
- * to easily switch technologies. For example one could swap the KotlinJacksonCallback with a KotlinJaxbCallback without
- * having to rewrite the KotlinGen object model translation code.
+ * to easily switch technologies. For example one could swap the KatlinToJsonCallback with a KotlinJaxbCallback without
+ * having to rewrite the KatlinGen object model translation code.
  *
  * This class is the entry point for Kotlin code generation.
  *
@@ -80,7 +80,7 @@ class KotlinGen extends JavaGen
     }
     @Override def visit(Body body)
     {
-        println "body @type=${body.type} @mixed=${body.mixedContent}"
+        //println "body @type=${body.type} @mixed=${body.mixedContent}"
         if (body.mixedContent) println "WARNING: mixed content currently not supported for body: ${body}"
         MCardinality container = container(body)
         String name = propertyNameFunction.apply(bodyPropertyName)
@@ -115,8 +115,8 @@ class KotlinGen extends JavaGen
                 override fun toString() = map.toString()
             }
              */
-            if (propertyName == 'any')
-                println("any")
+//            if (propertyName == 'any')
+//                println("any")
             String anyClassName = classNameFunction.apply(propertyName)
             MClass anyClass = (MClass)MType.lookupType(anyClassName)
             if (!anyClass || anyClass.fields.isEmpty()) { //TODO should this be done in the ComplexType method?
