@@ -22,6 +22,8 @@ import com.javagen.schema.model.MMethod.Stereotype
 
 /**
  * Traverses model and emits Dart/Flutter code.
+ *
+ * Style reference: https://www.dartlang.org/guides/language/effective-dart
  * 
  * @author Richard Easterling
  */
@@ -62,8 +64,10 @@ class DartEmitter extends CodeEmitter
 				out << 'part of \'' << m.partOf << '\';\n'
 		}
 		classes.each { c -> //visit declared classes and interfaces
-			visit(c)
-			out << '\n'
+			if (!c.ignore) {
+				visit(c)
+				out << '\n'
+			}
 		}
 		for(f in m.fields.values()) {
 			visit(f)
@@ -146,7 +150,9 @@ class DartEmitter extends CodeEmitter
 		if (!c.classes.isEmpty())
 			out << '\n'
 		for(nested in c.classes) {
-			visit(nested)
+			if (!nested.ignore) {
+				visit(nested)
+			}
 		}
 		for(m in c.methods.findAll{it.stereotype != MMethod.Stereotype.constructor}) {
 			visit(m)
@@ -188,9 +194,6 @@ class DartEmitter extends CodeEmitter
 				out << '\n' << tabs << c.annotationValues[index]
 			}
 			out << '\n' << tabs << enumName
-//			if (!c.enumValues.isEmpty()) {
-//				out << '(\"' << c.enumValues[index] << '\")'
-//			}
 			out << (index==c.enumNames.size()-1 ? '' : ',')
 		}
 		for(m in c.methods) {

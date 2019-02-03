@@ -17,7 +17,7 @@
 package com.javagen.schema.xml.node
 
 /**
- * Compositors determine what, how many and in what order elements cab be nested and sequenced together. The valid
+ * Compositors determine what, how many and in what order elements can be nested and sequenced together. The valid
  * subtypes are All, Choice and Sequence.
  *
  * Implementing classes: ComplexType, Group, All, Choice, Sequence
@@ -33,4 +33,16 @@ abstract class Compositor extends Node implements CompositorHolder
     int maxOccurs = 1
     int uboundedChildElements = 0
     boolean isUboundedChildElement() { uboundedChildElements > 0 }
+
+
+    /** rather than actually trying to compute this, we just put it in the id attribute in the form: '*polymorphic-{rootTypeName}' */
+    String polymporphicRootTypeName()
+    {
+        String typeName = 'anyType'
+        if (id?.contains('polymorphic-')) {
+            int index = id.indexOf('polymorphic-') + 'polymorphic-'.length()
+            typeName = id.substring(index)
+        }
+        return typeName
+    }
 }

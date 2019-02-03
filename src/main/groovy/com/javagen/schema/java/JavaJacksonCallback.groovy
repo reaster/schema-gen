@@ -22,6 +22,7 @@ import com.javagen.schema.xml.node.Any
 import com.javagen.schema.xml.node.AnyAttribute
 import com.javagen.schema.xml.node.Attribute
 import com.javagen.schema.xml.node.Body
+import com.javagen.schema.xml.node.Choice
 import com.javagen.schema.xml.node.ComplexType
 import com.javagen.schema.xml.node.Element
 import com.javagen.schema.xml.node.Restriction
@@ -90,6 +91,28 @@ class JavaJacksonCallback extends XmlNodeCallback
             property.methods[getter].annotations << '@JsonAnyGetter'
             property.parent.imports << 'com.fasterxml.jackson.annotation.JsonAnyGetter'
        }
+    }
+    @Override void gen(Choice choiceNode, MProperty property)
+    {
+//        @XmlElements([
+//                @XmlElement(name = "a", type = String.class),
+//                @XmlElement(name = "b", type = Double.class)
+//        ])
+        StringBuilder xmlElementList = new StringBuilder()
+        property.type.polymorphicTypes.eachWithIndex { e,i ->
+            if (i > 0)
+                xmlElementList << ', '
+            xmlElementList << "\n\t\t@XmlElement(name=\"${e.value}\", type=${e.key}.class)"
+        }
+        property.annotations << new MAnnotation(expr:  "@XmlElements({${xmlElementList}})")
+        property.parent.imports << 'javax.xml.bind.annotation.XmlElement'
+        property.parent.imports << 'javax.xml.bind.annotation.XmlElements'
+        MMethod constructor = property.parentClass()?.findMethod(MMethod.Stereotype.constructor)
+        if (constructor && constructor.params.size()==1) {
+            MBind param = constructor.params[0]
+            param.annotations << "@JsonProperty(\"${param.name}\")"
+            property.parent.imports << 'com.fasterxml.jackson.annotation.JsonProperty'
+        }
     }
     @Override void gen(Body body, MProperty property)
     {

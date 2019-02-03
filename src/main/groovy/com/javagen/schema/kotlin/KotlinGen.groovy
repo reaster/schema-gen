@@ -59,7 +59,8 @@ class KotlinGen extends JavaGen
     String sourceFileName = null
 
     @Override void optionalToPrimitiveWrapper(MProperty property) {}
-    @Override MEnum javaEnum(MEnum enumClass)
+
+    @Override MEnum generateEnumClass(MEnum enumClass)
     {
         List<String> enumValues = enumClass.enumValues.sort()
         def enumNames = []
@@ -78,6 +79,7 @@ class KotlinGen extends JavaGen
         enumClass.addField( new MProperty(name: enumValueFieldName, scope: 'private', 'final': true) )
         enumClass
     }
+
     @Override def visit(Body body)
     {
         //println "body @type=${body.type} @mixed=${body.mixedContent}"

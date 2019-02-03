@@ -36,10 +36,15 @@ import java.util.function.Function
 
 import static com.javagen.schema.common.GlobalFunctionsUtil.lowerCase
 import static com.javagen.schema.common.GlobalFunctionsUtil.upperCase
+import static com.javagen.schema.model.MMethod.IncludeProperties.allProperties
 import static com.javagen.schema.model.MMethod.Stereotype.*
 import static com.javagen.schema.xml.node.Schema.DEFAULT_NS
 
 /**
+ * TODO
+ * Results -> List<HotSpring> results;, remove Results class
+ * Media({}) removal
+ *
  * Translate XML schema to Dart 2.1 code.
  *
  * <p>A XmlNodeCallback can be used to apply specific third-party library annotations to the object model, allowing one
@@ -55,25 +60,7 @@ class DartGen extends JavaGen
     String sourceFileName = null
 
     @Override void optionalToPrimitiveWrapper(MProperty property) {}
-    @Override MEnum javaEnum(MEnum enumClass)
-    {
-        List<String> enumValues = enumClass.enumValues.sort()
-        def enumNames = []
-        def enumNameSet = [] as Set //look for and fix duplicate names
-        for(tag in enumValues) {
-            def enumName = enumNameFunction.apply(tag)
-            int i = 1
-            while (enumNameSet.contains(enumName)) //name not unique?
-                enumName += i
-            enumNameSet << enumName
-            enumNames << enumName
-        }
-        enumClass.enumNames = enumNames
-        enumClass.enumValues = enumValues
-        //setup a private value addField
-        enumClass.addField( new MProperty(name: enumValueFieldName, scope: 'private', 'final': true) )
-        enumClass
-    }
+
     @Override def visit(Body body)
     {
         println "body @type=${body.type} @mixed=${body.mixedContent}"
@@ -82,10 +69,10 @@ class DartGen extends JavaGen
         String name = propertyNameFunction.apply(bodyPropertyName)
         String type = schemaTypeToPropertyType(body.type ?: schema.getGlobal(DEFAULT_NS, 'string'), container)
 
-        MProperty property = new MProperty(name:name, type:type, cardinality: container, attr: ['body':name])
+        MProperty property = new MProperty(name:name, type:type, scope: 'public', cardinality: container, attr: ['body':name])
         MClass clazz = nestedStack.peek()
         clazz.addField(property)
-        clazz.addMethod(new MMethod(stereotype: constructor, params:[new MBind(name: name, type: type)], body: "" ))
+        //clazz.addMethod(new MMethod(stereotype: constructor, params:[new MBind(name: name, type: type)], body: "" ))
         callback.gen(body, property)
     }
 
@@ -104,14 +91,11 @@ class DartGen extends JavaGen
             MBind mapRType = new MBind(cardinality:container,type:type)
             String val = null //'LinkedHashMap()'
             property = new MProperty(name:propertyName, type:type, scope:'public', cardinality:container, final:any.fixed!=null, val:val, attr:['keyType':'String'])
-            //property.methods[putter] = new MMethod(name: "put${upperCase(propertyName)}", params: [new MBind(name:'key', type: 'String'), new MBind(name: 'value', type: type)], body: JavaPreEmitter.&putterMethodBody, stereotype: putter, refs: ['property':property])
-            //property.methods[getter] = new MMethod(name: "get${upperCase(propertyName)}", type:mapRType, body: JavaPreEmitter.&getterMethodBody, stereotype: getter, refs: ['property':property])
         } else {
             String val = any.fixed ?: any.'default'
             property = new MProperty(name:propertyName, type:type, cardinality:container, final:any.fixed!=null, val:val)
         }
         setNotNull(property)
-        optionalToPrimitiveWrapper(property)
         MClass clazz = nestedStack.peek()
         clazz.addField(property)
         callback.gen(any, property)
@@ -139,7 +123,7 @@ class DartGen extends JavaGen
     {
         MClass clazz = nestedStack.peek()
         TextOnlyType textOnlyType= clazz.attr['nodeType']
-        if (element.qname.name == 'color'){//} && clazz.name == 'Trkseg'){//&& textOnlyType.qname.name == ' Trkseg') {
+        if (clazz.name == 'Track') {
             println "element @name=${element.qname.name} @type=${element.type} -> ${clazz.name}"
         }
         //Compositor compositor = compositorStack.peek()
@@ -150,6 +134,17 @@ class DartGen extends JavaGen
             type = schemaTypeToPropertyType(element.type, container)
             if (!type)
                 throw new IllegalStateException("no type for element: ${element}")
+            if (element.type.isWrapperElement()) {
+                Type wrappedType = element.type.wrapperType()
+                if (wrappedType) {
+                    container = MCardinality.LIST
+                    type = schemaTypeToPropertyType(wrappedType, container)
+                } else if (element.type.childElements()[0] instanceof Any) {
+                    Any any = element.type.childElements()[0]
+                    genAny(name, any)
+                    return
+                }
+            }
         } else {
             if (element.isAbstract()) {
                 type = schemaAbstractTypeToPropertyType(element)
@@ -165,19 +160,37 @@ class DartGen extends JavaGen
         callback.gen(element, property)
     }
 
-    def mapHashCodeMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+    @Override MEnum generateEnumClass(MEnum enumClass)
     {
-        v.out << 'when {'
-        v.next()
-        v.out << '\n' << v.tabs << 'this === other -> true'
-        v.out << '\n' << v.tabs << "other is ${m.parent.name} -> map.size == other.map.size"
-        v.next()
-        v.out << '\n' << v.tabs << '&& map.all { (k,v) -> v.equals(other.map[k]) }'
-        v.previous()
-        v.out << '\n' << v.tabs << 'else -> false'
-        v.previous()
-        v.out << '\n' << v.tabs << '}'
+        java.util.List<String> enumValues = enumClass.enumValues.sort()
+        def enumNames = []
+        def enumNameSet = [] as Set //look for and fix duplicate names
+        for(tag in enumValues) {
+            def enumName = enumNameFunction.apply(tag)
+            int i = 1
+            while (enumNameSet.contains(enumName)) //name not unique?
+                enumName += i
+            enumNameSet << enumName
+            enumNames << enumName
+        }
+        enumClass.enumNames = enumNames
+        enumClass.enumValues = enumValues //.each { value -> enumValueFunction.apply(value) }
+        enumClass
     }
+
+    @Override String enumClassName(String tag)
+    {
+        int i = nestedStack.size()
+        def clazz = i == 0 ? null : nestedStack.get(i-1)
+        String name = enumClassNameFunction.apply(tag)
+        while(clazz instanceof MClass) {
+            name = "${clazz.name}_${name}"
+            i--
+            clazz = i == 0 ? null : nestedStack.get(i-1)
+        }
+        name
+    }
+
 
     DartGen()
     {
@@ -198,6 +211,7 @@ class DartGen extends JavaGen
                 new DartEmitter(gen: this)
         ]
         enumNameFunction = { text -> DartUtil.dartEnumName(text, false) }
+        enumValueFunction = { text -> DartUtil.dartEnumValue(text, false) }
         propertyNameFunction = { text -> DartUtil.legalDartName(lowerCase(text)) }
         constantNameFunction = { text -> DartUtil.dartConstName(text) }
         classNameFunction = { text -> DartUtil.legalDartClassName(text) }
@@ -225,9 +239,6 @@ class DartGen extends JavaGen
             sourceFileName = schema.rootElements.isEmpty() ? 'javagen' : upperCase(schema.rootElements.first().name)
         sourceFileName = sourceFileName.toLowerCase()
         rootModule.sourceFile = pathFromSourceFileName(this, rootModule, sourceFileName)
-//        if (callback instanceof DartToJsonCallback) {
-//            rootModule.parts << "${sourceFileName}.g.${fileExtension}"
-//        }
         pipeline.each { visitor ->
             visitor.visit(rootModule)
         }

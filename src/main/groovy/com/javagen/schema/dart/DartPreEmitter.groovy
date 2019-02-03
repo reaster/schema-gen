@@ -28,41 +28,23 @@ import static com.javagen.schema.model.MMethod.IncludeProperties.finalProperties
 import static com.javagen.schema.model.MMethod.Stereotype.*
 
 /**
- * Generates addMethod signatures and default implementations from stereotypes (getters, setters, hash, equals, toString).
+ * Generates boilerplate methods from stereotypes (hash, equals, toJson, fromJson, toString).
  *
  * @author Richard Easterling
  */
 class DartPreEmitter extends CodeEmitter
 {
-    EnumSet<MMethod.Stereotype> CLASS_METHODS = EnumSet.noneOf(MMethod.Stereotype) //EnumSet.of(equals, hash, toString, toStringBuilder)
-    EnumSet<MMethod.Stereotype> defaultMethods = EnumSet.noneOf(MMethod.Stereotype) //EnumSet.of(equals, hash, toString, toStringBuilder, getter, setter, adder)
-
     DartPreEmitter()
     {
-        //HACK to fix EnumSet.of() bug
-        CLASS_METHODS.add(constructor)
-        CLASS_METHODS.add(toJson)
-        CLASS_METHODS.add(fromJson)
-        CLASS_METHODS.add(equals)
-        CLASS_METHODS.add(hash)
-//        CLASS_METHODS.add(toString)
-//        CLASS_METHODS.add(toStringBuilder)
-        defaultMethods.add(constructor)
-        defaultMethods.add(equals)
-        defaultMethods.add(hash)
-        defaultMethods.add(toJson)
-        defaultMethods.add(fromJson)
-        defaultMethods.add(toString)
-        defaultMethods.add(toStringBuilder)
-        defaultMethods.add(getter)
-        defaultMethods.add(setter)
-        defaultMethods.add(adder)
+        configDefaultMethods()
+
         if ( ! MTypeRegistry.isInitialized() )
             new DartTypeRegistry()
     }
 
     @Override
-    def visit(MModule m) {
+    def visit(MModule m)
+    {
         m.classes.each {
             visit(it)
         }
@@ -72,34 +54,16 @@ class DartPreEmitter extends CodeEmitter
     }
 
     @Override
-    def visit(MClass c) {
-        defaultMethods.each {
-            if (CLASS_METHODS.contains(it)) {
-                MMethod method = new MMethod(stereotype: it)
-                if (it == constructor) {
-                    method.includeProperties = allProperties
-                    c.addMethod(method)
-                } else if (it == equals) {
-                    //check for supporting methods requirements
-                    if (c.fields.values().any{ p -> !p.isStatic() && p.isList() })
-                        c.addMethod(new MMethod(stereotype: equalsList))
-                    if (c.fields.values().any{ p -> !p.isStatic() && p.isMap() })
-                        c.addMethod(new MMethod(stereotype: equalsMap))
-                    if (c.fields.values().any{ p -> !p.isStatic() && p.isSet() })
-                        c.addMethod(new MMethod(stereotype: equalsSet))
-                    c.addMethod(method)
-                } else {
-                    c.addMethod(method)
-                }
-            }
-        }
+    def visit(MClass c)
+    {
+        addDefaultClassMethodSubs(c)
+
         c.methods.each {
             visit(it)
         }
         c.classes.each {
             visit(it)
         }
-        //generate accessors
         c.fields.values().each {
             visit(it)
         }
@@ -111,14 +75,14 @@ class DartPreEmitter extends CodeEmitter
         e.methods.each {
             visit(it)
         }
-        //generate accessors
         e.fields.values().each {
             visit(it)
         }
     }
 
     @Override
-    def visit(MField f) {
+    def visit(MField f)
+    {
     }
 
     @Override
@@ -127,7 +91,8 @@ class DartPreEmitter extends CodeEmitter
     }
 
     @Override
-    def visit(MReference r) {
+    def visit(MReference r)
+    {
         visit( (MProperty)r )
     }
 
@@ -149,21 +114,25 @@ class DartPreEmitter extends CodeEmitter
                 }
                 break
             case toJson:
-                //Map<String, dynamic> toJson() => _$UserToJson(this);
-                def stringType = MType.lookupType('String')
-                m.type = new MBind(type:MType.lookupType('dynamic'), cardinality: MCardinality.MAP, name:'json')
-                m.type.attr << ['keyType':stringType]
-                m.name = 'toJson'
-                m.setExpr("_\$${m.parent.name}ToJson(this)")
+                if (gen.includeJsonSupport) {
+                    //Map<String, dynamic> toJson() => _$UserToJson(this);
+                    def stringType = MType.lookupType('String')
+                    m.type = new MBind(type:MType.lookupType('dynamic'), cardinality: MCardinality.MAP, name:'json')
+                    m.type.attr << ['keyType':stringType]
+                    m.name = 'toJson'
+                    m.setExpr("_\$${m.parent.name}ToJson(this)")
+                }
                 break
             case fromJson:
-                //factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
-                m.factory = true
-                m.stereotype = MMethod.Stereotype.constructor
-                m.name = "${m.parent.name}.fromJson"
-                def stringType = MType.lookupType('String')
-                m.params = [ new MBind(type:MType.lookupType('dynamic'), cardinality: MCardinality.MAP, attr:['keyType':stringType], name:'json') ]
-                m.setExpr("_\$${m.parent.name}FromJson(json)")
+                if (gen.includeJsonSupport) {
+                    //factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+                    m.factory = true
+                    m.stereotype = MMethod.Stereotype.constructor
+                    m.name = "${m.parent.name}.fromJson"
+                    def stringType = MType.lookupType('String')
+                    m.params = [ new MBind(type:MType.lookupType('dynamic'), cardinality: MCardinality.MAP, attr:['keyType':stringType], name:'json') ]
+                    m.setExpr("_\$${m.parent.name}FromJson(json)")
+                }
                 break
             case hash:
                 m.annotations << '@override'
@@ -190,7 +159,6 @@ class DartPreEmitter extends CodeEmitter
                 if (m.parent.hasSuper())
                     m.annotations << '@override'
                 m.name = 'toString'
-                m.scope = 'protected'
                 m.params = [ new MBind(type:MType.lookupType('StringBuilder'), name:'sb') ]
                 m.body = m.body ?: this.&toStringBuilderMethodBody
                 break
@@ -236,6 +204,7 @@ class DartPreEmitter extends CodeEmitter
         v.out << '\n' << v.tabs << 'if (a==null || b==null || a.length != b.length) return false;'
         v.out << '\n' << v.tabs << 'return a.keys.every( (key) => b.containsKey(key) && a[key] == b[key] );'
     }
+
     private def equalsSetMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
         v.out << '\n' << v.tabs << 'if (identical(a, b) || (a==null && b==null)) return true;'
@@ -245,32 +214,32 @@ class DartPreEmitter extends CodeEmitter
 
     private def toStringBuilderMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
-        def fields = m.parent.fields.values().findAll{ p -> !p.isStatic() }
-        if (hasSuper) {
-            v.out << '\n' << v.tabs << 'super.toString(sb);'
-        }
-        fields.eachWithIndex { f, i ->
-            v.out << '\n' << v.tabs << "sb.append(\"${(i>0 || hasSuper ? ', ' : '')}${f.name}=\").append(${f.name})" << ';'
-        }
+//        def fields = m.parent.fields.values().findAll{ p -> !p.isStatic() }
+//        if (hasSuper) {
+//            v.out << '\n' << v.tabs << 'super.toString(sb);'
+//        }
+//        fields.eachWithIndex { f, i ->
+//            v.out << '\n' << v.tabs << "sb.append(\"${(i>0 || hasSuper ? ', ' : '')}${f.name}=\").append(${f.name})" << ';'
+//        }
     }
 
     private def toStringMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
-        def name = m.parent.shortName()
-        v.out << '\n' << v.tabs << "StringBuilder sb = new StringBuilder(\"${name}[\");"
-        v.out << '\n' << v.tabs << 'toString(sb);'
-        v.out << '\n' << v.tabs << 'return sb.append(\"]\").toString();'
+//        def name = m.parent.shortName()
+//        v.out << '\n' << v.tabs << "StringBuilder sb = new StringBuilder(\"${name}[\");"
+//        v.out << '\n' << v.tabs << 'toString(sb);'
+//        v.out << '\n' << v.tabs << 'return sb.append(\"]\").toString();'
     }
 
     private def toStringMethodBodyStandAlone(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
-        def name = m.parent.shortName()
-        def fields = m.parent.fields.values().findAll{ p -> !p.isStatic() }
-        v.out << '\n' << v.tabs << "StringBuilder sb = new StringBuilder(\"${name}[\");"
-        fields.eachWithIndex { f, i ->
-            v.out << '\n' << v.tabs << "sb.append(\"${(i>0 ? ', ' : '')}${f.name}=\").append(${f.name})" << ';'
-        }
-        v.out << '\n' << v.tabs << 'return sb.append(\"]\").toString();'
+//        def name = m.parent.shortName()
+//        def fields = m.parent.fields.values().findAll{ p -> !p.isStatic() }
+//        v.out << '\n' << v.tabs << "StringBuilder sb = new StringBuilder(\"${name}[\");"
+//        fields.eachWithIndex { f, i ->
+//            v.out << '\n' << v.tabs << "sb.append(\"${(i>0 ? ', ' : '')}${f.name}=\").append(${f.name})" << ';'
+//        }
+//        v.out << '\n' << v.tabs << 'return sb.append(\"]\").toString();'
     }
 
     private def constructorMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
@@ -282,35 +251,35 @@ class DartPreEmitter extends CodeEmitter
 //        }
     }
 
-    static def getterMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+    private def getterMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
-        MProperty prop = (MProperty)m.refs['property']
-        def propName = prop.name
-        v.out << '\n' << v.tabs << 'return ' << propName << ';'
+//        MProperty prop = (MProperty)m.refs['property']
+//        def propName = prop.name
+//        v.out << '\n' << v.tabs << 'return ' << propName << ';'
     }
-    static def setterMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+    private def setterMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
-        MProperty prop = (MProperty)m.refs['property']
-        def propName = prop.name
-        v.out << '\n' << v.tabs << 'this.' << propName << ' = ' << propName << ';'
+//        MProperty prop = (MProperty)m.refs['property']
+//        def propName = prop.name
+//        v.out << '\n' << v.tabs << 'this.' << propName << ' = ' << propName << ';'
     }
-    static def putterMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+    private def putterMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
-        def prop = m.refs['property']
-        def propName = prop.name
-        assert m.params.size() == 2
-        v.out << '\n' << v.tabs << 'this.' << propName << '.put(' << m.params[0].name << ', ' << m.params[1].name << ');'
+//        def prop = m.refs['property']
+//        def propName = prop.name
+//        assert m.params.size() == 2
+//        v.out << '\n' << v.tabs << 'this.' << propName << '.put(' << m.params[0].name << ', ' << m.params[1].name << ');'
     }
-    static def adderMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+    private def adderMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
-        MProperty prop = (MProperty)m.refs['property']
-        def propName = prop.name
-        def paramName = m.params[0].name
-        v.out << '\n' << v.tabs << 'if (' << 'this.' << propName << ' == null)'
-        v.next()
-        v.out << '\n' << v.tabs << 'this.' << propName << ' = new ' << DartTypeRegistry.containerImplementation(prop.cardinality) << '<>();'
-        v.previous()
-        v.out << '\n' << v.tabs << 'this.' << propName << '.add(' << paramName << ');'
+//        MProperty prop = (MProperty)m.refs['property']
+//        def propName = prop.name
+//        def paramName = m.params[0].name
+//        v.out << '\n' << v.tabs << 'if (' << 'this.' << propName << ' == null)'
+//        v.next()
+//        v.out << '\n' << v.tabs << 'this.' << propName << ' = new ' << DartTypeRegistry.containerImplementation(prop.cardinality) << '<>();'
+//        v.previous()
+//        v.out << '\n' << v.tabs << 'this.' << propName << '.add(' << paramName << ');'
     }
 
 
@@ -367,13 +336,57 @@ class DartPreEmitter extends CodeEmitter
         fields.each { f ->
             if (f.isStatic() || f.isGenIgnore())
                 return
-//            if (f.isArray()) {
-//                v.out << '\n' << v.tabs << "result = 31 * result + Arrays.hashCode(${f.name});"
-//            } else {
             v.out << '\n' << v.tabs << "result = 31 * result + ${f.name}?.hashCode ?? 0;"
-//            }
         }
         v.out << '\n' << v.tabs << 'return result;'
+    }
+
+    EnumSet<MMethod.Stereotype> CLASS_METHODS = EnumSet.noneOf(MMethod.Stereotype) //EnumSet.of(equals, hash, toString, toStringBuilder)
+    EnumSet<MMethod.Stereotype> defaultMethods = EnumSet.noneOf(MMethod.Stereotype) //EnumSet.of(equals, hash, toString, toStringBuilder, getter, setter, adder)
+
+    private configDefaultMethods()
+    {
+        //HACK to fix EnumSet.of() bug
+        CLASS_METHODS.add(constructor)
+        CLASS_METHODS.add(toJson)
+        CLASS_METHODS.add(fromJson)
+        CLASS_METHODS.add(equals)
+        CLASS_METHODS.add(hash)
+//        CLASS_METHODS.add(toString)
+//        CLASS_METHODS.add(toStringBuilder)
+        defaultMethods.add(constructor)
+        defaultMethods.add(equals)
+        defaultMethods.add(hash)
+        defaultMethods.add(toJson)
+        defaultMethods.add(fromJson)
+        defaultMethods.add(toString)
+        defaultMethods.add(toStringBuilder)
+        defaultMethods.add(getter)
+        defaultMethods.add(setter)
+        defaultMethods.add(adder)
+    }
+    private addDefaultClassMethodSubs(MClass c)
+    {
+        defaultMethods.each {
+            if (CLASS_METHODS.contains(it)) {
+                MMethod method = new MMethod(stereotype: it)
+                if (it == constructor) {
+                    method.includeProperties = allProperties
+                    c.addMethod(method)
+                } else if (it == equals) {
+                    //check for supporting methods requirements
+                    if (c.fields.values().any{ p -> !p.isStatic() && p.isList() })
+                        c.addMethod(new MMethod(stereotype: equalsList))
+                    if (c.fields.values().any{ p -> !p.isStatic() && p.isMap() })
+                        c.addMethod(new MMethod(stereotype: equalsMap))
+                    if (c.fields.values().any{ p -> !p.isStatic() && p.isSet() })
+                        c.addMethod(new MMethod(stereotype: equalsSet))
+                    c.addMethod(method)
+                } else {
+                    c.addMethod(method)
+                }
+            }
+        }
     }
 
 }

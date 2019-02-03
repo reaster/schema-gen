@@ -45,6 +45,7 @@ class MField extends MBind
 		String mapKey = cardinality==MCardinality.MAP ? "${attr['keyType']}," : ''
 				"${(isStatic() ? 'static ' : '')}${(scope ? scope+' ' : '')}${cPre}${mapKey}${type?.name}${cPost} ${name}${(val ? ' = '+val : '')}"
 	}
+	MClass parentClass() { (parent instanceof MClass) ? parent : null }
 
 	/**
 	 * passes imports down to base classes

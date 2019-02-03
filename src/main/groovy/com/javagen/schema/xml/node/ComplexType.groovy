@@ -36,8 +36,9 @@ class ComplexType extends SimpleType implements CompositorHolder
             return false
         Element e = elements[0]
         boolean isAnyClass = (e instanceof Any)
+        boolean isChoice = (e instanceof Choice)
         boolean isOptionalAnyChild = allowAnyChild ? true : !isAnyClass
-        boolean result = e.maxOccurs > 1 && !e.isMixed() && isOptionalAnyChild
+        boolean result = e.maxOccurs > 1 && !e.isMixed() && (isOptionalAnyChild || isChoice)
 //        if (result)
 //            println("isWrapperElement: ${this}")
         result

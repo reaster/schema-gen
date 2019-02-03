@@ -66,6 +66,7 @@ abstract class Gen
     String defaultEnumValue //ignored if null, otherwise forces all enum classes to don't define defaults to use this value
     boolean sortEnumValues = true
     boolean includeIfNull = false
+    boolean includeJsonSupport = true;
 
     Function<String,String> packageNameFunction = { ns -> packageName ?: ns ? GlobalFunctionsUtil.javaPackageFromNamespace(ns, true) : 'com.javagen.model' }
     Function<String,String> enumNameFunction = { text -> GlobalFunctionsUtil.javaEnumName(text, false) }

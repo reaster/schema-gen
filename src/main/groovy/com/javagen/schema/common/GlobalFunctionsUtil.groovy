@@ -216,23 +216,25 @@ final class GlobalFunctionsUtil
 		}
 	}
 
-	static Map<String,String> overrideNamespaces(Map<String,String> namespaces, String overrideNamespace)
-	{
-		if (overrideNamespace) {
-			String targetNamespace = namespaces['targetNamespace']
-			if (!targetNamespace)
-				throw new IllegalStateException("no targetNamespace defined in ${namespaces}")
-			Map<String,String> result = new HashMap<>(namespaces)
-			result.keySet().forEach{ key ->
-				if (result[key.toString()] == targetNamespace ) {
-					result[key.toString()] = overrideNamespace
-				}
-			}
-			result
-		} else {
-			namespaces
-		}
-	}
+//	static Map<String,String> overrideNamespaces(Map<String,String> namespaces, String overrideNamespace)
+//	{
+//		if (overrideNamespace) {
+//			String targetNamespace = namespaces['targetNamespace']
+//			if (!targetNamespace)
+//				throw new IllegalStateException("no targetNamespace defined in ${namespaces}")
+//			Map<String,String> result = new HashMap<>(namespaces)
+//			result.keySet().forEach{ key ->
+//				if (result[key.toString()] == targetNamespace ) {
+//					result[key.toString()] = overrideNamespace
+//				}
+//			}
+//			result
+//		} else {
+//			namespaces
+//		}
+//	}
+
+
 
 	static Map<String,String>loadNamespaces(URL xmlUrl, Set<String> alreadyDefinedNS=new HashSet<>(), String targetNamespaceKey='targetNamespace')
 	{

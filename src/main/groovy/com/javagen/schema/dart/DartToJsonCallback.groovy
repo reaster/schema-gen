@@ -119,7 +119,7 @@ class DartToJsonCallback extends XmlNodeCallback {
         boolean genImport = false
         enumClass.enumNames.eachWithIndex { String name, int i ->
             if (name != enumClass.enumValues[i]) {
-                enumClass.annotationValues[i] =  "@JsonKey(name: \"${enumClass.enumValues[i]}\")"
+                enumClass.annotationValues[i] =  "@JsonKey(name: \"${gen.enumValueFunction.apply(enumClass.enumValues[i])}\")"
                 genImport = true
             } else {
                 enumClass.annotationValues[i] = ''

@@ -24,5 +24,28 @@ package com.javagen.schema.xml.node
  *
  * @author Richard Easterling
  */
-class Choice extends Compositor {
+class Choice extends Compositor
+{
+    Polymorphic polymorphic = null
+
+    Polymorphic polymorphicType() {
+        if (polymorphic == null) {
+            for(Element e : childElements()) { //includes elements and groups
+                if (e.maxOccurs != 1 || (e instanceof Any)) {
+                    polymorphic = Polymorphic.NOT_POLYMORPHIC
+                    return polymorphic
+                }
+            }
+            polymorphic = this.maxOccurs > 1 ? Polymorphic.COLLECTION : Polymorphic.SINGLE_VALUE
+        }
+        polymorphic
+    }
+
+    enum Polymorphic {
+        COLLECTION,
+        SINGLE_VALUE,
+        NOT_POLYMORPHIC;
+        boolean isPolymorphic() { COLLECTION == this || SINGLE_VALUE == this }
+        //final EnumSet<Polymorphic> POLY_TYPES = EnumSet.of(COLLECTION, SINGLE_VALUE)
+    }
 }

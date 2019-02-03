@@ -19,7 +19,7 @@ package com.javagen.schema.dart
 
 import com.javagen.schema.common.PluralServiceNoop
 
-import static com.javagen.schema.common.GlobalFunctionsUtil.javaEnumName
+import static com.javagen.schema.dart.DartUtil.dartEnumName
 
 /**
  * This class is only used for testing and development.
@@ -47,19 +47,31 @@ class DartGenMain extends DartGen
     def initHsf()
     {
         schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-1_1.xsd').toURI().toURL()
-        srcDir = new File('../schema-gen-hsf/hsf-kotlin/src/main/dart-gen')
-        println "srcDir = ${srcDir.getAbsolutePath()}"
+        packageName = 'com.hotspringsfinder.detail.model'
+        srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen')
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
-        def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']
-        def unknownEnum = 'Unknown'
-        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: javaEnumName(text, false) }
+        def enumCustomNames = ['primitive+':'primitivePlus','$':'cheap','$$':'moderate','$$$':'pricy','$$$$':'exclusive']
+        def unknownEnum = 'unknown'
+        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: dartEnumName(text, false) }
+    }
+    def initHsf2()
+    {
+        schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-2_0.xsd').toURI().toURL()
+        sourceFileName = 'hsf2'
+        packageName = 'model'
+        srcDir = new File('/Users/richard/dev/flutter/hot_springs_finder/lib/model')
+        customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
+        def enumCustomNames = ['primitive+':'primitivePlus','$':'cheap','$$':'moderate','$$$':'pricy','$$$$':'exclusive']
+        def unknownEnum = 'unknown'
+        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: dartEnumName(text, false) }
     }
 
     DartGenMain()
     {
         super()
-        initGpx()
+        //initGpx()
         //initHsf()
+        initHsf2()
         //initWadl()
     }
 

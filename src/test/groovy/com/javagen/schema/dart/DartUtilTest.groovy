@@ -33,5 +33,13 @@ class DartUtilTest
         assertTrue(toGeneratedSourceFileName(f,'-gen','src').toString().endsWith('myproject/lib/src/my_code-gen.dart'))
     }
 
+    @Test
+    void testEscapeDartString()
+    {
+        assertEquals('default params', '\\$', escapeDartString('$'))
+        assertEquals('default params', '\\$\\$', escapeDartString('$$'))
+    }
+
+
 
 }

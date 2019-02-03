@@ -64,6 +64,8 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.printStackTrace
 import static com.javagen.schema.common.GlobalFunctionsUtil.upperCase
 import static com.javagen.schema.java.JavaTypeRegistry.useWrapper
 import static com.javagen.schema.model.MCardinality.LIST
+import static com.javagen.schema.model.MCardinality.OPTIONAL
+import static com.javagen.schema.model.MCardinality.REQUIRED
 import static com.javagen.schema.model.MMethod.IncludeProperties.allProperties
 import static com.javagen.schema.model.MMethod.Stereotype.*
 import static com.javagen.schema.xml.node.Schema.DEFAULT_NS
@@ -102,6 +104,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	String enumValueFieldName = 'value'
 	String anyPropertyName = 'any'
 	String anyPropeertyNameWrapped = 'map'
+	String polyMorphicListName = 'list'
 	String anyType = 'string'
 	boolean useOptional = false
 
@@ -174,7 +177,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	@Override def preVisit(TextOnlyType textOnlyType)
 	{
 		if (mapToEnum(textOnlyType)) {
-			String className = enumClassNameFunction.apply(textOnlyType.qname.name)
+			String className = enumClassName(textOnlyType.qname.name)
 			MClass clazz = new MEnum(name:className)
 			this << clazz
 			this >> clazz
@@ -204,12 +207,12 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		if (container.isContainer())
 			container = MCardinality.LINKEDMAP
 		String name = container.isContainer() ? anyPropertyName : anyPropeertyNameSingular
-		Type schemaType = null
-		if (any.id?.contains('polymorphic-')) {
-			int index = any.id.indexOf('polymorphic-') + 'polymorphic-'.length()
-			String typeName = any.id.substring(index)
-			schemaType = schema.getGlobal(typeName)
-		}
+		Type schemaType = polymporphicType(any)
+//		if (any.id?.contains('polymorphic-')) {
+//			int index = any.id.indexOf('polymorphic-') + 'polymorphic-'.length()
+//			String typeName = any.id.substring(index)
+//			schemaType = schema.getGlobal(typeName)
+//		}
 		String type = schemaTypeToPropertyType(schemaType ?: schema.getGlobal(DEFAULT_NS,anyType), container)
 		MProperty property = new MProperty(name:name, type:type)
 		setNotNull(property)
@@ -218,7 +221,6 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		clazz.addField(property)
 		callback.gen(any, property)
 		//println "any -> ${name}: ${type}"
-
 	}
 	@Override def visit(AnyAttribute anyAttribute)
 	{
@@ -301,8 +303,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		if (body.mixedContent) println "WARNING: mixed content currently not supported for body: ${body}"
 		MCardinality container = container(body)
 		String name = propertyNameFunction.apply(bodyPropertyName)
-		String type = schemaTypeToPropertyType(body.type ?: schema.getGlobal(DEFAULT_NS, 'string'), container)
-
+		MType type = schemaTypeToPropertyType(body.type ?: schema.getGlobal(DEFAULT_NS, 'string'), container)
 		MProperty property = new MProperty(name:name, type:type, cardinality: container, attr: ['body':name])
 		setNotNull(property)
 		optionalToPrimitiveWrapper(property)
@@ -315,6 +316,8 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		String className = classNameFunction.apply(complexType.qname.name)
 		MClass clazz = lookupOrCreateClass(className)
 		clazz.attr['nodeType'] = complexType
+		if (clazz.name == 'Results')
+			println clazz.name
 		compositorStack.push(DEFAULT_COMPOSTER)
 		this << clazz
 		XmlSchemaVisitor.super.visit(complexType)
@@ -326,6 +329,8 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 
 	def setClassProperties(MClass clazz, ComplexType complexType)
 	{
+//		if (clazz.name == 'Results')
+//			println clazz.name
 		clazz.ignore = complexType.isWrapperElement()
 		clazz.abstract = complexType.abstract
 		if (complexType.base) {
@@ -342,12 +347,70 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		XmlSchemaVisitor.super.visit(all)
 		compositorStack.pop()
 	}
-	@Override def visit(Choice choice) {
+
+	private void collectPolymorphicTypes(Choice choice, MBase polymorphicType)
+	{
+		for(Element e : choice.childElements()) { //includes elements and groups
+			MType type = schemaTypeToPropertyType(e.type, MCardinality.REQUIRED)
+			polymorphicType.polymorphicTypes.put(type, e.qname.name)
+		}
+	}
+
+	private void choiceCollectionWrapper(Choice choice)
+	{
+		MCardinality container = MCardinality.LIST
+		String name = polyMorphicListName //TODO dig up proper name
+		Type schemaType = polymporphicType(choice)
+		MType type = schemaTypeToPropertyType(schemaType ?: schema.getGlobal(DEFAULT_NS,anyType), container)
+		collectPolymorphicTypes(choice, type)
+		MProperty property = new MProperty(name:name, type:type, cardinality:container)
+		setNotNull(property)
+		MClass clazz = nestedStack.peek()
+		clazz.addField(property)
+		MMethod constructor = new MMethod(stereotype:constructor, includeProperties: MMethod.IncludeProperties.allProperties)
+		constructor.params << new MBind(name:name, type:type, cardinality:container)
+		clazz.addMethod(constructor)
+		callback.gen(choice, property)
+		println "choice -> ${name}: ${type}"
+	}
+
+	private void choicePolymprphicInstance(Choice choice)
+	{
+		MCardinality container = choice.minOccurs==1 ? REQUIRED : OPTIONAL
+		String name = 'value' //TODO dig up proper name
+		Type schemaType = polymporphicType(choice)
+		MType type = schemaTypeToPropertyType(schemaType ?: schema.getGlobal(DEFAULT_NS,anyType), container)
+		collectPolymorphicTypes(choice, type)
+		MProperty property = new MProperty(name:name, type:type, cardinality:container)
+		setNotNull(property)
+		optionalToPrimitiveWrapper(property)
+		MClass clazz = nestedStack.peek()
+		clazz.addField(property)
+		callback.gen(choice, property)
+		println "choice -> ${name}: ${type}"
+	}
+
+	@Override def visit(Choice choice)
+	{
+		Compositor parent = compositorStack.peek()
 		compositorStack.push(choice)
-		XmlSchemaVisitor.super.visit(choice)
+		TextOnlyType parentType = nestedStack.peek().attr['nodeType']
+		switch (choice.polymorphicType()) {
+			case Choice.Polymorphic.COLLECTION:
+				choiceCollectionWrapper(choice)
+				break
+			case Choice.Polymorphic.SINGLE_VALUE:
+				choicePolymprphicInstance(choice)
+				break
+			case Choice.Polymorphic.NOT_POLYMORPHIC:
+				println "WARNING: ${parentType?.qname.name} choice element will be treated as a sequence, not a polymorphic instance or collection"
+				XmlSchemaVisitor.super.visit(choice)
+				break
+		}
 		compositorStack.pop()
 	}
-	@Override def visit(Sequence sequence) {
+	@Override def visit(Sequence sequence)
+	{
 		compositorStack.push(sequence)
 		XmlSchemaVisitor.super.visit(sequence)
 		compositorStack.pop()
@@ -389,14 +452,14 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 			if (textOnlyType.base instanceof Union) {
 				clazz = genUnion(textOnlyType)
 			} else {
-				String className = enumClassNameFunction.apply(textOnlyType.qname.name)
+				String className = enumClassName(textOnlyType.qname.name)
 				if (textOnlyType.restrictionSet().size() > 1) {
 					println "WARNING: can't model ${textOnlyType.qname.name} complex enum class, ignoring non-enum restrictions: ${textOnlyType.restrictionSet()}"
 				}
-				def enumValues = textOnlyType.restrictions.findAll{ it.type == Restriction.RType.enumeration }.collect{ enumValueFunction.apply(it.value) }
+				def enumValues = textOnlyType.restrictions.findAll{ it.type == Restriction.RType.enumeration }.collect{ it.value } //enumValueFunction.apply(
 				clazz = lookupOrCreateClass(className, true)
 				clazz.enumValues = enumValues
-				javaEnum( clazz )
+				generateEnumClass( clazz )
 			}
 			if (!clazz) {
 				throw new IllegalStateException("no clazz generated for TextOnlyType: ${textOnlyType}")
@@ -409,6 +472,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 			//println "textOnlyType @name=${textOnlyType.qname.name} -> will map to simple type: ${textOnlyType}, cardinality:${MCardinality.REQUIRED}"
 		}
 	}
+
 	@Override def visit(Union union)
 	{
 		println "union @name=${union.qname.name}"
@@ -438,15 +502,15 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	// xml methods
 	////////////////////////////////////////////////////////////////////////////
 
+	protected Type polymporphicType(Compositor compositor)
+	{
+		String typeName = compositor.polymporphicRootTypeName() //looks for id="*polymorphic-{rootTypeName}"
+		schema.getGlobal(typeName)
+	}
 	protected Type polymporphicType(Any any)
 	{
-		Type schemaType = null
-		if (any.id?.contains('polymorphic-')) {
-			int index = any.id.indexOf('polymorphic-') + 'polymorphic-'.length()
-			String typeName = any.id.substring(index)
-			schemaType = schema.getGlobal(typeName)
-		}
-		return schemaType
+		String typeName = any.polymporphicRootTypeName() //looks for id="*polymorphic-{rootTypeName}"
+		schema.getGlobal(typeName)
 	}
 
 	MProperty genAny(String propertyName, Any any)
@@ -502,20 +566,21 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 					if (type.restrictionSet().size() > 1) {
 						println "WARNING: can't model ${unionType.qname.name} union member ${type.qname.name} as enum class, ignoring non-enum restrictions: ${type.restrictionSet()}"
 					}
-					type.restrictions.findAll{ it.type == Restriction.RType.enumeration }.each{ enumValues << enumValueFunction.apply(it.value) }
+					type.restrictions.findAll{ it.type == Restriction.RType.enumeration }.each{ enumValues << it.value } //enumValueFunction.apply
 				}
 			}
 			println()
 			String className = enumClassNameFunction.apply(unionType.qname.name)
 			MEnum mEnum =  lookupOrCreateEnum(className)
 			mEnum.enumValues = enumValues
-			javaEnum(mEnum)
+			generateEnumClass(mEnum)
 		} else {
 			println "TODO add support for non-enum unions, skipping ${union.qname.name}"
 			null
 		}
 	}
-	MEnum javaEnum(MEnum enumClass)
+
+	MEnum generateEnumClass(MEnum enumClass)
 	{
 		java.util.List<String> enumValues = enumClass.enumValues.sort()
 		def enumNames = []
@@ -540,6 +605,11 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	////////////////////////////////////////////////////////////////////////////
 	// internal methods
 	////////////////////////////////////////////////////////////////////////////
+
+	String enumClassName(String tag)
+	{
+		enumClassNameFunction.apply(tag)
+	}
 
 	MClass lookupOrCreateClass(String className, boolean isEnum=false)
 	{

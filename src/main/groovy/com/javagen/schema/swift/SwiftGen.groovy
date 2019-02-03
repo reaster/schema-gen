@@ -325,7 +325,7 @@ class SwiftGen extends Gen implements XmlSchemaVisitor
 				if (textOnlyType.restrictionSet().size() > 1) {
 					println "WARNING: can't model ${textOnlyType.qname.name} complex enum class, ignoring non-enum restrictions: ${textOnlyType.restrictionSet()}"
 				}
-				def enumValues = textOnlyType.restrictions.findAll{ it.type == Restriction.RType.enumeration }.collect{ enumValueFunction.apply(it.value) }
+				def enumValues = textOnlyType.restrictions.findAll{ it.type == Restriction.RType.enumeration }.collect{ it.value } //enumValueFunction.apply(
 				clazz = lookupOrCreateClass(className, true)
 				clazz.enumValues = enumValues
 				swiftEnum( clazz )

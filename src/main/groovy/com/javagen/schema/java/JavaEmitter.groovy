@@ -17,6 +17,8 @@
 package com.javagen.schema.java
 
 import com.javagen.schema.common.CodeEmitter
+import com.javagen.schema.model.MAnnotation
+import com.javagen.schema.model.MBase
 import com.javagen.schema.model.MBind
 import com.javagen.schema.model.MCardinality
 import static com.javagen.schema.model.MCardinality.*
@@ -211,6 +213,9 @@ class JavaEmitter extends CodeEmitter
 		out << m.name << '('
 		m.params.eachWithIndex { MBind p, int i ->
 			if (i>0) out << ', '
+			p.annotations.each{ anno ->
+				out << anno << ' '
+			}
 			out << typeDeclaration(p, m) << ' ' << p.name
 		}
 		out << ')'

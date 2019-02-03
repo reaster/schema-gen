@@ -80,7 +80,7 @@ class KotlinUtil
     {
         if (anyString==null || anyString.trim().length()==0)
             return null
-        String normalized = replaceSpecialChars(anyString, ' ,_-&/', (char)'_')
+        String normalized = replaceSpecialChars(anyString, ' ,+_-&/', (char)'_')
         return allUpperCase ? legalKotlinName(normalized.toUpperCase()) : camelBackKotlinClass(normalized)
     }
 

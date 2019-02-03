@@ -666,7 +666,35 @@ class XmlSchemaNormalizer
         throw new IllegalStateException("can't find parent Type")
     }
 
-    Schema buildSchema(final URL xmlSchemaURL, final String overrideNamespace=null) {
+    Map<String,String> overrideNamespaces(Map<String,String> namespaces, String overrideNamespace)
+    {
+        if (overrideNamespace) {
+            Map<String,String> result = new HashMap<>(namespaces)
+            String targetNamespace = namespaces['targetNamespace']
+            int index = prefixToNamespaceMap.size()
+            while (!targetNamespace && index > 0) {
+                namespaces = prefixToNamespaceMap.get(index - 1)
+                targetNamespace = namespaces['targetNamespace']
+                index--
+            }
+            if (!targetNamespace)
+                throw new IllegalStateException("no 'targetNamespace' defined in ${namespaces} or namespace stack (prefixToNamespaceMap)")
+
+            result.put('targetNamespace', targetNamespace)
+            result.put('', targetNamespace) //TODO do we need this?
+//            result.keySet().forEach{ key ->
+//                if (result[key.toString()] == targetNamespace ) {
+//                    result[key.toString()] = overrideNamespace
+//                }
+//            }
+            result
+        } else {
+            namespaces
+        }
+    }
+
+    Schema buildSchema(final URL xmlSchemaURL, final String overrideNamespace=null)
+    {
         final Map<String,String> namespaces = overrideNamespaces( loadNamespaces(xmlSchemaURL), overrideNamespace )
         //println "PUSH: ${namespaces}"
         prefixToNamespaceMap.push(namespaces)

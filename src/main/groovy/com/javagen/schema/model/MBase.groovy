@@ -19,6 +19,8 @@ package com.javagen.schema.model
 class MBase {
 	String name
 	def attr = [:]
+	Map<MType,String> polymorphicTypes = [:]
+	boolean isPolymorphic() { !polymorphicTypes.isEmpty() }
 	Annotations annotations = new Annotations()
 	static final String TEMPLATE_NAME = 'TEMPLATE_NAME'
 

@@ -24,6 +24,7 @@ import com.javagen.schema.xml.node.Any
 import com.javagen.schema.xml.node.AnyAttribute
 import com.javagen.schema.xml.node.Attribute
 import com.javagen.schema.xml.node.Body
+import com.javagen.schema.xml.node.Choice
 import com.javagen.schema.xml.node.ComplexType
 import com.javagen.schema.xml.node.Element
 import com.javagen.schema.xml.node.Schema
@@ -46,6 +47,7 @@ class XmlNodeCallback
     void gen(Attribute attribute, MProperty property) {  }
     void gen(AnyAttribute anyAttribute, MProperty property) {  }
     void gen(Any anyNode, MProperty property) {  }
+    void gen(Choice choiceNode, MProperty property) {  }
     void gen(Any anyNode, MClass anyClass) { }
     void gen(Body body, MProperty property) {  }
     void gen(TextOnlyType textOnlyType, MEnum enumClass) {  }

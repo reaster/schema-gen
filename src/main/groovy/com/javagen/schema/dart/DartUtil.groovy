@@ -71,6 +71,7 @@ class DartUtil {
             default: return "ERROR digitToNumberName($digit)"
         }
     }
+
     /**
      * Make sure identifier is a legal Dart name and modify it if necessary.
      */
@@ -102,6 +103,7 @@ class DartUtil {
         identifier = upperCase(identifier)
         return isDartDefaultImportsClass(identifier) ? identifier+'_' : identifier
     }
+
     static String camelBackDartClass(String anyString)
     {
         return legalDartClassName( upperCase(camelBackName(anyString)) )
@@ -114,8 +116,18 @@ class DartUtil {
     {
         if (anyString==null || anyString.trim().length()==0)
             return null
-        String normalized = replaceSpecialChars(anyString, ' ,_-&/', (char)'_')
+        String normalized = replaceSpecialChars(anyString, ' ,_+-&/', (char)'_')
         return allUpperCase ? legalDartName(normalized.toUpperCase()) : legalDartName(camelBackName(normalized))
+    }
+
+    /**
+     * Generate a legal uppercase or camelCase Java enum name given an arbitrary string.
+     */
+    static String dartEnumValue(String anyString, boolean allUpperCase)
+    {
+        if (anyString==null || anyString.trim().length()==0)
+            return null
+        return escapeDartString( allUpperCase ? anyString.toUpperCase() : anyString )
     }
 
     /**
@@ -138,6 +150,14 @@ class DartUtil {
         }
         return legalDartName( dartConst.toString() )
     }
+
+    static String escapeDartString(String string) {
+        if (!string)
+            return string
+        string = string.replace("\$","\\\$")
+        string
+    }
+
 
 
     ////////////////////////////////////////////////////////////////////////////

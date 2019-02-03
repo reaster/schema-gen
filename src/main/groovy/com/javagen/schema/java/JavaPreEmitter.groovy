@@ -17,6 +17,7 @@
 package com.javagen.schema.java
 
 import com.javagen.schema.common.CodeEmitter
+import com.javagen.schema.model.MBase
 import com.javagen.schema.model.MBind
 import com.javagen.schema.model.MClass
 import com.javagen.schema.model.MEnum
@@ -49,6 +50,8 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.*
  */
 class JavaPreEmitter extends CodeEmitter
 {
+    protected boolean moveFieldAnnotationsToGetter = true
+
     EnumSet<MMethod.Stereotype> CLASS_METHODS = EnumSet.noneOf(MMethod.Stereotype) //EnumSet.of(equals, hash, toString, toStringBuilder)
     EnumSet<MMethod.Stereotype> defaultMethods = EnumSet.noneOf(MMethod.Stereotype) //EnumSet.of(equals, hash, toString, toStringBuilder, getter, setter, adder)
 
@@ -144,12 +147,14 @@ class JavaPreEmitter extends CodeEmitter
             case constructor:
                 m.name = m.parent.shortName()
                 m.body = m.body ?: this.&constructorMethodBody
-                switch (m.includeProperties) {
-                    case finalProperties:
-                        m.params = m.parent.fields.values().findAll { p -> p.isFinal() && !p.isStatic() }
-                        break
-                    case allProperties:
-                        m.params = m.parent.fields.values().findAll { p -> !p.isStatic() }
+                if (m.params.isEmpty()) {
+                    switch (m.includeProperties) {
+                        case finalProperties:
+                            m.params = m.parent.fields.values().findAll { p -> p.isFinal() && !p.isStatic() }
+                            break
+                        case allProperties:
+                            m.params = m.parent.fields.values().findAll { p -> !p.isStatic() }
+                    }
                 }
                 break
             case hash:
@@ -263,8 +268,8 @@ class JavaPreEmitter extends CodeEmitter
                     }
                     break
                 case getter:
-                    def method = p.methods[getter]
-                    def getterName = method?.name
+                    MMethod method = p.methods[getter]
+                    String getterName = method?.name
                     if (!method) {
                         getterName = JavaTypeRegistry.isBoolean(p.type) && !p.isContainerType() ? 'is' + upCaseName : 'get' + upCaseName
                         MBind type = new MBind(type: p.type, cardinality: p.cardinality)
@@ -272,6 +277,10 @@ class JavaPreEmitter extends CodeEmitter
                         method = new MMethod(name: getterName, type: type, scope: 'public', body: methodBody, stereotype: getter)
                         method.refs['property'] = p
                         p.methods[getter] = method
+                        if (moveFieldAnnotationsToGetter && !p.annotations.empty) {
+                            method.annotations = p.annotations
+                            p.annotations = new MBase.Annotations()
+                        }
                     }
                     if (p.parent.hasMethod(getterName)) {
                         println "WARNING: method already defined - ingoring property getter: ${getterName} for ${p}"

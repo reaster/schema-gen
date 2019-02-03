@@ -30,4 +30,15 @@ class Any extends Element
     {
         super.setType(type)
     }
+    /** rather than actually trying to compute this, we just put it in the id attribute in the form: '*polymorphic-{rootTypeName}' */
+    String polymporphicRootTypeName()
+    {
+        String typeName = 'anyType'
+        if (id?.contains('polymorphic-')) {
+            int index = compositor.id.indexOf('polymorphic-') + 'polymorphic-'.length()
+            typeName = id.substring(index)
+        }
+        return typeName
+    }
+
 }
