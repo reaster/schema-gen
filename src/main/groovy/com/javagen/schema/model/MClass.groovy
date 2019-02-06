@@ -33,6 +33,16 @@ class MClass extends MType implements MSource
 	List<String> _implements = []
 	String _extends = null
 
+	Map<String,MField> inheritedFields(boolean includeThis = true) {
+		Map<String,MField> result = new LinkedHashMap<>()
+		MClass c = includeThis ? this : (this.extends ? MType.lookupType(this.extends) : null)
+		while (c != null) {
+			c.fields.each { it -> result[it.key] = it.value }
+			c = c.extends ? MType.lookupType(c.extends) : null
+		}
+		result
+	}
+
 	def MClass() {
 		scope = 'public'
 		_abstract = false
@@ -65,6 +75,19 @@ class MClass extends MType implements MSource
 		}
 		return p
 	}
+	@Override boolean isTypeOf(MType t) {
+		if (t instanceof MClass) {
+			MClass c = this
+			while(c) {
+				c = c.extends ? MType.lookupType(c.extends) : null
+				if (c == t) {
+					return true
+				}
+			}
+		}
+		false
+	}
+
 	@Override String nestedAttr(String key)
 	{
 		attr[key] ?: parent?.nestedAttr(key)

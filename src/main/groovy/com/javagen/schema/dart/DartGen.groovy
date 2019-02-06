@@ -59,124 +59,18 @@ class DartGen extends JavaGen
 {
     String sourceFileName = null
 
+    //java-specific methods:
     @Override void optionalToPrimitiveWrapper(MProperty property) {}
+    @Override void mapPropertyAccessors(MProperty property) {}
+    @Override void addEnumValueSupport(MEnum enumClass) {}
 
-    @Override def visit(Body body)
+    /** remove srcFolder to conform to import syntax. */
+    @Override String projectPath(File srcFile, boolean includeProjectFolder=true)
     {
-        println "body @type=${body.type} @mixed=${body.mixedContent}"
-        if (body.mixedContent) println "WARNING: mixed content currently not supported for body: ${body}"
-        MCardinality container = container(body)
-        String name = propertyNameFunction.apply(bodyPropertyName)
-        String type = schemaTypeToPropertyType(body.type ?: schema.getGlobal(DEFAULT_NS, 'string'), container)
-
-        MProperty property = new MProperty(name:name, type:type, scope: 'public', cardinality: container, attr: ['body':name])
-        MClass clazz = nestedStack.peek()
-        clazz.addField(property)
-        //clazz.addMethod(new MMethod(stereotype: constructor, params:[new MBind(name: name, type: type)], body: "" ))
-        callback.gen(body, property)
+        def path = super.projectPath(srcFile, includeProjectFolder)
+        srcFolder ? path.replace(srcFolder+'/', '') : path
     }
 
-    @Override MProperty genAny(String propertyName, Any any)
-    {
-        //println "any @name=${any.qname?.name}"
-        MCardinality container = container(any)
-        Type polymorphicType = polymporphicType(any) ?: any.type // any.type is not allowed in XML Schema?
-        MType type = schemaTypeToPropertyType(polymorphicType ?: schema.getGlobal(DEFAULT_NS, anyType), container)
-        MProperty property
-        if (polymorphicType) {
-            String val = any.fixed ?: any.'default' ?: (container == MCardinality.LIST) ? 'new java.util.ArrayList<>()' : null
-            property = new MProperty(name:propertyName, type:type, cardinality:container, final:any.fixed!=null, val:val)
-        } else if (container == MCardinality.LIST) {
-            container = MCardinality.MAP
-            MBind mapRType = new MBind(cardinality:container,type:type)
-            String val = null //'LinkedHashMap()'
-            property = new MProperty(name:propertyName, type:type, scope:'public', cardinality:container, final:any.fixed!=null, val:val, attr:['keyType':'String'])
-        } else {
-            String val = any.fixed ?: any.'default'
-            property = new MProperty(name:propertyName, type:type, cardinality:container, final:any.fixed!=null, val:val)
-        }
-        setNotNull(property)
-        MClass clazz = nestedStack.peek()
-        clazz.addField(property)
-        callback.gen(any, property)
-        property
-    }
-
-    @Override def visit(Attribute attribute)
-    {
-        //println "attribute @name=${attribute.qname.name} @type=${attribute.type}"
-        MCardinality container = container(attribute)
-        String name = propertyFromAttributeFunction.apply(attribute.qname, container)
-        if (!attribute.type)
-            attribute.type = schema.getGlobal(DEFAULT_NS, 'anySimpleType')
-        MType type = schemaTypeToPropertyType(attribute.type, container)
-        String val = attribute.fixed ?: attribute.'default'
-        java.util.List<MRestriction> restrictions = MappingUtil.translate(attribute)
-        MProperty property = new MProperty(name:name, type:type, scope:'public', cardinality:container, final:attribute.fixed!=null, val:val, restrictions:restrictions)
-        setNotNull(property)
-        MClass clazz = nestedStack.peek()
-        clazz.addField(property)
-        callback.gen(attribute, property)
-    }
-
-    @Override def visit(Element element)
-    {
-        MClass clazz = nestedStack.peek()
-        TextOnlyType textOnlyType= clazz.attr['nodeType']
-        if (clazz.name == 'Track') {
-            println "element @name=${element.qname.name} @type=${element.type} -> ${clazz.name}"
-        }
-        //Compositor compositor = compositorStack.peek()
-        MCardinality container = container(element)
-        String name = propertyFromElementFunction.apply(element.qname, container)
-        MType type = null
-        if (element.type) {
-            type = schemaTypeToPropertyType(element.type, container)
-            if (!type)
-                throw new IllegalStateException("no type for element: ${element}")
-            if (element.type.isWrapperElement()) {
-                Type wrappedType = element.type.wrapperType()
-                if (wrappedType) {
-                    container = MCardinality.LIST
-                    type = schemaTypeToPropertyType(wrappedType, container)
-                } else if (element.type.childElements()[0] instanceof Any) {
-                    Any any = element.type.childElements()[0]
-                    genAny(name, any)
-                    return
-                }
-            }
-        } else {
-            if (element.isAbstract()) {
-                type = schemaAbstractTypeToPropertyType(element)
-            } else {
-                throw new IllegalStateException("no type for element: ${element} with parent: ${textOnlyType}")
-            }
-        }
-        String val = element.fixed ?: element.'default'
-        java.util.List<MRestriction> restrictions = MappingUtil.translate(element)
-        MProperty property = new MProperty(name:name, type:type, scope:'public', cardinality:container, final:element.fixed!=null, val:val, restrictions:restrictions)
-        setNotNull(property)
-        clazz.addField(property)
-        callback.gen(element, property)
-    }
-
-    @Override MEnum generateEnumClass(MEnum enumClass)
-    {
-        java.util.List<String> enumValues = enumClass.enumValues.sort()
-        def enumNames = []
-        def enumNameSet = [] as Set //look for and fix duplicate names
-        for(tag in enumValues) {
-            def enumName = enumNameFunction.apply(tag)
-            int i = 1
-            while (enumNameSet.contains(enumName)) //name not unique?
-                enumName += i
-            enumNameSet << enumName
-            enumNames << enumName
-        }
-        enumClass.enumNames = enumNames
-        enumClass.enumValues = enumValues //.each { value -> enumValueFunction.apply(value) }
-        enumClass
-    }
 
     @Override String enumClassName(String tag)
     {
@@ -191,14 +85,17 @@ class DartGen extends JavaGen
         name
     }
 
-
     DartGen()
     {
         super(true)
+        packageName = 'model'
+        srcFolder = 'lib'
         fileExtension = 'dart'
         useOptional = true //only applies to Java
         srcDir = new File('lib')
         anyType = 'anyType'
+        propertyScope = 'public'
+        choiceCollectionWrapperConstructor = false
         simpleXmlTypeToPropertyType = { typeName ->
             DartTypeRegistry.simpleXmlTypeToPropertyType[typeName]
         }
@@ -208,6 +105,7 @@ class DartGen extends JavaGen
         pipeline = [
                 new DartPreEmitter(gen: this),
                 new DartJsonEmitter(gen: this),
+                new DartSupportEmitter(gen: this),
                 new DartEmitter(gen: this)
         ]
         enumNameFunction = { text -> DartUtil.dartEnumName(text, false) }
@@ -215,6 +113,7 @@ class DartGen extends JavaGen
         propertyNameFunction = { text -> DartUtil.legalDartName(lowerCase(text)) }
         constantNameFunction = { text -> DartUtil.dartConstName(text) }
         classNameFunction = { text -> DartUtil.legalDartClassName(text) }
+        packageNameFunction = { ns -> packageName }
 
 //        packageNameFunction = { ns -> packageName ?: ns ? GlobalFunctionsUtil.javaPackageFromNamespace(ns, true) : 'com.javagen.model' }
 //        enumNameFunction = { text -> GlobalFunctionsUtil.javaEnumName(text, false) }
@@ -244,3 +143,121 @@ class DartGen extends JavaGen
         }
     }
 }
+
+
+//    @Override def visit(Body body)
+//    {
+//        println "body @type=${body.type} @mixed=${body.mixedContent}"
+//        if (body.mixedContent) println "WARNING: mixed content currently not supported for body: ${body}"
+//        MCardinality container = container(body)
+//        String name = propertyNameFunction.apply(bodyPropertyName)
+//        String type = schemaTypeToPropertyType(body.type ?: schema.getGlobal(DEFAULT_NS, 'string'), container)
+//
+//        MProperty property = new MProperty(name:name, type:type, scope: 'public', cardinality: container, attr: ['body':name])
+//        optionalToPrimitiveWrapper(property)
+//        MClass clazz = nestedStack.peek()
+//        clazz.addField(property)
+//        //clazz.addMethod(new MMethod(stereotype: constructor, params:[new MBind(name: name, type: type)], body: "" ))
+//        callback.gen(body, property)
+//    }
+
+//    @Override MProperty genAny(String propertyName, Any any)
+//    {
+//        //println "any @name=${any.qname?.name}"
+//        MCardinality container = container(any)
+//        Type polymorphicType = polymporphicType(any) ?: any.type // any.type is not allowed in XML Schema?
+//        MType type = schemaTypeToPropertyType(polymorphicType ?: schema.getGlobal(DEFAULT_NS, anyType), container)
+//        MProperty property
+//        if (polymorphicType) {
+//            String val = any.fixed ?: any.'default' ?: (container == MCardinality.LIST) ? 'new java.util.ArrayList<>()' : null
+//            property = new MProperty(name:propertyName, type:type, cardinality:container, final:any.fixed!=null, val:val)
+//        } else if (container == MCardinality.LIST) {
+//            container = MCardinality.MAP
+//            MBind mapRType = new MBind(cardinality:container,type:type)
+//            String val = null //'LinkedHashMap()'
+//            property = new MProperty(name:propertyName, type:type, scope:'public', cardinality:container, final:any.fixed!=null, val:val, attr:['keyType':'String'])
+//        } else {
+//            String val = any.fixed ?: any.'default'
+//            property = new MProperty(name:propertyName, type:type, cardinality:container, final:any.fixed!=null, val:val)
+//        }
+//        MClass clazz = nestedStack.peek()
+//        clazz.addField(property)
+//        callback.gen(any, property)
+//        property
+//    }
+
+//    @Override def visit(Attribute attribute)
+//    {
+//        //println "attribute @name=${attribute.qname.name} @type=${attribute.type}"
+//        MCardinality container = container(attribute)
+//        String name = propertyFromAttributeFunction.apply(attribute.qname, container)
+//        if (!attribute.type)
+//            attribute.type = schema.getGlobal(DEFAULT_NS, 'anySimpleType')
+//        MType type = schemaTypeToPropertyType(attribute.type, container)
+//        String val = attribute.fixed ?: attribute.'default'
+//        java.util.List<MRestriction> restrictions = MappingUtil.translate(attribute)
+//        MProperty property = new MProperty(name:name, type:type, scope:'public', cardinality:container, final:attribute.fixed!=null, val:val, restrictions:restrictions)
+//        setNotNull(property)
+//        MClass clazz = nestedStack.peek()
+//        clazz.addField(property)
+//        callback.gen(attribute, property)
+//    }
+
+//    @Override def visit(Element element)
+//    {
+//        MClass clazz = nestedStack.peek()
+//        TextOnlyType textOnlyType= clazz.attr['nodeType']
+//        if (clazz.name == 'Track') {
+//            println "element @name=${element.qname.name} @type=${element.type} -> ${clazz.name}"
+//        }
+//        //Compositor compositor = compositorStack.peek()
+//        MCardinality container = container(element)
+//        String name = propertyFromElementFunction.apply(element.qname, container)
+//        MType type = null
+//        if (element.type) {
+//            type = schemaTypeToPropertyType(element.type, container)
+//            if (!type)
+//                throw new IllegalStateException("no type for element: ${element}")
+//            if (element.type.isWrapperElement()) {
+//                Type wrappedType = element.type.wrapperType()
+//                if (wrappedType) {
+//                    container = MCardinality.LIST
+//                    type = schemaTypeToPropertyType(wrappedType, container)
+//                } else if (element.type.childElements()[0] instanceof Any) {
+//                    Any any = element.type.childElements()[0]
+//                    genAny(name, any)
+//                    return
+//                }
+//            }
+//        } else {
+//            if (element.isAbstract()) {
+//                type = schemaAbstractTypeToPropertyType(element)
+//            } else {
+//                throw new IllegalStateException("no type for element: ${element} with parent: ${textOnlyType}")
+//            }
+//        }
+//        String val = element.fixed ?: element.'default'
+//        java.util.List<MRestriction> restrictions = MappingUtil.translate(element)
+//        MProperty property = new MProperty(name:name, type:type, scope:'public', cardinality:container, final:element.fixed!=null, val:val, restrictions:restrictions)
+//        setNotNull(property)
+//        clazz.addField(property)
+//        callback.gen(element, property)
+//    }
+
+//    @Override MEnum generateEnumClass(MEnum enumClass)
+//    {
+//        java.util.List<String> enumValues = enumClass.enumValues.sort()
+//        def enumNames = []
+//        def enumNameSet = [] as Set //look for and fix duplicate names
+//        for(tag in enumValues) {
+//            def enumName = enumNameFunction.apply(tag)
+//            int i = 1
+//            while (enumNameSet.contains(enumName)) //name not unique?
+//                enumName += i
+//            enumNameSet << enumName
+//            enumNames << enumName
+//        }
+//        enumClass.enumNames = enumNames
+//        enumClass.enumValues = enumValues //.each { value -> enumValueFunction.apply(value) }
+//        enumClass
+//    }

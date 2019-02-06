@@ -99,7 +99,7 @@ class JavaJacksonCallback extends XmlNodeCallback
 //                @XmlElement(name = "b", type = Double.class)
 //        ])
         StringBuilder xmlElementList = new StringBuilder()
-        property.type.polymorphicTypes.eachWithIndex { e,i ->
+        property.type.polymorphicTypes.eachWithIndex { e, i ->
             if (i > 0)
                 xmlElementList << ', '
             xmlElementList << "\n\t\t@XmlElement(name=\"${e.value}\", type=${e.key}.class)"

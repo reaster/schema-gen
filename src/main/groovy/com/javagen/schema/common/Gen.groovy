@@ -17,6 +17,7 @@
 package com.javagen.schema.common
 
 import com.javagen.schema.model.MClass
+import com.javagen.schema.model.MMethod
 import com.javagen.schema.model.MModule
 import com.javagen.schema.model.MSource
 import com.javagen.schema.xml.XmlNodeCallback
@@ -50,7 +51,7 @@ import java.util.function.Function
 abstract class Gen
 {
     URL schemaURL = new URL('http://www.topografix.com/gpx/1/1/gpx.xsd')
-    File srcDir = new File('src/main/java-gen');
+    File srcDir = null //new File('src/main/java-gen');
 
     List<CodeEmitter> pipeline = []
 
@@ -59,7 +60,10 @@ abstract class Gen
     def customPluralMappings = [:] //needed for irregular nouns: tooth->teeth, person->people
     boolean useOptional = false //just effects Java code: Integer vs Optional<Integer>
     boolean printSchema = false
+    File projectDir = null
+    String projectName = null
     String packageName = null
+    String srcFolder = 'src/main/java-gen'
     String addSuffixToEnumClass = 'Enum'
     String removeSuffixFromType = 'Type'
     String fileExtension = 'java'
@@ -78,6 +82,38 @@ abstract class Gen
     Function<String,String> collectionNameFunction = { singular -> customPluralMappings[singular] ?: pluralService.toPlural(singular) }
     Function<String,String> simpleXmlTypeToPropertyType
     BiFunction<Gen,MClass,File> classOutputFileFunction = { gen, clazz -> new File(gen.srcDir, GlobalFunctionsUtil.pathFromPackage(clazz.fullName(),fileExtension))} //default works for Java
+
+    File getSrcDir()
+    {
+        if (srcDir) {
+            if (projectDir) {
+                if (!projectName)
+                    projectName = projectDir.name
+            } else {
+                if (!projectName)
+                    projectName = 'javagen'
+                projectDir = new File(projectName)
+            }
+            if (!srcFolder)
+                throw new IllegalStateException('srcFolder not set')
+            srcDir = new File(projectDir, srcFolder)
+        }
+        srcDir
+    }
+
+    String projectPath(File srcFile, boolean includeProjectFolder=true)
+    {
+        def segments = Arrays.asList(srcFile.absolutePath.split('/')).reverse()
+        String result = ''
+        String stop = projectName ? projectName : srcFolder.split('/')[0]
+        for(def segment : segments) {
+            if (stop == segment) {
+                return includeProjectFolder ? ("${projectName ? projectName : stop}/${result}") : result
+            }
+            result = result ? "${segment}/${result}" : segment
+        }
+        result
+    }
 
     /**
      * Build abstract code model from (XML) schema.
@@ -130,7 +166,12 @@ abstract class Gen
             throw new Error("no 'fileName' param provided for ${nested}")
         if (!fileName)
             fileName = 'Src'
-        new File(gen.srcDir, "${fileName}.${gen.fileExtension}")
+        if (nested && nested instanceof MModule && ((MModule)nested).name) {
+            String packageName = ((MModule)nested).fullName().replace('.', '/')
+            return new File(new File(gen.srcDir, packageName), "${fileName}.${gen.fileExtension}")
+        } else {
+            new File(gen.srcDir, "${fileName}.${gen.fileExtension}")
+        }
     }
 
 //    /** when assigned to classOutputFileFunction, allows multiple code artifacts in one source files based on parent attr value */

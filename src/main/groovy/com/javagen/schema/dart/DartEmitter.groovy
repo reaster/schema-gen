@@ -109,6 +109,13 @@ class DartEmitter extends CodeEmitter
 		if (c.isAbstract())
 			out << 'abstract '
 		out << (c.mixin ? 'mixin ' : (c.isEnum() ? '' : 'class ')) << c.name
+		if (c.getExtends())
+			out << ' extends ' << c.getExtends()
+		c.implements.unique().eachWithIndex { e, i ->
+			out << (i==0) ? 'extends ' : ', '
+			out << e.name
+		}
+
 		/*
 		if (!c.fields.isEmpty()) {
 			out << '('
@@ -248,6 +255,7 @@ class DartEmitter extends CodeEmitter
 			println "ignoring method with no name: ${m}"
 			return
 		}
+		MClass c = m.parent instanceof MClass ? m.parent : null
 		out << '\n' << '\n' << tabs
 		boolean annotationsOnNL = m.annotations.size() > 1
 		m.annotations.each {
@@ -273,11 +281,13 @@ class DartEmitter extends CodeEmitter
 		if (m.stereotype == Stereotype.constructor) {
 			boolean allProperties = MMethod.IncludeProperties.allProperties == m.includeProperties
 			if (allProperties) {
+				Map<String,MBind> localProperties = c.fields
 				out << m.name << '({'
 				this++
 				m.params.eachWithIndex { MBind p, int i ->
 					if (i>0) out << ', '
-					out << '\n' << tabs << "this.${p.name}"
+					boolean isLocal = localProperties.containsKey(p.name)
+					out << '\n' << tabs << "${ isLocal ? 'this.' : '' }${p.name}"
 					def val = defaultValue(p, p.val)
 					if (val != null) {
 						out << ' = ' << val
@@ -285,6 +295,17 @@ class DartEmitter extends CodeEmitter
 				}
 				this--
 				out << '\n' << tabs << "})"
+				Map<String,MBind> superProperties = c.inheritedFields(false)
+				if (!superProperties.isEmpty()) {
+					out << ' : super('
+					this++
+					superProperties.eachWithIndex { Map.Entry<String, MField> e, int i ->
+						if (i>0) out << ', '
+						out << '\n' << tabs << e.key << ':' << e.key
+					}
+					this--
+					out << '\n' << tabs << ')'
+				}
 			} else {
 				out << m.name << '('
 				m.params.eachWithIndex { MBind p, int i ->

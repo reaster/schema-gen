@@ -101,16 +101,17 @@ class DartPreEmitter extends CodeEmitter
     {
         if (!m.stereotype || m.parent.isInterface())
             return
+        MClass c = m.parent instanceof MClass ? m.parent : null
         switch (m.stereotype) {
             case constructor:
-                m.name = m.parent.shortName()
+                m.name = c.shortName()
                 //m.body = m.body ?: this.&constructorMethodBody
                 switch (m.includeProperties) {
                     case finalProperties:
-                        m.params = m.parent.fields.values().findAll { p -> p.isFinal() && !p.isStatic() && !p.isGenIgnore() }
+                        m.params = c.inheritedFields().values().findAll { p -> p.isFinal() && !p.isStatic() && !p.isGenIgnore() }
                         break
                     case allProperties:
-                        m.params = m.parent.fields.values().findAll { p -> !p.isFinal() && !p.isStatic() && !p.isGenIgnore() }
+                        m.params = c.inheritedFields().values().findAll { p -> !p.isFinal() && !p.isStatic() && !p.isGenIgnore() }
                 }
                 break
             case toJson:
@@ -367,6 +368,8 @@ class DartPreEmitter extends CodeEmitter
     }
     private addDefaultClassMethodSubs(MClass c)
     {
+        if (c.ignore)
+            return
         defaultMethods.each {
             if (CLASS_METHODS.contains(it)) {
                 MMethod method = new MMethod(stereotype: it)

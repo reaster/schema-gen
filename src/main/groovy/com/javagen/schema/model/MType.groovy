@@ -27,6 +27,8 @@ class MType extends MBase
 
 	String toString() { name }
 
+	boolean isTypeOf(MType t) { false }
+
 	static MType lookupType(String name) {
 		MTypeRegistry.instance().lookupType(name)
 	}

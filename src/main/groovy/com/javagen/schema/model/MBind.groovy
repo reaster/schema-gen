@@ -17,7 +17,7 @@
 package com.javagen.schema.model
 
 /**
- * A bound type has a scope, optional cardinality, optional name and optional restrictions.
+ * A bound type has a scope, optional cardinality, optional polymorphism, optional name and optional restrictions.
  * It serves as a base class for field, property, return types and function parameter declarations.
  * 
  * @author richard

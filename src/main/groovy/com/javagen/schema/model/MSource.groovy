@@ -61,7 +61,17 @@ trait MSource
      */
     List<String> gatherSourceImports()
     {
-        gather(true)
+        List<String> results = []
+        if (sourceFile) {
+            Set<String> set = this.imports?.list ?: [] as Set
+            classes.each { MClass c ->
+                c.imports.list.each {
+                    set << it
+                }
+            }
+            results = set.sort().collect()
+        }
+        results
     }
 
 
@@ -70,7 +80,17 @@ trait MSource
      */
     List<String> gatherSourceParts()
     {
-        gather(false)
+        List<String> results = []
+        if (sourceFile) {
+            Set<String> set = this.parts?.list ?: [] as Set
+            classes.each { MClass c ->
+                c.parts.list.each {
+                    set << it
+                }
+            }
+            results = set.sort().collect()
+        }
+        results
     }
 
     /**
@@ -84,7 +104,7 @@ trait MSource
         def leftShift(item) {
             def parent = owner.parent
             //println "Imports.leftShift owner=${owner}, owner.parent=${owner.parent} , this=${this} "
-            if ((parent instanceof MModule)) {
+            if (!parent || parent instanceof MModule) {
                 list << item
             } else {
                 parent.imports << item
@@ -115,25 +135,5 @@ trait MSource
         def each(Closure c) { list.each(c) }
     }
 
-    private List<String> gather(boolean useImports=true)
-    {
-        List<String> results = []
-        if (sourceFile) {
-            Set<String> set = [] as Set
-            classes.each { MClass c ->
-                if (useImports) {
-                    c.imports.list.each {
-                        set << it
-                    }
-                } else {
-                    c.parts.list.each {
-                        set << it
-                    }
-                }
-            }
-            results = set.sort().collect()
-        }
-        results
-    }
 
 }

@@ -54,12 +54,15 @@ class DartGenMain extends DartGen
         def unknownEnum = 'unknown'
         enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: dartEnumName(text, false) }
     }
+
     def initHsf2()
     {
         schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-2_0.xsd').toURI().toURL()
+        //projectName = 'hot_springs_finder'
         sourceFileName = 'hsf2'
-        packageName = 'model'
-        srcDir = new File('/Users/richard/dev/flutter/hot_springs_finder/lib/model')
+        //packageName = 'model'
+        projectDir = new File('/Users/richard/dev/flutter/hot_springs_finder')
+//        srcDir = new File('/Users/richard/dev/flutter/hot_springs_finder/lib/model')
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
         def enumCustomNames = ['primitive+':'primitivePlus','$':'cheap','$$':'moderate','$$$':'pricy','$$$$':'exclusive']
         def unknownEnum = 'unknown'

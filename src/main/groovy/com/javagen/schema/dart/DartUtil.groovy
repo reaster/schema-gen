@@ -16,6 +16,8 @@
 
 package com.javagen.schema.dart
 
+import com.javagen.schema.model.MModule
+
 import static com.javagen.schema.common.GlobalFunctionsUtil.*
 
 /**
@@ -33,16 +35,33 @@ class DartUtil {
     {
         return dartReservedWords.contains(ident)
     }
-    static File toGeneratedSourceFileName(File src, String suffix='.g', String subfolder=null)
+    static String trimSlashes(String path)
+    {
+        if (!path || path.isEmpty())
+            return ''
+        if (path?.startsWith('/'))
+            path = path.substring(1)
+        if (path?.endsWith('/'))
+            path = path[0..-1]
+        path
+    }
+//    static String toGeneratedRelativeFileName(String srcFolder, MModule m, String name, String suffix='.g', String subFolder=null)
+//    {
+//        String src = trimSlashes(m.fullName()?.replace('.', '/'))
+//        srcFolder = trimSlashes(srcFolder)
+//        subFolder = trimSlashes(subFolder)
+//        if (name.endsWith('.dart'))
+//            name = name[0..-6]
+//        String result = "${src ? src+'/' : ''}${srcFolder ? srcFolder+'/' : ''}${subFolder ? subFolder + '/' : ''}${name}${suffix}.dart"
+//        result
+//    }
+    static File toGeneratedSourceFileName(File src, String suffix='.g', String subFolder=null)
     {
         def name = src.name
         if (name.endsWith('.dart'))
             name = name[0..-6]
-        if (subfolder?.startsWith('/'))
-            subfolder = subfolder.substring(1)
-        if (subfolder?.endsWith('/'))
-            subfolder = subfolder[0..-1]
-        File result = new File("${src.parentFile.absolutePath}/${subfolder ? subfolder+'/' : ''}${name}${suffix}.dart")
+        subFolder = trimSlashes(subFolder)
+        File result = new File("${src.parentFile.absolutePath}/${subFolder ? subFolder+'/' : ''}${name}${suffix}.dart")
         result
     }
     /**

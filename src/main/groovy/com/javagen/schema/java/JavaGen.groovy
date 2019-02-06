@@ -105,14 +105,19 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	String anyPropertyName = 'any'
 	String anyPropeertyNameWrapped = 'map'
 	String polyMorphicListName = 'list'
+	String propertyScope = 'private'
 	String anyType = 'string'
 	boolean useOptional = false
+	boolean choiceCollectionWrapperConstructor = true
 
 
 	JavaGen(boolean skipInit=false)
 	{
 		super()
 		//Java-specific config:
+		srcFolder = 'src/main/java-gen'
+		fileExtension = 'java'
+
 		if (!skipInit) {
 			//assign simpleXmlTypeToPropertyType function to lambda
 			this.simpleXmlTypeToPropertyType = { typeName ->
@@ -214,7 +219,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 //			schemaType = schema.getGlobal(typeName)
 //		}
 		String type = schemaTypeToPropertyType(schemaType ?: schema.getGlobal(DEFAULT_NS,anyType), container)
-		MProperty property = new MProperty(name:name, type:type)
+		MProperty property = new MProperty(name:name, type:type, scope:propertyScope)
 		setNotNull(property)
 		optionalToPrimitiveWrapper(property)
 		MClass clazz = nestedStack.peek()
@@ -228,7 +233,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		MCardinality container = container(anyAttribute)
 		String name = propertyNameFunction.apply(anyAttribute?.qname?.name ?: anyAttributeName)
 		String type = schemaTypeToPropertyType(anyAttribute.type ?: schema.getGlobal(DEFAULT_NS,anyAttributeType), container)
-		MProperty property = new MProperty(name:name, type:type)
+		MProperty property = new MProperty(name:name, type:type, scope:propertyScope)
 		setNotNull(property)
 		optionalToPrimitiveWrapper(property)
 		MClass clazz = nestedStack.peek()
@@ -245,7 +250,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		MType type = schemaTypeToPropertyType(attribute.type, container)
 		String val = attribute.fixed ?: attribute.'default'
 		java.util.List<MRestriction> restrictions = MappingUtil.translate(attribute)
-		MProperty property = new MProperty(name:name, type:type, cardinality:container, final:attribute.fixed!=null, val:val, restrictions:restrictions)
+		MProperty property = new MProperty(name:name, type:type, cardinality:container, scope:propertyScope, final:attribute.fixed!=null, val:val, restrictions:restrictions)
 		setNotNull(property)
 		optionalToPrimitiveWrapper(property)
 		MClass clazz = nestedStack.peek()
@@ -291,7 +296,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		}
 		String val = element.fixed ?: element.'default'
 		java.util.List<MRestriction> restrictions = MappingUtil.translate(element)
-		MProperty property = new MProperty(name:name, type:type, cardinality:container, final:element.fixed!=null, val:val, restrictions:restrictions)
+		MProperty property = new MProperty(name:name, type:type, cardinality:container, scope:propertyScope, final:element.fixed!=null, val:val, restrictions:restrictions)
 		setNotNull(property)
 		optionalToPrimitiveWrapper(property)
 		clazz.addField(property)
@@ -304,7 +309,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		MCardinality container = container(body)
 		String name = propertyNameFunction.apply(bodyPropertyName)
 		MType type = schemaTypeToPropertyType(body.type ?: schema.getGlobal(DEFAULT_NS, 'string'), container)
-		MProperty property = new MProperty(name:name, type:type, cardinality: container, attr: ['body':name])
+		MProperty property = new MProperty(name:name, type:type, cardinality: container, scope:propertyScope, attr:['body':name])
 		setNotNull(property)
 		optionalToPrimitiveWrapper(property)
 		MClass clazz = nestedStack.peek()
@@ -348,13 +353,16 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		compositorStack.pop()
 	}
 
-	private void collectPolymorphicTypes(Choice choice, MBase polymorphicType)
+	private Map<MType,String> collectPolymorphicTypes(Choice choice)
 	{
+		Map<MType,String> polymorphicTypes = new LinkedHashMap()
 		for(Element e : choice.childElements()) { //includes elements and groups
 			MType type = schemaTypeToPropertyType(e.type, MCardinality.REQUIRED)
-			polymorphicType.polymorphicTypes.put(type, e.qname.name)
+			polymorphicTypes.put(type, e.qname.name)
 		}
+		polymorphicTypes
 	}
+
 
 	private void choiceCollectionWrapper(Choice choice)
 	{
@@ -362,14 +370,15 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		String name = polyMorphicListName //TODO dig up proper name
 		Type schemaType = polymporphicType(choice)
 		MType type = schemaTypeToPropertyType(schemaType ?: schema.getGlobal(DEFAULT_NS,anyType), container)
-		collectPolymorphicTypes(choice, type)
-		MProperty property = new MProperty(name:name, type:type, cardinality:container)
+		MProperty property = new MProperty(name:name, type:type, cardinality:container, scope:propertyScope, polymorphicTypes:collectPolymorphicTypes(choice))
 		setNotNull(property)
 		MClass clazz = nestedStack.peek()
 		clazz.addField(property)
-		MMethod constructor = new MMethod(stereotype:constructor, includeProperties: MMethod.IncludeProperties.allProperties)
-		constructor.params << new MBind(name:name, type:type, cardinality:container)
-		clazz.addMethod(constructor)
+		if (choiceCollectionWrapperConstructor) {
+			MMethod constructor = new MMethod(stereotype:constructor, includeProperties: MMethod.IncludeProperties.allProperties)
+			constructor.params << new MBind(name:name, type:type, cardinality:container)
+			clazz.addMethod(constructor)
+		}
 		callback.gen(choice, property)
 		println "choice -> ${name}: ${type}"
 	}
@@ -380,8 +389,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		String name = 'value' //TODO dig up proper name
 		Type schemaType = polymporphicType(choice)
 		MType type = schemaTypeToPropertyType(schemaType ?: schema.getGlobal(DEFAULT_NS,anyType), container)
-		collectPolymorphicTypes(choice, type)
-		MProperty property = new MProperty(name:name, type:type, cardinality:container)
+		MProperty property = new MProperty(name:name, type:type, cardinality:container, scope:propertyScope, polymorphicTypes:collectPolymorphicTypes(choice))
 		setNotNull(property)
 		optionalToPrimitiveWrapper(property)
 		MClass clazz = nestedStack.peek()
@@ -513,6 +521,13 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		schema.getGlobal(typeName)
 	}
 
+	void mapPropertyAccessors(MProperty property)
+	{
+		String propertyName = property.name
+		property.methods[putter] = new MMethod(name: "put${upperCase(propertyName)}", params: [new MBind(name:'key', type: 'String'), new MBind(name: 'value', type: type)], body: JavaPreEmitter.&putterMethodBody, stereotype: putter, refs: ['property':property])
+		property.methods[getter] = new MMethod(name: "get${upperCase(propertyName)}", type:mapRType, body: JavaPreEmitter.&getterMethodBody, stereotype: getter, refs: ['property':property])
+	}
+
 	MProperty genAny(String propertyName, Any any)
 	{
 		//println "any @name=${any.qname?.name}"
@@ -522,17 +537,16 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		MProperty property
 		if (polymorphicType) {
 			String val = any.fixed ?: any.'default' ?: (container == MCardinality.LIST) ? 'new java.util.ArrayList<>()' : null
-			property = new MProperty(name:propertyName, type:type, cardinality:container, final:any.fixed!=null, val:val)
+			property = new MProperty(name:propertyName, type:type, cardinality:container, scope:propertyScope, final:any.fixed!=null, val:val)
 		} else if (container == MCardinality.LIST) {
 			container = MCardinality.MAP
 			MBind mapRType = new MBind(cardinality:container,type:type)
 			String val = 'new java.util.LinkedHashMap<>()'
-			property = new MProperty(name:propertyName, type:type, cardinality:container, final:any.fixed!=null, val:val, attr:['keyType':'String'])
-			property.methods[putter] = new MMethod(name: "put${upperCase(propertyName)}", params: [new MBind(name:'key', type: 'String'), new MBind(name: 'value', type: type)], body: JavaPreEmitter.&putterMethodBody, stereotype: putter, refs: ['property':property])
-			property.methods[getter] = new MMethod(name: "get${upperCase(propertyName)}", type:mapRType, body: JavaPreEmitter.&getterMethodBody, stereotype: getter, refs: ['property':property])
+			property = new MProperty(name:propertyName, type:type, cardinality:container, scope:propertyScope, final:any.fixed!=null, val:val, attr:['keyType':'String'])
+			mapPropertyAccessors(property)
 		} else {
 			String val = any.fixed ?: any.'default'
-			property = new MProperty(name:propertyName, type:type, cardinality:container, final:any.fixed!=null, val:val)
+			property = new MProperty(name:propertyName, type:type, cardinality:container, scope:propertyScope, final:any.fixed!=null, val:val)
 		}
 		setNotNull(property)
 		optionalToPrimitiveWrapper(property)
@@ -580,6 +594,14 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		}
 	}
 
+	void addEnumValueSupport(MEnum enumClass)
+	{
+		//setup a private value addField
+		enumClass.addField( new MProperty(name: enumValueFieldName, scope: 'private', 'final': true) )
+		//add a private constructor
+		enumClass.addMethod( new MMethod(name:enumClass.shortName(), stereotype:constructor, includeProperties:allProperties, scope:'private') )
+	}
+
 	MEnum generateEnumClass(MEnum enumClass)
 	{
 		java.util.List<String> enumValues = enumClass.enumValues.sort()
@@ -595,10 +617,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		}
 		enumClass.enumNames = enumNames
 		enumClass.enumValues = enumValues
-		//setup a private value addField
-		enumClass.addField( new MProperty(name: enumValueFieldName, scope: 'private', 'final': true) )
-		//add a private constructor
-		enumClass.addMethod( new MMethod(name:enumClass.shortName(), stereotype:constructor, includeProperties:allProperties, scope:'private') )
+		addEnumValueSupport(enumClass)
 		enumClass
 	}
 
