@@ -28,6 +28,11 @@ class MType extends MBase
 	String toString() { name }
 
 	boolean isTypeOf(MType t) { false }
+	/** single property class as a LIST, SET or ARRAY */
+	boolean isListWrapper() { false }
+	/** single property class ussualy as a MAP or LINKEDMAP */
+	boolean isMapWrapper() { false }
+
 
 	static MType lookupType(String name) {
 		MTypeRegistry.instance().lookupType(name)

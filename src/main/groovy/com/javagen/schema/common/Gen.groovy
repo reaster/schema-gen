@@ -17,10 +17,9 @@
 package com.javagen.schema.common
 
 import com.javagen.schema.model.MClass
-import com.javagen.schema.model.MMethod
 import com.javagen.schema.model.MModule
 import com.javagen.schema.model.MSource
-import com.javagen.schema.xml.XmlNodeCallback
+import groovy.text.SimpleTemplateEngine
 
 import static com.javagen.schema.common.GlobalFunctionsUtil.lowerCase
 
@@ -70,7 +69,7 @@ abstract class Gen
     String defaultEnumValue //ignored if null, otherwise forces all enum classes to don't define defaults to use this value
     boolean sortEnumValues = true
     boolean includeIfNull = false
-    boolean includeJsonSupport = true;
+    boolean includeJsonSupport = true
 
     Function<String,String> packageNameFunction = { ns -> packageName ?: ns ? GlobalFunctionsUtil.javaPackageFromNamespace(ns, true) : 'com.javagen.model' }
     Function<String,String> enumNameFunction = { text -> GlobalFunctionsUtil.javaEnumName(text, false) }
@@ -81,11 +80,14 @@ abstract class Gen
     Function<String,String> constantNameFunction = { text -> GlobalFunctionsUtil.javaConstName(text) }
     Function<String,String> collectionNameFunction = { singular -> customPluralMappings[singular] ?: pluralService.toPlural(singular) }
     Function<String,String> simpleXmlTypeToPropertyType
-    BiFunction<Gen,MClass,File> classOutputFileFunction = { gen, clazz -> new File(gen.srcDir, GlobalFunctionsUtil.pathFromPackage(clazz.fullName(),fileExtension))} //default works for Java
+    BiFunction<Gen,MClass,File> classOutputFileFunction = { gen, clazz ->
+        File srcDir = gen.srcDir
+        new File(srcDir, GlobalFunctionsUtil.pathFromPackage(clazz.fullName(), fileExtension))
+    } //default works for Java
 
     File getSrcDir()
     {
-        if (srcDir) {
+        if (!srcDir) {
             if (projectDir) {
                 if (!projectName)
                     projectName = projectDir.name
@@ -150,12 +152,12 @@ abstract class Gen
     /**
      * Generate code from template and bindings - currently not being used.
      */
-    def genTemplate(String templateText, File outputFile, Map binding)
+    def static genTemplate(String templateText, File outputFile, Map binding)
     {
-        def engine	= new groovy.text.SimpleTemplateEngine()
+        def engine	= new SimpleTemplateEngine()
         def template = engine.createTemplate(templateText)
         def out = new FileOutputStream(outputFile, false)
-        out << template.make(binding).toString();
+        out << template.make(binding).toString()
         out.close()
     }
 

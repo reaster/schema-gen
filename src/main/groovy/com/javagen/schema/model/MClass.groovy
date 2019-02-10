@@ -25,7 +25,8 @@ class MClass extends MType implements MSource
 	private boolean extension //Swift and Kotlin
 	private boolean mixin = false //Dart
 	private boolean data
-	boolean ignore = false //do not emmit class
+	/** do not emmit class */
+	boolean ignore = false
 	protected def scope = 'public'
 	private boolean struct
 	Map<String,MField> fields = [:]
@@ -33,29 +34,33 @@ class MClass extends MType implements MSource
 	List<String> _implements = []
 	String _extends = null
 
-	Map<String,MField> inheritedFields(boolean includeThis = true) {
-		Map<String,MField> result = new LinkedHashMap<>()
-		MClass c = includeThis ? this : (this.extends ? MType.lookupType(this.extends) : null)
-		while (c != null) {
-			c.fields.each { it -> result[it.key] = it.value }
-			c = c.extends ? MType.lookupType(c.extends) : null
-		}
-		result
-	}
-
-	def MClass() {
+	MClass() {
 		scope = 'public'
 		_abstract = false
 	}
+
+	Map<String,MField> inheritedFields(boolean includeThis = true) {
+		Map<String,MField> result = new LinkedHashMap<>()
+		MClass c = includeThis ? this : (this.extends ? (MClass)lookupType(this.extends) : null)
+		while (c != null) {
+			c.fields.each { it -> result[it.key] = it.value }
+			c = c.extends ? lookupType(c.extends) : null
+		}
+		result
+	}
+	MField firstField() {
+		inheritedFields().values().first()
+	}
+
 	@Override
 	String fullName() {
 		parent ? parent.fullName()+'.'+name : name
 	}
-	def addField(f) {
+	def addField(MField f) {
 		fields[f.name] = f
 		f.parent = this
 	}
-	def addMethod(m) {
+	def addMethod(MMethod m) {
 		methods << m
 		m.parent = this
 	}
@@ -79,13 +84,25 @@ class MClass extends MType implements MSource
 		if (t instanceof MClass) {
 			MClass c = this
 			while(c) {
-				c = c.extends ? MType.lookupType(c.extends) : null
+				c = c.extends ? (MClass)lookupType(c.extends) : null
 				if (c == t) {
 					return true
 				}
 			}
 		}
 		false
+	}
+
+	/** single property class as a LIST, SET or ARRAY */
+	@Override boolean isListWrapper() {
+		Map<String,MField> allFields = inheritedFields()
+		allFields.size() == 1 && allFields.values().first().cardinality in [MCardinality.ARRAY, MCardinality.LIST, MCardinality.SET]
+	}
+	/** single property class ussualy as a MAP or LINKEDMAP */
+	@Override boolean isMapWrapper()
+	{
+		Map<String,MField> allFields = inheritedFields()
+		allFields.size() == 1 && allFields.values().first().cardinality in [MCardinality.MAP, MCardinality.LINKEDMAP]
 	}
 
 	@Override String nestedAttr(String key)

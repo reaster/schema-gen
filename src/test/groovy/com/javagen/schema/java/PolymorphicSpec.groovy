@@ -70,7 +70,7 @@ class PolymorphicSpec extends Specification
 //
 //        @JacksonXmlElementWrapper(useWrapping = false)
 //        @XmlElements(value = {
-//            @XmlElement(name = "A", type = Integer.class) @XmlElement(name = "B", type = Float.class)
+//            @XmlElement(name = "A", type = Integer.class), @XmlElement(name = "B", type = Float.class)
 //        })
 //        public List items;
 //    }

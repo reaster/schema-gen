@@ -19,10 +19,6 @@ package com.javagen.schema.common
 import groovy.transform.CompileStatic
 import org.xml.sax.InputSource
 
-import java.nio.file.Path
-import java.nio.file.Paths
-
-import static GlobalFunctionsUtil.CharType.*
 import org.xml.sax.helpers.DefaultHandler
 import javax.xml.parsers.SAXParser
 import javax.xml.parsers.SAXParserFactory
@@ -109,7 +105,7 @@ final class GlobalFunctionsUtil
 		for(int i = 0; i < strlen; i++) {
 			char c = Character.toUpperCase( anyString.charAt(i) )
 			boolean validId = Character.isJavaIdentifierPart(c) && (c < 128)
-			if (validId || lastChar != '_')
+			if (validId || lastChar != (char)'_')
 				javaConst.append( validId ? c : '_')
 			lastChar = validId ? c : (char)'_'
 		}
@@ -121,7 +117,7 @@ final class GlobalFunctionsUtil
 			return null
 		boolean canReverse = true
 		List<String> result = []
-		namespace.split('/|:').each { String seg ->
+		namespace.split('[/:]').each { String seg ->
 			if (seg && !seg.startsWith('http')) {
 				String [] tokens = canReverse ? seg.split('\\.').reverse() : seg.split('\\.')
 				tokens.each { String token ->
@@ -174,8 +170,8 @@ final class GlobalFunctionsUtil
 			if (index >= 0) {
 				final String relative = path.substring(index+1)
 				return relative
-				final Path path1 = Paths.get(url.toURI())
-				return path.toString()
+				//final Path path1 = Paths.get(url.toURI())
+				//return path.toString()
 			} else if (path.startsWith('.')) {
 				return path
 			} else if (!path.startsWith('/') && path.indexOf(':') == -1) { //excludes windows drive paths: C:/path
@@ -196,20 +192,20 @@ final class GlobalFunctionsUtil
 			namespaces['xml'] = "http://www.w3.org/XML/1998/namespace"
 		}
 
-		@Override public void startPrefixMapping (String prefix, String uri) throws SAXException
+		@Override void startPrefixMapping (String prefix, String uri) throws SAXException
 		{
 			//if ( ! alreadyDefinedNS.contains(uri) ) {
 				alreadyDefinedNS << uri
 				namespaces.put(prefix, uri)
 			//}
 		}
-		@Override public void startElement(String uri, String localName,String qName, Attributes attributes) throws SAXException
+		@Override void startElement(String uri, String localName,String qName, Attributes attributes) throws SAXException
 		{
 			if (!targetFound && targetNamespaceKey!=null) {
 				int index = attributes.getIndex(targetNamespaceKey)
 				if (index >= 0) {
 					namespaces[targetNamespaceKey] = attributes.getValue(index)
-					println("<${qName} targetNamespace='${attributes.getValue(index)}'>");
+					println("<${qName} targetNamespace='${attributes.getValue(index)}'>")
 				}
 				targetFound = true
 			}
@@ -238,20 +234,20 @@ final class GlobalFunctionsUtil
 
 	static Map<String,String>loadNamespaces(URL xmlUrl, Set<String> alreadyDefinedNS=new HashSet<>(), String targetNamespaceKey='targetNamespace')
 	{
-		final SAXParserFactory factory = SAXParserFactory.newInstance();
+		final SAXParserFactory factory = SAXParserFactory.newInstance()
 		factory.setNamespaceAware(true)
-		SAXParser saxParser = factory.newSAXParser();
+		SAXParser saxParser = factory.newSAXParser()
 		NamespaceHandler handler = new NamespaceHandler(targetNamespaceKey:targetNamespaceKey, alreadyDefinedNS:alreadyDefinedNS)
-		saxParser.parse(xmlUrl.toString(), handler);
+		saxParser.parse(xmlUrl.toString(), handler)
 		handler.namespaces
 	}
 	static Map<String,String>loadNamespaces(String xml, Set<String> alreadyDefinedNS=new HashSet<>(), String targetNamespaceKey='targetNamespace')
 	{
-		final SAXParserFactory factory = SAXParserFactory.newInstance();
+		final SAXParserFactory factory = SAXParserFactory.newInstance()
 		factory.setNamespaceAware(true)
-		SAXParser saxParser = factory.newSAXParser();
+		SAXParser saxParser = factory.newSAXParser()
 		NamespaceHandler handler = new NamespaceHandler(targetNamespaceKey:targetNamespaceKey, alreadyDefinedNS:alreadyDefinedNS)
-		saxParser.parse(new InputSource(new StringReader(xml)), handler);
+		saxParser.parse(new InputSource(new StringReader(xml)), handler)
 		handler.namespaces
 	}
 
@@ -295,7 +291,7 @@ final class GlobalFunctionsUtil
 		for (int i = 0; i < strlen; i++) {
 			char ch = text.charAt(i)
 			if (specialChars.indexOf((int)ch) >= 0) {
-				if (ch == '&') {
+				if (ch == (char)'&') {
 					retstr.append("and")
 				} else {
 					if (replacedSpecial)
@@ -336,7 +332,7 @@ final class GlobalFunctionsUtil
 			onechar[0] = anyString.charAt(i)
 			String charString = new String(onechar)
 			if (specialCharacters.indexOf(charString) >= 0) {
-				nextUpper = !charString.equals("'")
+				nextUpper = charString != '\''
 			} else {
 				if (nextUpper) {
 					if (!firstChar)
@@ -387,7 +383,7 @@ final class GlobalFunctionsUtil
 	{
 		if (!namespace)
 			return null
-		String[] segments = namespace.split('/|:')
+		String[] segments = namespace.split('[/:]')
 		int index = segments.length-1
 		while (isAllDigits(segments[index]))
 			index--
@@ -398,8 +394,8 @@ final class GlobalFunctionsUtil
 	{
 		for (int i = 0; i < str.length(); i++)
 		{
-			char ch = str.charAt(i);
-			if ( !(Character.isDigit(ch) || ch == '.' || ch == '-' || ch == '+') )
+			char ch = str.charAt(i)
+			if ( !(Character.isDigit(ch) || ch == (char)'.' || ch == (char)'-' || ch == (char)'+') )
 				return false
 		}
 		return true
@@ -479,7 +475,7 @@ final class GlobalFunctionsUtil
 			return singular + 'es' 			// bus -> buses, match -> matches, dish -> dishes, box -> boxes, quiz -> quizes
 		else if (singular.endsWith('y')) {
 			char c = len > 2 ?  singular.charAt(len - 2) : (char)'?' 		//2nd to last char
-			if (charType(c) == vowel) {
+			if (charType(c) == CharType.vowel) {
 				return singular + 's' 								//day -> days
 			} else {
 				return singular.substring(0, len - 1) + 'ies' 		//city -> cities
@@ -490,7 +486,7 @@ final class GlobalFunctionsUtil
 			return singular.substring(0, len - 2) + 'ves'			// life -> lives, knife -> knives
 		} else if (singular.endsWith('o')) {
 				char c = len > 2 ? singular.charAt(len - 2) : (char)'a' 	//2nd to last char
-				if (charType(c) == vowel) {
+				if (charType(c) == CharType.vowel) {
 					return singular + 's' 							// zoo -> zoos, radio -> radios
 				} else {
 					return singular + 'es' 						// hero -> heroes, echo -> ehcoes
@@ -506,134 +502,134 @@ final class GlobalFunctionsUtil
 	static final CharType charType(char c)
 	{
 		switch (c) {
-			case 0: return system
-			case 1: return system
-			case 2: return system
-			case 3: return system
-			case 4: return system
-			case 5: return system
-			case 6: return system
-			case 7: return system
-			case 8: return system
-			case 9: return white
-			case 10: return white
-			case 11: return system
-			case 12: return system
-			case 13: return white
-			case 14: return system
-			case 15: return system
-			case 16: return system
-			case 17: return system
-			case 18: return system
-			case 19: return system
-			case 20: return system
-			case 21: return system
-			case 22: return system
-			case 23: return system
-			case 24: return system
-			case 25: return system
-			case 26: return system
-			case 27: return system
-			case 28: return system
-			case 29: return system
-			case 30: return system
-			case 31: return system
-			case ' ': return white
-			case '!': return symbol
-			case '"': return symbol
-			case '#': return symbol
-			case '$': return symbol
-			case '%': return symbol
-			case '&': return symbol
-			case '\'': return symbol
-			case '(': return symbol
-			case ')': return symbol
-			case '*': return symbol
-			case '+': return digit
-			case ',': return symbol
-			case '-': return symbol
-			case '.': return digit
-			case '/': return symbol
-			case '0': return digit
-			case '1': return digit
-			case '2': return digit
-			case '3': return digit
-			case '4': return digit
-			case '5': return digit
-			case '6': return digit
-			case '7': return digit
-			case '8': return digit
-			case '9': return digit
-			case ':': return symbol
-			case '': return symbol
-			case '<': return symbol
-			case '=': return symbol
-			case '>': return symbol
-			case '?': return symbol
-			case '@': return symbol
-			case 'A': return vowel
-			case 'B': return constonant
-			case 'C': return constonant
-			case 'D': return constonant
-			case 'E': return vowel
-			case 'F': return constonant
-			case 'G': return constonant
-			case 'H': return constonant
-			case 'I': return vowel
-			case 'J': return constonant
-			case 'K': return constonant
-			case 'L': return constonant
-			case 'M': return constonant
-			case 'N': return constonant
-			case 'O': return vowel
-			case 'P': return constonant
-			case 'Q': return constonant
-			case 'R': return constonant
-			case 'S': return constonant
-			case 'T': return constonant
-			case 'U': return vowel
-			case 'V': return constonant
-			case 'W': return constonant
-			case 'X': return constonant
-			case 'Y': return constonant
-			case 'Z': return constonant
-			case '[': return symbol
-			case '\\': return symbol
-			case ']': return symbol
-			case '^': return symbol
-			case '_': return symbol
-			case '`': return symbol
-			case 'a': return vowel
-			case 'b': return constonant
-			case 'c': return constonant
-			case 'd': return constonant
-			case 'e': return vowel
-			case 'f': return constonant
-			case 'g': return constonant
-			case 'h': return constonant
-			case 'i': return vowel
-			case 'j': return constonant
-			case 'k': return constonant
-			case 'l': return constonant
-			case 'm': return constonant
-			case 'n': return constonant
-			case 'o': return vowel
-			case 'p': return constonant
-			case 'q': return constonant
-			case 'r': return constonant
-			case 's': return constonant
-			case 't': return constonant
-			case 'u': return vowel
-			case 'v': return constonant
-			case 'w': return constonant
-			case 'x': return constonant
-			case 'y': return constonant
-			case 'z': return constonant
-			case '{': return symbol
-			case '|': return symbol
-			case '}': return symbol
-			case '~': return symbol
-			default:  return system
+			case 0: return CharType.system
+			case 1: return CharType.system
+			case 2: return CharType.system
+			case 3: return CharType.system
+			case 4: return CharType.system
+			case 5: return CharType.system
+			case 6: return CharType.system
+			case 7: return CharType.system
+			case 8: return CharType.system
+			case 9: return CharType.white
+			case 10: return CharType.white
+			case 11: return CharType.system
+			case 12: return CharType.system
+			case 13: return CharType.white
+			case 14: return CharType.system
+			case 15: return CharType.system
+			case 16: return CharType.system
+			case 17: return CharType.system
+			case 18: return CharType.system
+			case 19: return CharType.system
+			case 20: return CharType.system
+			case 21: return CharType.system
+			case 22: return CharType.system
+			case 23: return CharType.system
+			case 24: return CharType.system
+			case 25: return CharType.system
+			case 26: return CharType.system
+			case 27: return CharType.system
+			case 28: return CharType.system
+			case 29: return CharType.system
+			case 30: return CharType.system
+			case 31: return CharType.system
+			case ' ': return CharType.white
+			case '!': return CharType.symbol
+			case '"': return CharType.symbol
+			case '#': return CharType.symbol
+			case '$': return CharType.symbol
+			case '%': return CharType.symbol
+			case '&': return CharType.symbol
+			case '\'': return CharType.symbol
+			case '(': return CharType.symbol
+			case ')': return CharType.symbol
+			case '*': return CharType.symbol
+			case '+': return CharType.digit
+			case ',': return CharType.symbol
+			case '-': return CharType.symbol
+			case '.': return CharType.digit
+			case '/': return CharType.symbol
+			case '0': return CharType.digit
+			case '1': return CharType.digit
+			case '2': return CharType.digit
+			case '3': return CharType.digit
+			case '4': return CharType.digit
+			case '5': return CharType.digit
+			case '6': return CharType.digit
+			case '7': return CharType.digit
+			case '8': return CharType.digit
+			case '9': return CharType.digit
+			case ':': return CharType.symbol
+			case '': return CharType.symbol
+			case '<': return CharType.symbol
+			case '=': return CharType.symbol
+			case '>': return CharType.symbol
+			case '?': return CharType.symbol
+			case '@': return CharType.symbol
+			case 'A': return CharType.vowel
+			case 'B': return CharType.constonant
+			case 'C': return CharType.constonant
+			case 'D': return CharType.constonant
+			case 'E': return CharType.vowel
+			case 'F': return CharType.constonant
+			case 'G': return CharType.constonant
+			case 'H': return CharType.constonant
+			case 'I': return CharType.vowel
+			case 'J': return CharType.constonant
+			case 'K': return CharType.constonant
+			case 'L': return CharType.constonant
+			case 'M': return CharType.constonant
+			case 'N': return CharType.constonant
+			case 'O': return CharType.vowel
+			case 'P': return CharType.constonant
+			case 'Q': return CharType.constonant
+			case 'R': return CharType.constonant
+			case 'S': return CharType.constonant
+			case 'T': return CharType.constonant
+			case 'U': return CharType.vowel
+			case 'V': return CharType.constonant
+			case 'W': return CharType.constonant
+			case 'X': return CharType.constonant
+			case 'Y': return CharType.constonant
+			case 'Z': return CharType.constonant
+			case '[': return CharType.symbol
+			case '\\': return CharType.symbol
+			case ']': return CharType.symbol
+			case '^': return CharType.symbol
+			case '_': return CharType.symbol
+			case '`': return CharType.symbol
+			case 'a': return CharType.vowel
+			case 'b': return CharType.constonant
+			case 'c': return CharType.constonant
+			case 'd': return CharType.constonant
+			case 'e': return CharType.vowel
+			case 'f': return CharType.constonant
+			case 'g': return CharType.constonant
+			case 'h': return CharType.constonant
+			case 'i': return CharType.vowel
+			case 'j': return CharType.constonant
+			case 'k': return CharType.constonant
+			case 'l': return CharType.constonant
+			case 'm': return CharType.constonant
+			case 'n': return CharType.constonant
+			case 'o': return CharType.vowel
+			case 'p': return CharType.constonant
+			case 'q': return CharType.constonant
+			case 'r': return CharType.constonant
+			case 's': return CharType.constonant
+			case 't': return CharType.constonant
+			case 'u': return CharType.vowel
+			case 'v': return CharType.constonant
+			case 'w': return CharType.constonant
+			case 'x': return CharType.constonant
+			case 'y': return CharType.constonant
+			case 'z': return CharType.constonant
+			case '{': return CharType.symbol
+			case '|': return CharType.symbol
+			case '}': return CharType.symbol
+			case '~': return CharType.symbol
+			default:  return CharType.system
 		}
 	}
 

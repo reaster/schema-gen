@@ -24,7 +24,7 @@ class MMethod extends MBase
 	enum IncludeProperties {noProperties, finalProperties, allProperties}
 	Stereotype stereotype = Stereotype.unknown
 	IncludeProperties includeProperties
-	def parent //MClass
+	def parent //MClass or MModule
 	def refs = [:]
 	private MBind type
 	List<MBind> params = []
@@ -43,8 +43,8 @@ class MMethod extends MBase
 	/** signature takes two params: lambda(MMethod m, MVisitor v) and writes text to v.out */
 	Closure body = null
 
-	def MMethod() { }
-	def MMethod(String name, MField field, Stereotype stereotype) {
+	MMethod() { }
+	MMethod(String name, MField field, Stereotype stereotype) {
 		this.name = name
 		refs['property'] = field
 		this.stereotype = stereotype
@@ -58,7 +58,7 @@ class MMethod extends MBase
 	void setType(MBind type) { this.type = type }
 	void setType(MType type) { this.type = new MBind(type: type) }
 	void setType(String typeName) {
-		MType type = MType.lookupType(typeName);
+		MType type = MType.lookupType(typeName)
 		if (!type) throw new IllegalArgumentException("no type registered under '${typeName}' in ${parent.name}.${name}")
 		setType(type)
 	}

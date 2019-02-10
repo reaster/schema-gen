@@ -133,13 +133,11 @@ class JavaGenSpec extends Specification
         joeClass.fields.size() > 0
         joeClass.fields.values().each { println it }
         when: "maxOccurs=unbounded choice mapping"
-        MProperty names = joeClass.fields['names']
-        MProperty places = joeClass.fields['places']
+        MProperty list = joeClass.fields[schemaVisitor.polyMorphicListName]
         then: "map to optional property"
-        names != null
-        names.cardinality == MCardinality.LIST
-        places != null
-        places.cardinality == MCardinality.LIST
+        list != null
+        list.cardinality == MCardinality.LIST
+        list.type.name == 'String'
     }
 
     def "test element and attribute mapping variations"()
@@ -309,6 +307,8 @@ class JavaGenSpec extends Specification
         measureTypeEnum != null
         measureTypeEnum.enumValues.size() == 5
         measureTypeEnum.enumNames.size() == 5
+        measureTypeEnum.enumValues == ['2d','3d','dgps','none','pps']
+        measureTypeEnum.enumNames == ['_2d','_3d','Dgps','None','Pps']
         when: "element from union of enummerations"
         MProperty measure = wptClass.fields['measure']
         then:

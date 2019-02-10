@@ -35,7 +35,7 @@ class Any extends Element
     {
         String typeName = 'anyType'
         if (id?.contains('polymorphic-')) {
-            int index = compositor.id.indexOf('polymorphic-') + 'polymorphic-'.length()
+            int index = id.indexOf('polymorphic-') + 'polymorphic-'.length()
             typeName = id.substring(index)
         }
         return typeName

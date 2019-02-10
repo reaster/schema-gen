@@ -14,6 +14,7 @@ class MModuleSpec extends Specification
         given:
         Gen gen = new JavaGen()
         MModule m1 = new MModule(name: 'm1')
+        gen.rootModule = m1
         MClass c1 = new MClass(name:'C1')
         m1.addClass(c1)
         when:

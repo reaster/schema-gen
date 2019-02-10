@@ -26,19 +26,22 @@ import groovy.transform.ToString
 class ComplexType extends SimpleType implements CompositorHolder
 {
     /** wrapper elements can be mapped directly to a container (i.e. List<ChildElement>) and don't need their own class */
-    @Override boolean isWrapperElement(boolean allowAnyChild=false) {
+    @Override boolean isWrapperElement(boolean allowAnyChild=false, boolean allowChoice=false) {
 //        if (qname.name.startsWith('ptseg') || qname.name.startsWith('extensions'))
 //            println qname.name
         if (!attributes.isEmpty())
             return false
+        boolean isChoiceClass = compositors.size() == 1 && (compositors[0] instanceof Choice)
+        if (allowChoice && isChoiceClass) {
+            return true
+        }
         def elements = childElements()
         if (elements.size() != 1)
             return false
         Element e = elements[0]
         boolean isAnyClass = (e instanceof Any)
-        boolean isChoice = (e instanceof Choice)
         boolean isOptionalAnyChild = allowAnyChild ? true : !isAnyClass
-        boolean result = e.maxOccurs > 1 && !e.isMixed() && (isOptionalAnyChild || isChoice)
+        boolean result = e.maxOccurs > 1 && !e.isMixed() && isOptionalAnyChild
 //        if (result)
 //            println("isWrapperElement: ${this}")
         result

@@ -19,56 +19,22 @@ package com.javagen.schema.java
 import com.javagen.schema.common.Gen
 import com.javagen.schema.common.MappingUtil
 import com.javagen.schema.common.PluralService
-import com.javagen.schema.common.PluralServiceNoop
-import com.javagen.schema.model.MBase
-import com.javagen.schema.model.MBind
-import com.javagen.schema.model.MCardinality
-import com.javagen.schema.model.MClass
-import com.javagen.schema.model.MEnum
-import com.javagen.schema.model.MField
-import com.javagen.schema.model.MMethod
-import com.javagen.schema.model.MModule
-import com.javagen.schema.model.MProperty
-import com.javagen.schema.model.MReference
-import com.javagen.schema.model.MRestriction
-import com.javagen.schema.model.MSource
-import com.javagen.schema.model.MType
-import com.javagen.schema.model.MTypeRegistry
+import com.javagen.schema.model.*
 import com.javagen.schema.xml.QName
 import com.javagen.schema.xml.XmlNodeCallback
 import com.javagen.schema.xml.XmlSchemaNormalizer
 import com.javagen.schema.xml.XmlSchemaVisitor
-import com.javagen.schema.xml.node.All
-import com.javagen.schema.xml.node.Any
-import com.javagen.schema.xml.node.AnyAttribute
-import com.javagen.schema.xml.node.Attribute
-import com.javagen.schema.xml.node.AttributeGroup
-import com.javagen.schema.xml.node.Body
-import com.javagen.schema.xml.node.Choice
-import com.javagen.schema.xml.node.ComplexType
-import com.javagen.schema.xml.node.Compositor
-import com.javagen.schema.xml.node.Element
-import com.javagen.schema.xml.node.Group
-import com.javagen.schema.xml.node.List
-import com.javagen.schema.xml.node.Restriction
-import com.javagen.schema.xml.node.Schema
-import com.javagen.schema.xml.node.Sequence
-import com.javagen.schema.xml.node.SimpleType
-import com.javagen.schema.xml.node.TextOnlyType
-import com.javagen.schema.xml.node.Type
-import com.javagen.schema.xml.node.Union
+import com.javagen.schema.xml.node.*
 
 import java.util.function.BiFunction
 
-import static com.javagen.schema.common.GlobalFunctionsUtil.printStackTrace
 import static com.javagen.schema.common.GlobalFunctionsUtil.upperCase
-import static com.javagen.schema.java.JavaTypeRegistry.useWrapper
-import static com.javagen.schema.model.MCardinality.LIST
-import static com.javagen.schema.model.MCardinality.OPTIONAL
-import static com.javagen.schema.model.MCardinality.REQUIRED
+import static com.javagen.schema.model.MCardinality.*
 import static com.javagen.schema.model.MMethod.IncludeProperties.allProperties
 import static com.javagen.schema.model.MMethod.Stereotype.*
 import static com.javagen.schema.xml.node.Schema.DEFAULT_NS
+
+import groovy.util.logging.Log
 
 /**
  * Translate XML schema to Java 1.8 code.
@@ -81,6 +47,7 @@ import static com.javagen.schema.xml.node.Schema.DEFAULT_NS
  *
  * @author Richard Easterling
  */
+@Log
 class JavaGen extends Gen implements XmlSchemaVisitor
 {
 	XmlNodeCallback callback
@@ -210,14 +177,9 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	{
 		MCardinality container = container(any)
 		if (container.isContainer())
-			container = MCardinality.LINKEDMAP
+			container = LINKEDMAP
 		String name = container.isContainer() ? anyPropertyName : anyPropeertyNameSingular
 		Type schemaType = polymporphicType(any)
-//		if (any.id?.contains('polymorphic-')) {
-//			int index = any.id.indexOf('polymorphic-') + 'polymorphic-'.length()
-//			String typeName = any.id.substring(index)
-//			schemaType = schema.getGlobal(typeName)
-//		}
 		String type = schemaTypeToPropertyType(schemaType ?: schema.getGlobal(DEFAULT_NS,anyType), container)
 		MProperty property = new MProperty(name:name, type:type, scope:propertyScope)
 		setNotNull(property)
@@ -279,7 +241,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 			if (element.type.isWrapperElement()) {
 				Type wrappedType = element.type.wrapperType()
 				if (wrappedType) {
-					container = MCardinality.LIST
+					container = LIST
 					type = schemaTypeToPropertyType(wrappedType, container)
 				} else if (element.type.childElements()[0] instanceof Any) {
 					Any any = element.type.childElements()[0]
@@ -334,9 +296,11 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 
 	def setClassProperties(MClass clazz, ComplexType complexType)
 	{
-//		if (clazz.name == 'Results')
-//			println clazz.name
+//		if (clazz.name == 'ReferenceWrapper')
+//			println "IGNORING: ${clazz.name}"
 		clazz.ignore = complexType.isWrapperElement()
+		if (clazz.ignore)
+			log.warning "IGNORING WRAPPER CLASS: ${clazz.name}".toString()
 		clazz.abstract = complexType.abstract
 		if (complexType.base) {
 			String typeName = complexType.base.qname.name
@@ -357,7 +321,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	{
 		Map<MType,String> polymorphicTypes = new LinkedHashMap()
 		for(Element e : choice.childElements()) { //includes elements and groups
-			MType type = schemaTypeToPropertyType(e.type, MCardinality.REQUIRED)
+			MType type = schemaTypeToPropertyType(e.type, REQUIRED)
 			polymorphicTypes.put(type, e.qname.name)
 		}
 		polymorphicTypes
@@ -366,8 +330,8 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 
 	private void choiceCollectionWrapper(Choice choice)
 	{
-		MCardinality container = MCardinality.LIST
-		String name = polyMorphicListName //TODO dig up proper name
+		MCardinality container = LIST
+		String name = polyMorphicListName
 		Type schemaType = polymporphicType(choice)
 		MType type = schemaTypeToPropertyType(schemaType ?: schema.getGlobal(DEFAULT_NS,anyType), container)
 		MProperty property = new MProperty(name:name, type:type, cardinality:container, scope:propertyScope, polymorphicTypes:collectPolymorphicTypes(choice))
@@ -434,7 +398,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	}
 	@Override def visit(SimpleType simpleType)
 	{
-		String name = simpleType.qname.name
+		//String name = simpleType.qname.name
 //		if (name == 'mediaReferenceType' || name == 'phoneNumberType')
 //			println name
 		String className = classNameFunction.apply(simpleType.qname.name)
@@ -458,14 +422,14 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		if (mapToEnum(textOnlyType)) {
 			MEnum clazz = null
 			if (textOnlyType.base instanceof Union) {
-				clazz = genUnion(textOnlyType)
+				clazz = genUnion(textOnlyType) as MEnum
 			} else {
 				String className = enumClassName(textOnlyType.qname.name)
 				if (textOnlyType.restrictionSet().size() > 1) {
 					println "WARNING: can't model ${textOnlyType.qname.name} complex enum class, ignoring non-enum restrictions: ${textOnlyType.restrictionSet()}"
 				}
 				def enumValues = textOnlyType.restrictions.findAll{ it.type == Restriction.RType.enumeration }.collect{ it.value } //enumValueFunction.apply(
-				clazz = lookupOrCreateClass(className, true)
+				clazz = lookupOrCreateClass(className, true) as MEnum
 				clazz.enumValues = enumValues
 				generateEnumClass( clazz )
 			}
@@ -477,14 +441,14 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 			this >> clazz
 			callback.gen(textOnlyType, clazz)
 		} else {
-			//println "textOnlyType @name=${textOnlyType.qname.name} -> will map to simple type: ${textOnlyType}, cardinality:${MCardinality.REQUIRED}"
+			//println "textOnlyType @name=${textOnlyType.qname.name} -> will map to simple type: ${textOnlyType}, cardinality:${REQUIRED}"
 		}
 	}
 
 	@Override def visit(Union union)
 	{
 		println "union @name=${union.qname.name}"
-		union.simpleTypes.eachWithIndex { SimpleType type, int i ->
+		union.simpleTypes.eachWithIndex { TextOnlyType type, int i ->
 			"${i==0 ? ':' : ','} ${type.qname?.name}"
 		}
 		println()
@@ -536,10 +500,10 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		MType type = schemaTypeToPropertyType(polymorphicType ?: schema.getGlobal(DEFAULT_NS, anyType), container)
 		MProperty property
 		if (polymorphicType) {
-			String val = any.fixed ?: any.'default' ?: (container == MCardinality.LIST) ? 'new java.util.ArrayList<>()' : null
+			String val = any.fixed ?: any.'default' ?: (container == LIST) ? 'new java.util.ArrayList<>()' : null
 			property = new MProperty(name:propertyName, type:type, cardinality:container, scope:propertyScope, final:any.fixed!=null, val:val)
-		} else if (container == MCardinality.LIST) {
-			container = MCardinality.MAP
+		} else if (container == LIST) {
+			container = MAP
 			MBind mapRType = new MBind(cardinality:container,type:type)
 			String val = 'new java.util.LinkedHashMap<>()'
 			property = new MProperty(name:propertyName, type:type, cardinality:container, scope:propertyScope, final:any.fixed!=null, val:val, attr:['keyType':'String'])
@@ -560,7 +524,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	boolean mapToEnum(TextOnlyType textOnlyType)
 	{
 		if (textOnlyType.base instanceof Union) {
-			Union union = textOnlyType.base
+			Union union = textOnlyType.base as Union
 			union.simpleTypes.every{ it.restrictionSet().contains(Restriction.RType.enumeration) }
 		} else {
 			textOnlyType.restrictionSet().contains(Restriction.RType.enumeration)
@@ -569,7 +533,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 
 	MClass genUnion(TextOnlyType unionType)
 	{
-		Union union = unionType.base
+		Union union = unionType.base as Union
 		//println "union @name=${unionType.qname.name}"
 		boolean isEnumUnion = mapToEnum(unionType)
 		if (isEnumUnion) {
@@ -586,7 +550,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 			println()
 			String className = enumClassNameFunction.apply(unionType.qname.name)
 			MEnum mEnum =  lookupOrCreateEnum(className)
-			mEnum.enumValues = enumValues
+			mEnum.enumValues = new ArrayList(enumValues)
 			generateEnumClass(mEnum)
 		} else {
 			println "TODO add support for non-enum unions, skipping ${union.qname.name}"
@@ -639,7 +603,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 	}
 	MEnum lookupOrCreateEnum(String enumName)
 	{
-		MEnum clazz = nestedStack.peek().lookupClass(enumName)
+		MEnum clazz = nestedStack.peek().lookupClass(enumName) as MEnum
 		clazz ?: new MEnum(name: enumName)
 	}
 
@@ -650,11 +614,11 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 			switch (type) {
 				case TextOnlyType:
 					if (CONTAINER_TYPES.contains(type.qname.name)) {
-						return MCardinality.LIST
+						return LIST
 					}
 					break
 				case List:
-					return MCardinality.LIST
+					return LIST
 				case Union:
 				case SimpleType:
 				case ComplexType:
@@ -669,9 +633,9 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 			}
 		}
 		if (attribute.isRequired()) {
-			return MCardinality.REQUIRED
+			return REQUIRED
 		} else {
-			return MCardinality.OPTIONAL
+			return OPTIONAL
 		}
 	}
 	MCardinality container(Element element)
@@ -681,11 +645,11 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 			switch (type) {
 				case TextOnlyType:
 					if (type && CONTAINER_TYPES.contains(type.qname.name)) {
-						return MCardinality.LIST
+						return LIST
 					}
 					break
 				case List:
-					return MCardinality.LIST
+					return LIST
 				case Union:
 				case SimpleType:
 				case ComplexType:
@@ -701,13 +665,13 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		}
 		Compositor compositor = compositorStack.peek()
 		if (compositor.maxOccurs > 1 && !compositor.isUboundedChildElement()) //can't use parent maxOccurs if any child is unbounded
-			return MCardinality.LIST
+			return LIST
 		if (element.maxOccurs > 1) {
-			return MCardinality.LIST
+			return LIST
 		} else if (element.minOccurs == 0) {
-			return MCardinality.OPTIONAL
+			return OPTIONAL
 		} else {
-			return MCardinality.REQUIRED
+			return REQUIRED
 		}
 	}
 	MCardinality container(Body body) {
@@ -716,11 +680,11 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 			switch (type) {
 				case TextOnlyType:
 					if (type && CONTAINER_TYPES.contains(type.qname.name)) {
-						return MCardinality.LIST
+						return LIST
 					}
 					break
 				case List:
-					return MCardinality.LIST
+					return LIST
 				case Union:
 				case SimpleType:
 				case ComplexType:
@@ -734,17 +698,17 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 				type = type.base //go deeper looking for built-in type
 			}
 		}
-		return MCardinality.OPTIONAL //TODO verify there is no way to make body required
+		return OPTIONAL //TODO verify there is no way to make body required
 	}
 	/** warning: modifies model! */
 	void optionalToPrimitiveWrapper(MProperty property) {
-		if (!useOptional && MCardinality.OPTIONAL == property.cardinality) {
-			property.cardinality = MCardinality.REQUIRED // just use nulled wrapper class
+		if (!useOptional && OPTIONAL == property.cardinality) {
+			property.cardinality = REQUIRED // just use nulled wrapper class
 		}
 	}
 	void setNotNull(MProperty property)
 	{
-		property.attr['notNull'] = MCardinality.REQUIRED == property.cardinality && !property.type.isPrimitive()
+		property.attr['notNull'] = REQUIRED == property.cardinality && !property.type.isPrimitive()
 	}
 	MType schemaTypeToPropertyType(Type type, MCardinality container)
 	{
@@ -760,7 +724,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 		}
 		if (!langType)
 			throw new Error("No type registed for ${typeName}")
-		if (container == MCardinality.OPTIONAL && langType.isPrimitive()) {
+		if (container == OPTIONAL && langType.isPrimitive()) {
 			String wrapper = JavaTypeRegistry.useWrapper(typeName)
 			if (typeName != wrapper) {
 				return MType.lookupType(wrapper)
@@ -791,13 +755,13 @@ class JavaGen extends Gen implements XmlSchemaVisitor
         MSource src = nestedStack.elementAt(i-1)
         while( ! (src instanceof MModule) ) {
             i--
-            src = nestedStack.elementAt(i-1)
+            src = (MModule)nestedStack.elementAt(i-1)
         }
-        i < 0 ? null : nestedStack.elementAt(i-1)
+        i < 0 ? null : (MModule)nestedStack.elementAt(i-1)
     }
 	String schemaTypeToPropertyTypeName(Type type)
 	{
-		String javaType
+		//String javaType
 		Type t = type
 		while(t) {
 			switch (t) {
@@ -805,7 +769,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 				case ComplexType:
 					return classNameFunction.apply(t.qname.name)
 				case TextOnlyType:
-					if (mapToEnum(t)) {
+					if (mapToEnum(t as TextOnlyType)) {
 						return enumClassNameFunction.apply(t.qname.name)
 					} else if (t.isBuiltInType()) {
 						return simpleXmlTypeToPropertyType.apply(t.qname.name)

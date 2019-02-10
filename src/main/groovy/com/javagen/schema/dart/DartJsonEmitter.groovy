@@ -137,13 +137,22 @@ class DartJsonEmitter extends CodeEmitter
             m2.setBody(this.&toJsonMethodBody)
         }
         impl.addMethod(m2)
-        c.fields.values().findAll{!it.isStatic() && !it.isFinal() && !it.isGenIgnore() && it.isPolymorphic()}.each {
-            toJsonPolymorphicMethod(it)
+        c.fields.values().findAll{!it.isStatic() && !it.isFinal() && !it.isGenIgnore() && it.isPolymorphic() && it instanceof MProperty}.each {
+            toJsonPolymorphicMethod( (MProperty)it )
         }
-
     }
 
-    private def toJsonMethodBodyExcludeNulls(MClass targetClass, boolean isWrapper, MMethod m, CodeEmitter v, boolean hasSuper=false)
+    private def toJsonMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+    {
+         if (gen.includeIfNull) {
+            toJsonMethodBodyIncludeNulls(m, v, hasSuper)
+        } else {
+            toJsonMethodBodyExcludeNulls(m, v, hasSuper)
+        }
+    }
+
+
+    private static def toJsonMethodBodyExcludeNulls(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
         /*
         //with include_if_null: false
@@ -155,7 +164,9 @@ class DartJsonEmitter extends CodeEmitter
           return val;
         };
          */
-        if (isWrapper) {
+        MClass targetClass = m.attr['class'] as MClass
+        boolean unwrapMapInField = targetClass.isMapWrapper()
+        if (unwrapMapInField) {
             v.out << '\n' << v.tabs << 'return instance.' << targetClass.fields.values()[0].name << ';'
         } else {
             if (targetClass.extends) {
@@ -172,10 +183,11 @@ class DartJsonEmitter extends CodeEmitter
                     } else if (f.isMap()) {
                         v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\': instance.' << f.name << ');'
                     } else if (f.type instanceof MEnum) {
-                        def toJsonMapName = enumMapName(f.type)
+                        def toJsonMapName = enumMapName( (MEnum)f.type )
                         v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', ' << toJsonMapName << '[instance.' << f.name << ']);'
                     } else if (f.isReference()) {
-                        v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << '==null ? null : ' << toJsonMethod << '(instance.' << f.name << '));'
+                        String unWrap = f.type.isListWrapper() ? "['${f.type.firstField().name}']" : ''
+                        v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << '==null ? null : ' << toJsonMethod << '(instance.' << f.name << ')' << unWrap << ');'
                     } else if (f.type.name == 'DateTime') {
                         v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << '?.toIso8601String());'
                     } else if (f.type.name == 'Uri') {
@@ -188,7 +200,7 @@ class DartJsonEmitter extends CodeEmitter
             v.out << '\n' << v.tabs << 'return val;'
         }
     }
-    private def toJsonMethodBodyIncludeNulls(MClass targetClass, boolean isWrapper, MMethod m, CodeEmitter v, boolean hasSuper=false)
+    private static def toJsonMethodBodyIncludeNulls(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
         /*
         //with include_if_null: true
@@ -200,14 +212,15 @@ class DartJsonEmitter extends CodeEmitter
           'extensions': instance.extensions==null ? null : _$ExtensionsToJson(instance.extensions)
         };
          */
-        if (!isWrapper) {
+        MClass targetClass = m.attr['class'] as MClass
+        boolean unwrapMapInField = targetClass.isMapWrapper()
+        if (!unwrapMapInField) {
             v.out << '<String, dynamic>{'
         }
         v.next()
         int i = 0
         for (MField f in targetClass.fields.values()) {
             if (!f.isStatic() && !f.isGenIgnore()) {
-
                 String toJsonMethod = f.isPolymorphic() ? toJsonMethodName("Polymorphic${f.type.name}") : toJsonMethodName(f.type)
                 if (i > 0) {
                     v.out << ','
@@ -215,16 +228,17 @@ class DartJsonEmitter extends CodeEmitter
                 if (f.isArray() || f.isList() || f.isSet()) {
                     v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '==null ? null : instance.' << f.name << '.map(' << toJsonMethod << ').toList()'
                 } else if (f.isMap()) {
-                    if (isMapWrapper(f)) {
+                    if (f.isMapWrapper()) {
                         v.out << '\n' << v.tabs << 'instance.' << f.name
                     } else {
                         v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name
                     }
                 } else if (f.type instanceof MEnum) {
-                    def toJsonMapName = enumMapName(f.type)
+                    def toJsonMapName = enumMapName( (MEnum)f.type )
                     v.out << '\n' << v.tabs << '\'' << f.name << '\': ' << toJsonMapName << '[instance.' << f.name << ']'
                 } else if (f.isReference()) {
-                    v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '==null ? null : ' << toJsonMethod << '(instance.' << f.name << ')'
+                    String unWrap = f.type.isListWrapper() ? "['${f.type.firstField().name}']" : ''
+                    v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '==null ? null : ' << toJsonMethod << '(instance.' << f.name << ')' << unWrap
                 } else if (f.type.name == 'DateTime') {
                     v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '?.toIso8601String()'
                 } else if (f.type.name == 'Uri') {
@@ -236,7 +250,7 @@ class DartJsonEmitter extends CodeEmitter
             }
         }
         v.previous()
-        if (!isWrapper) {
+        if (!unwrapMapInField) {
             v.out << '\n' << v.tabs << '}'
         }
     }
@@ -245,20 +259,20 @@ class DartJsonEmitter extends CodeEmitter
     {
         //factory Metadata.fromJson(Map<String, dynamic> json) => _$MetadataFromJson(json);
         //Metadata _$MetadataFromJson(Map<String, dynamic> json) {
-        MMethod m2 = new MMethod(name:fromJsonMethodName(m.parent))
         MClass c = m.parent
+        MMethod m2 = new MMethod(name:fromJsonMethodName(c))
         m2.type = c
         def stringType = MType.lookupType('String')
         m2.params = [new MBind(type: MType.lookupType('dynamic'), cardinality: MCardinality.MAP, attr:['keyType':stringType], name: 'json')]
         m2.attr << ['class':c]
         m2.setBody(this.&fromJsonMethodBody)
         impl.addMethod(m2)
-        c.fields.values().findAll{!it.isStatic() && !it.isFinal() && !it.isGenIgnore() && it.isPolymorphic()}.each {
-            fromJsonPolymorphicMethod(it)
+        c.fields.values().findAll{!it.isStatic() && !it.isFinal() && !it.isGenIgnore() && it instanceof MProperty && it.isPolymorphic()}.each {
+            fromJsonPolymorphicMethod( (MProperty)it )
         }
     }
 
-    private def fromJsonMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+    private static def fromJsonMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
         /*
         return Gpx(
@@ -276,10 +290,13 @@ class DartJsonEmitter extends CodeEmitter
           extensions: json['extensions'] == null
               ? null
               : Extensions.fromJson(json['extensions'] as Map<String, dynamic>),
+          references: json['references'] == null
+              ? null
+              : ReferenceWrapper.fromJson({'list': json['references'] as List}) // unwrapped list
          );
          */
-        MClass targetClass = m.attr['class']
-        boolean isWrapper = isMapWrapper(targetClass)
+        MClass targetClass = (MClass)m.attr['class']
+        //boolean isListWrapper = targetClass.isListWrapper()
 //        if ('ReferenceWrapper' == targetClass.name)
 //            println targetClass.name
         v.out << '\n' << v.tabs << 'return ' << targetClass.name << '('
@@ -300,7 +317,7 @@ class DartJsonEmitter extends CodeEmitter
                         v.out << '\n' << v.tabs << '?.map( (e) => e == null ? null : ' << methodCall << '(e as Map<String, dynamic>) )?.toList()'
                         v.previous()
                     } else if (f.isMap()) {
-                        if (isMapWrapper(f)) {
+                        if (f.isMapWrapper()) {
                             v.out << '\n' << v.tabs << f.name << ': json'
                         } else {
                             // Map<String,String> convertedMap = new Map.fromIterable(json.entries,
@@ -312,7 +329,7 @@ class DartJsonEmitter extends CodeEmitter
                             v.previous()
                         }
                     } else if (f.type instanceof MEnum) {
-                        def toJsonMapName = enumMapName(f.type)
+                        def toJsonMapName = enumMapName( (MEnum)f.type )
                         v.out << '\n' << v.tabs << f.name << ':  _$enumDecodeNullable(' << toJsonMapName << ', json[\'' << f.name << '\'])'
                         //fix: _$enumDecodeNullable(_$FixTypeEnumEnumMap, json['fix']),
                     } else if (f.isReference()) {
@@ -320,7 +337,11 @@ class DartJsonEmitter extends CodeEmitter
                         v.out << '\n' << v.tabs << f.name << ': json[\'' << f.name << '\'] == null'
                         v.next()
                         v.out << '\n' << v.tabs << '? null'
-                        v.out << '\n' << v.tabs << ': ' << methodCall << '(json[\'' << f.name << '\'] as Map<String, dynamic>)'
+                        if (f.type.isListWrapper()) {
+                            v.out << '\n' << v.tabs << ': ' << methodCall << '({\'list\': json[\'' << f.name << '\'] as List})'
+                        } else {
+                            v.out << '\n' << v.tabs << ': ' << methodCall << '(json[\'' << f.name << '\'] as Map<String, dynamic>)'
+                        }
                         v.previous()
                     } else if (f.type.name in ['String', 'int', 'bool']) {
                         v.out << '\n' << v.tabs << f.name << ': json[\'' << f.name << '\'] as ' << f.type.name
@@ -337,7 +358,7 @@ class DartJsonEmitter extends CodeEmitter
                 }
             }
             c = c.extends
-                    ? MType.lookupType(c.extends)
+                    ? (MClass)MType.lookupType(c.extends)
                     : null
         }
         v.previous()
@@ -411,7 +432,7 @@ class DartJsonEmitter extends CodeEmitter
         }
         m
     }
-    private def toJsonPolymorphicMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false) {
+    private static def toJsonPolymorphicMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false) {
         /*
         Map<String,dynamic> _$PolymorphicReferenceToJson(Reference instance) {
           Map<String, dynamic> val = instance.toJson();
@@ -425,7 +446,7 @@ class DartJsonEmitter extends CodeEmitter
           return val;
         }
         */
-        MProperty f = m.attr['property']
+        MProperty f = (MProperty)m.attr['property']
         v.out << '\n' << v.tabs << 'Map<String, dynamic> val = instance.toJson();'
         Map<MType,String> polymorphicTypes = f.polymorphicTypes
         polymorphicTypes.eachWithIndex { e, i ->
@@ -470,7 +491,7 @@ class DartJsonEmitter extends CodeEmitter
     {
         //T _$enumDecode<T>(Map<T, dynamic> enumValues, dynamic source) {
         MType generic = new MType(name:'T', generic:true)
-        MType dynamic = MType.lookupType('dynamic');
+        MType dynamic = MType.lookupType('dynamic')
         MMethod m2 = new MMethod(name:'_$enumDecode', type:generic)
         m2.params = [new MBind(name: 'enumValues', type:dynamic, cardinality: MCardinality.MAP, attr:['keyType': generic]), new MBind(name: 'source', type:dynamic)]
         m2.setBody(this.&enumDecodeMethodBody)
@@ -524,34 +545,6 @@ class DartJsonEmitter extends CodeEmitter
         v.out << '\n' << v.tabs << 'if (source == null) { return null; }'
         v.out << '\n' << v.tabs << 'return _$enumDecode<T>(enumValues, source);'
     }
-
-    ////////////////////////////////////////////////////////////////////////////
-    // support methods
-
-    private boolean isMapWrapper(MField f)
-    {
-        MClass targetClass = f.parent instanceof MClass ? f.parent : null
-        f.cardinality == MCardinality.MAP && targetClass?.fields.size() == 1
-    }
-    private boolean isMapWrapper(MClass c)
-    {
-        if (c.fields.size() != 1)
-            return false
-        MField f = c.fields.values()[0]
-        f.cardinality == MCardinality.MAP
-    }
-
-    private def toJsonMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
-    {
-        MClass targetClass = m.attr['class']
-        boolean isWrapper = isMapWrapper(targetClass)
-        if (gen.includeIfNull) {
-            toJsonMethodBodyIncludeNulls(targetClass, isWrapper, m, v, hasSuper)
-        } else {
-            toJsonMethodBodyExcludeNulls(targetClass, isWrapper, m, v, hasSuper)
-        }
-    }
-
 
 
 }

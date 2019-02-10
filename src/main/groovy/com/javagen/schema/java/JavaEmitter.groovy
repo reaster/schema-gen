@@ -31,12 +31,14 @@ import com.javagen.schema.model.MModule
 import com.javagen.schema.model.MProperty
 import com.javagen.schema.model.MReference
 import com.javagen.schema.model.MTypeRegistry
+import groovy.util.logging.Log
 
 /**
  * Traverses model and emits Java code.
  * 
  * @author Richard Easterling
  */
+@Log
 class JavaEmitter extends CodeEmitter
 {
 	static EnumSet<MCardinality> NON_GENERIC_PARAMS = EnumSet.of(MAP,LINKEDMAP,REQUIRED)
@@ -56,7 +58,7 @@ class JavaEmitter extends CodeEmitter
 		List<MClass> classes = m.classes.findAll{ c -> !c.ignore }
 		classes.each { c -> //visit declared classes and interfaces
 			File sourceFile = gen.classOutputFileFunction.apply(gen,c)
-			System.out.println "OUTPUT: ${sourceFile}"
+			log.info "OUTPUT: ${sourceFile}"
 			openWriter(sourceFile)
 			out << 'package ' << m.fullName() << ';\n'
 			c.imports.each {
@@ -153,8 +155,8 @@ class JavaEmitter extends CodeEmitter
 	@Override
 	def visit(MField f)
 	{
-		if (f.name == 'map')
-			println 'map'
+//		if (f.name == 'map')
+//			println 'map'
 		f.annotations.list.findAll{ !it.onGenericParam || NON_GENERIC_PARAMS.contains(f.cardinality)}.each {
 			out << '\n' << tabs
 			out << it
@@ -191,7 +193,7 @@ class JavaEmitter extends CodeEmitter
 	def visit(MMethod m)
 	{
 		if (!m.name) {
-			println "ignoring method with no name: ${m}"
+			log.warning"ignoring method with no name: ${m}"
 			return
 		}
 		m.annotations.each {

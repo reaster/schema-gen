@@ -19,6 +19,7 @@ package com.javagen.schema.dart
 import com.javagen.schema.common.CodeEmitter
 import com.javagen.schema.model.*
 import com.javagen.schema.model.MMethod.Stereotype
+import groovy.util.logging.Log
 
 /**
  * Traverses model and emits Dart/Flutter code.
@@ -27,6 +28,7 @@ import com.javagen.schema.model.MMethod.Stereotype
  * 
  * @author Richard Easterling
  */
+@Log
 class DartEmitter extends CodeEmitter
 {
 	boolean assignDefaultValues = true
@@ -45,7 +47,7 @@ class DartEmitter extends CodeEmitter
 	{
 		List<MClass> classes = m.classes.findAll{ c -> !c.ignore }
 		if (m.isSource()) {
-			println "OUTPUT: ${m.sourceFile}" //TODO weird bug - only prints on first pass
+			log.info "OUTPUT: ${m.sourceFile}" //TODO weird bug - only prints on first pass
 			openWriter(m.sourceFile)
 			List<String> imports = m.gatherSourceImports()
 			//out << 'package ' << m.fullName() << '\n'

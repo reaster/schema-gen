@@ -47,6 +47,12 @@ class MField extends MBind
 	}
 	MClass parentClass() { (parent instanceof MClass) ? parent : null }
 
+	boolean isMapWrapper()
+	{
+		parentClass()?.isMapWrapper() ?: false
+	}
+
+
 	/**
 	 * passes imports down to base classes
 	 */
