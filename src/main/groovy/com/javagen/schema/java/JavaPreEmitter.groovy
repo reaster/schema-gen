@@ -51,6 +51,7 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.*
 class JavaPreEmitter extends CodeEmitter
 {
     protected boolean moveFieldAnnotationsToGetter = true
+    protected boolean moveFieldJavaDocsToGetter = true
 
     EnumSet<MMethod.Stereotype> CLASS_METHODS = EnumSet.noneOf(MMethod.Stereotype) //EnumSet.of(equals, hash, toString, toStringBuilder)
     EnumSet<MMethod.Stereotype> defaultMethods = EnumSet.noneOf(MMethod.Stereotype) //EnumSet.of(equals, hash, toString, toStringBuilder, getter, setter, adder)
@@ -85,9 +86,11 @@ class JavaPreEmitter extends CodeEmitter
 
     @Override
     def visit(MClass c) {
-        defaultMethods.each {
-            if (CLASS_METHODS.contains(it))
-                c.addMethod(new MMethod(stereotype: it))
+        if (!c.interface) {
+            defaultMethods.each {
+                if (CLASS_METHODS.contains(it))
+                    c.addMethod(new MMethod(stereotype: it))
+            }
         }
         c.methods.each {
             visit(it)
@@ -280,6 +283,10 @@ class JavaPreEmitter extends CodeEmitter
                         if (moveFieldAnnotationsToGetter && !p.annotations.empty) {
                             method.annotations = p.annotations
                             p.annotations = new MBase.Annotations()
+                        }
+                        if (moveFieldJavaDocsToGetter && p.document && !p.document.isEmpty()) {
+                            method.document = p.document
+                            p.document = null
                         }
                     }
                     if (p.parent.hasMethod(getterName)) {

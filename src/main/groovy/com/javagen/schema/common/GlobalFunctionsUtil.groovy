@@ -352,6 +352,11 @@ final class GlobalFunctionsUtil
 	}
 
 
+	static String javadocEscape(String name)
+	{
+		name?.replace('<', '&lt;')
+	}
+
 	static String stripNamespace(String name)
 	{
 		def pos = name ? name.indexOf(':') : -1

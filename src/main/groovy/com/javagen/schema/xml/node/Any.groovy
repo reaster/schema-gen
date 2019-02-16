@@ -33,7 +33,9 @@ class Any extends Element
     /** rather than actually trying to compute this, we just put it in the id attribute in the form: '*polymorphic-{rootTypeName}' */
     String polymporphicRootTypeName()
     {
-        String typeName = 'anyType'
+        def appinfoType = annotation?.appinfo('javageen:type')
+        String typeName = appinfoType ? appinfoType[0] : 'anyType'
+        if (appinfoType)
         if (id?.contains('polymorphic-')) {
             int index = id.indexOf('polymorphic-') + 'polymorphic-'.length()
             typeName = id.substring(index)

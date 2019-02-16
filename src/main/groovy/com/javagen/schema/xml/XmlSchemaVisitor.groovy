@@ -48,6 +48,13 @@ trait XmlSchemaVisitor
         }
     }
 
+//    def visit(Annotation annotation) {
+//        if (printTrace) println "annotation ${annotation.documentation?.first()?.text}"
+//        annotation.documentation.each { visit(it) }
+//        annotation.attr.each { visit(it) }
+//    }
+
+
     def visit(Any any) {
         if (printTrace) println "any @name=${any.qname.name}"
     }
@@ -78,6 +85,7 @@ trait XmlSchemaVisitor
 
     def visit(ComplexType complexType) {
         if (printTrace) println "complexType @name=${complexType.qname.name}"
+        //if (complexType.annotation) visit(complexType.annotation)
         for (Attribute attribute : complexType.attributes) {
             visit(attribute)
         }
@@ -129,6 +137,12 @@ trait XmlSchemaVisitor
         if (printTrace) println "group @name=${group.qname.name}"
         for (Element element : group.elements) {
             visit(element)
+        }
+        for (Group subgroup : group.groups) {
+            visit(subgroup)
+        }
+        for (Compositor compositor : group.compositors) {
+            visit(compositor)
         }
     }
 

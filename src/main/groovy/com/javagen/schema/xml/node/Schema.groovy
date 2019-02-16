@@ -22,7 +22,7 @@ import static com.javagen.schema.common.GlobalFunctionsUtil.extractNamespacePref
 import static com.javagen.schema.common.GlobalFunctionsUtil.stripNamespace
 
 //@ToString(includeNames=true,includePackage=false,excludes='TARGET_PREFIX,DEFAULT_NS,DEFAULT_PREFIX')
-class Schema implements CompositorHolder, AttributeHolder
+class Schema extends Node implements CompositorHolder, AttributeHolder
 {
     static final String targetNamespace = 'targetNamespace'
     static final String DEFAULT_NS = 'http://www.w3.org/2001/XMLSchema'

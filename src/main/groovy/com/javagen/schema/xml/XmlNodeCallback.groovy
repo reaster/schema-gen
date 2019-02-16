@@ -27,6 +27,7 @@ import com.javagen.schema.xml.node.Body
 import com.javagen.schema.xml.node.Choice
 import com.javagen.schema.xml.node.ComplexType
 import com.javagen.schema.xml.node.Element
+import com.javagen.schema.xml.node.Group
 import com.javagen.schema.xml.node.Schema
 import com.javagen.schema.xml.node.SimpleType
 import com.javagen.schema.xml.node.TextOnlyType
@@ -54,4 +55,5 @@ class XmlNodeCallback
     void gen(SimpleType simpleType, MClass clazz) {  }
     void gen(ComplexType complexType, MClass clazz) {  }
     void gen(Element element, MClass clazz) { /* root elements */ }
+    void gen(Group group, MClass clazz) { }
 }

@@ -39,7 +39,14 @@ class DartUtilTest
         assertEquals('default params', '\\$', escapeDartString('$'))
         assertEquals('default params', '\\$\\$', escapeDartString('$$'))
     }
-
+    @Test
+    void testDartEnumName()
+    {
+        assertEquals('id',  dartEnumName('ID', false, false))
+        assertEquals('ID',  dartEnumName('id', true, false))
+        assertEquals('ID',  dartEnumName('ID', false, true))
+        assertEquals('id',  dartEnumName('id', false, true))
+    }
 
 
 }

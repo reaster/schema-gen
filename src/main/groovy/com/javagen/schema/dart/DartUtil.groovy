@@ -131,12 +131,16 @@ class DartUtil {
     /**
      * Generate a legal uppercase or camelCase Dart enum name given an arbitrary string.
      */
-    static String dartEnumName(String anyString, boolean allUpperCase)
+    static String dartEnumName(String anyString, boolean allUpperCase=false, boolean preserveAcronymCase=false)
     {
         if (anyString==null || anyString.trim().length()==0)
             return null
         String normalized = replaceSpecialChars(anyString, ' ,_+-&/', (char)'_')
-        return allUpperCase ? legalDartName(normalized.toUpperCase()) : legalDartName(camelBackName(normalized))
+        if (allUpperCase)
+            return legalDartName(normalized.toUpperCase())
+        if (preserveAcronymCase && normalized.toUpperCase() == normalized)
+            return legalDartName(normalized)
+        return legalDartName(camelBackName(normalized))
     }
 
     /**

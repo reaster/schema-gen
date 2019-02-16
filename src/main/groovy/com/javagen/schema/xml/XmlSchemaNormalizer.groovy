@@ -18,8 +18,10 @@ package com.javagen.schema.xml
 
 import com.javagen.schema.model.MType
 import com.javagen.schema.xml.node.All
+import com.javagen.schema.xml.node.Annotation
 import com.javagen.schema.xml.node.Any
 import com.javagen.schema.xml.node.AnyAttribute
+import com.javagen.schema.xml.node.Appinfo
 import com.javagen.schema.xml.node.Attribute
 import com.javagen.schema.xml.node.AttributeGroup
 import com.javagen.schema.xml.node.AttributeHolder
@@ -27,6 +29,7 @@ import com.javagen.schema.xml.node.Choice
 import com.javagen.schema.xml.node.ComplexType
 import com.javagen.schema.xml.node.Compositor
 import com.javagen.schema.xml.node.CompositorHolder
+import com.javagen.schema.xml.node.Documentation
 import com.javagen.schema.xml.node.Element
 import com.javagen.schema.xml.node.ElementHolder
 import com.javagen.schema.xml.node.Group
@@ -59,6 +62,7 @@ class XmlSchemaNormalizer
     Stack<AttributeHolder> attributeStack = new Stack<>()
     Stack<Value> valueStack = new Stack<>()
     Stack<TextOnlyType> simpleTypeStack = new Stack<>()
+    com.javagen.schema.xml.node.Node lastNode;
     boolean verbose = false
     boolean inlineGroups = true
 
@@ -95,6 +99,8 @@ class XmlSchemaNormalizer
             if (!tag)
                 throw new IllegalStateException("no element tag found for ${node}")
             String name = child.@name?.text()
+            if (name == 'emailType' || name == 'hoursType')
+                println name
             String ref = child.@ref?.text()
             String id = child.@id?.text()
             String typeWithPrefix = child.@type?.text()
@@ -102,18 +108,19 @@ class XmlSchemaNormalizer
             if (typeWithPrefix && !type) {
                 throw new IllegalStateException("${tag} @name='${name}' has @type='${typeWithPrefix}' but NO global type was found")
             }
-//            if (name == 'phoneNumberType' || name == 'phoneType')
-//                println name
             switch (tag) {
                 case 'simpleType':
                     name = name ?: node.@name?.text()
                     boolean _abstract = child.@abstract?.text() == 'true'
+                    if (name == 'documentType')
+                        println name
                     if (!name)
                         throw new IllegalStateException("simpleType must have name defined")
                     if (isTextOnlyType(child)) {
                         TextOnlyType textOnlyType = schema.getGlobal(qname(name)) ?: new TextOnlyType(qname:name,base:type,id:id)
                         textOnlyType.abstract = _abstract
                         simpleTypeStack.push(textOnlyType)
+                        lastNode = textOnlyType
                         traverseElements(child)
                         if (child.@name?.text()) {
                             schema.putGlobal(textOnlyType)
@@ -126,6 +133,7 @@ class XmlSchemaNormalizer
                         simpleType.abstract = _abstract
                         simpleTypeStack.push(simpleType)
                         attributeStack.push(simpleType)
+                        lastNode = simpleType
                         traverseElements(child)
                         if (child.@name?.text()) {
                             schema.putGlobal(simpleType)
@@ -137,8 +145,11 @@ class XmlSchemaNormalizer
                     }
                     break
                 case 'complexType':
+//                    if (name == 'documentType')
+//                        println name
                     boolean isSimpleContent = child.simpleContent?.list()
                     if (isSimpleContent) {
+                        lastNode = new TextOnlyType()
                         traverseElements(child)
                     } else {
                         name = name ?: node.@name?.text()
@@ -150,6 +161,7 @@ class XmlSchemaNormalizer
                         boolean _abstract = child.@abstract?.text() == 'true'
                         if (_abstract)
                             complexType.abstract = _abstract
+                        lastNode = complexType
                         elementStack.push(complexType)
                         attributeStack.push(complexType)
                         traverseElements(child)
@@ -169,11 +181,20 @@ class XmlSchemaNormalizer
                     name = name ?: node.@name?.text() ?: node.parent().@name?.text()
                     if (!name)
                         throw new IllegalStateException("simpleType must have name defined")
-                    //boolean mixed = node.@mixed?.text() == 'true'
+                    boolean mixed = node.@mixed?.text() == 'true'
+                    if (mixed)
+                        println 'mixed'
                     SimpleType simpleType = schema.getGlobal(qname(name)) ?: new SimpleType(qname:name,base:type,id:id)
+                    simpleType.mixedContent = mixed
                     simpleTypeStack.push(simpleType)
                     attributeStack.push(simpleType)
+                    lastNode = simpleType
                     traverseElements(child)
+                    if (!simpleType.annotation && node.annotation) {
+                        lastNode = simpleType
+                        simpleType.annotation = new Annotation() //HACK
+                        traverseElements(node.annotation)
+                    }
                     if (node.@name?.text()) {
                         schema.putGlobal(simpleType) //global
                     } else {
@@ -207,6 +228,7 @@ class XmlSchemaNormalizer
                     valueStack.push(element)
                     indent+=1
                     def ch = elementStack.peek()
+                    lastNode = element
                     traverseElements(child)
                     if ( !element.type && !(element instanceof Any) && !element.isAbstract()) {
                         println "no type for element=@name='${name} in namespaces: ${prefixToNamespaceMap.peek()}"
@@ -222,6 +244,7 @@ class XmlSchemaNormalizer
                     if (verbose) println "${tab*indent}<any name='${name}' type='${type}' ref='${ref}'>"
                     valueStack.push(any)
                     indent+=1
+                    lastNode = any
                     traverseElements(child)
                     ElementHolder eh = elementStack.peek()
                     eh.elements << any
@@ -239,6 +262,7 @@ class XmlSchemaNormalizer
                     setAttributeProperties(attribute, child)
                     if (verbose) println "${tab*indent}<attribute name='${name}' type='${type}' ref='${ref}'>"
                     valueStack.push(attribute)
+                    lastNode = attribute
                     traverseElements(child)
                     AttributeHolder attributeHolder = attributeStack.peek()
                     if (attributeHolder) {
@@ -251,6 +275,7 @@ class XmlSchemaNormalizer
                 case 'anyAttribute':
                     Attribute attribute = new AnyAttribute(qname:name)
                     valueStack.push(attribute)
+                    lastNode = attribute
                     traverseElements(child)
                     AttributeHolder attributeHolder = attributeStack.peek()
                     if (attributeHolder) {
@@ -271,6 +296,7 @@ class XmlSchemaNormalizer
                     } else if (name) {
                         AttributeGroup attrGroup = schema.globalAttributeGroups[qname(name)] ?: new AttributeGroup(qname:name)
                         attributeStack.push(attrGroup)
+                        lastNode = attrGroup
                         traverseElements(child)
                         schema.globalAttributeGroups.put(attrGroup.qname, attrGroup)
                         attributeStack.pop()
@@ -289,6 +315,7 @@ class XmlSchemaNormalizer
                     } else if (name) {
                         Group group = schema.globalGroups[qname(name)] ?: new Group(qname:name)
                         elementStack.push(group)
+                        lastNode = group
                         traverseElements(child)
                         schema.globalGroups.put(group.qname, group)
                         elementStack.pop()
@@ -314,6 +341,7 @@ class XmlSchemaNormalizer
                             union.simpleTypes << simpleType
                         }
                     }
+                    lastNode = union
                     traverseElements(child) //nested simplTypes not captured yet...
                     simpleTypeStack.peek().base = union
                     break
@@ -321,6 +349,7 @@ class XmlSchemaNormalizer
                     Sequence sequence = setCompositorProperties(new Sequence(id:id), child)
                     elementStack.peek().compositors << sequence
                     elementStack.push(sequence)
+                    lastNode = sequence
                     traverseElements(child)
                     elementStack.pop()
                     break
@@ -328,6 +357,7 @@ class XmlSchemaNormalizer
                     Choice choice = setCompositorProperties(new Choice(id:id), child)
                     elementStack.peek().compositors << choice
                     elementStack.push(choice)
+                    lastNode = choice
                     traverseElements(child)
                     elementStack.pop()
                     break
@@ -335,8 +365,19 @@ class XmlSchemaNormalizer
                     All all = setCompositorProperties(new All(id:id), child)
                     elementStack.peek().compositors << all
                     elementStack.push(all)
+                    lastNode = all
                     traverseElements(child)
                     elementStack.pop()
+                    break
+                case 'annotation':
+                    lastNode.annotation = new Annotation()
+                    traverseElements(child)
+                    break
+                case 'documentation':
+                    lastNode.annotation.documentation << new Documentation(text: child.text())
+                    break
+                case 'appinfo':
+                    lastNode.annotation.appinfo << new Appinfo(text: child.text())
                     break
                 case 'notation':
                 case 'unique':
@@ -347,9 +388,6 @@ class XmlSchemaNormalizer
                 case 'key':
                 case 'keyref':
                 case 'field':
-                case 'annotation':
-                case 'documentation':
-                case 'appinfo':
                     break //TODO
                 case 'enumeration':
                 case 'minInclusive':
@@ -406,7 +444,8 @@ class XmlSchemaNormalizer
             namespace = prefixToNamespaceMap.peek()[ targetNS ? Schema.targetNamespace : '']
         if (!namespace)
             throw new IllegalStateException("no namespace registered for prefix '${prefix}' for name: ${nameWithPrefix}")
-        new QName(namespace:namespace,name: stripNamespace(nameWithPrefix))
+        final String name = stripNamespace(nameWithPrefix)
+        new QName(namespace:namespace,name: name)
     }
     QName qnameRef(String nameWithPrefix)
     {
@@ -749,6 +788,7 @@ class XmlSchemaNormalizer
         }
         //need to index global elements so they can be ref(erenced)
         indexGlobalNodes(xmlSchema)
+        lastNode = schema
         //walk the schema XML tree
         traverseElements(xmlSchema)
 

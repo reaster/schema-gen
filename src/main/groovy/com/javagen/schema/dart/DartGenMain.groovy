@@ -66,7 +66,7 @@ class DartGenMain extends DartGen
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
         def enumCustomNames = ['primitive+':'primitivePlus','$':'cheap','$$':'moderate','$$$':'pricy','$$$$':'exclusive']
         def unknownEnum = 'unknown'
-        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: dartEnumName(text, false) }
+        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: dartEnumName(text, false, true) }
     }
 
     DartGenMain()

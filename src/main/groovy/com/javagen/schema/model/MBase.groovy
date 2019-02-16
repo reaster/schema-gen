@@ -19,6 +19,7 @@ package com.javagen.schema.model
 class MBase {
 	String name
 	def attr = [:]
+	MDocument document
 	Map<MType,String> polymorphicTypes = [:]
 	boolean isPolymorphic() { !polymorphicTypes.isEmpty() }
 	Annotations annotations = new Annotations()

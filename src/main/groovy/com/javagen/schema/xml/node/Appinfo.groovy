@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Outsource Cafe, Inc.
+ * Copyright (c) 2019 Outsource Cafe, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,18 @@
 
 package com.javagen.schema.xml.node
 
-import com.javagen.schema.xml.QName
-import groovy.transform.ToString
-
-@ToString(includePackage=false)
-abstract class Node
+class Appinfo extends Node
 {
-    QName qname
-    String id
-    Annotation annotation
-    def attr = [:]
-    boolean isRoot() { return qname!=null }
-    void setQname(String name) { this.qname = new QName(name:name) }
-    void setQname(QName qname) { this.qname = qname }
-    java.util.List<String> appinfoValues(String key) { annotation?.appinfoValues(key) ?: [] }
-    java.util.List<String> docLines() { annotation?.docLines() ?: [] }
+    static final String JAVAGEN_PREFIX = 'javagen:'
+    static final String EXTENDS_DIRECTIVE = JAVAGEN_PREFIX+'extends'
+    static final String IMPLEMENTS_DIRECTIVE = JAVAGEN_PREFIX+'implements'
+    static final String ABSTACTION_DIRECTIVE = JAVAGEN_PREFIX+'abstraction'
+
+    String text;
+
+    /** given a key-value pair separated by an equals sign (javagen:type=String), return just the value. */
+    String appinfoValue(String key) {
+        text?.startsWith(key) ? text.replace("${key}=", '') : null
+    }
+
 }

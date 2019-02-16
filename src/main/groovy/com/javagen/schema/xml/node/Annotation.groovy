@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Outsource Cafe, Inc.
+ * Copyright (c) 2019 Outsource Cafe, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,20 @@
 
 package com.javagen.schema.xml.node
 
-import com.javagen.schema.xml.QName
-import groovy.transform.ToString
-
-@ToString(includePackage=false)
-abstract class Node
+class Annotation extends Node
 {
-    QName qname
-    String id
-    Annotation annotation
-    def attr = [:]
-    boolean isRoot() { return qname!=null }
-    void setQname(String name) { this.qname = new QName(name:name) }
-    void setQname(QName qname) { this.qname = qname }
-    java.util.List<String> appinfoValues(String key) { annotation?.appinfoValues(key) ?: [] }
-    java.util.List<String> docLines() { annotation?.docLines() ?: [] }
+    java.util.List<Appinfo> appinfo = []
+    java.util.List<Documentation> documentation = []
+    @Override java.util.List<String> appinfoValues(String key) {
+        appinfo.findAll{ it.text.startsWith(key) }.collect { it.appinfoValue(key) } ?: []
+    }
+    @Override java.util.List<String> docLines() {
+        java.util.List<String> lines = []
+        documentation.each { doc ->
+            doc.text.split('\n').each {
+                lines << it.trim()
+            }
+        }
+        lines
+    }
 }

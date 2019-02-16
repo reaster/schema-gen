@@ -17,6 +17,7 @@
 package com.javagen.schema.common
 
 import com.javagen.schema.common.Gen
+import com.javagen.schema.model.MDocument
 import com.javagen.schema.model.MEnum
 import com.javagen.schema.model.MClass
 import com.javagen.schema.model.MField
@@ -60,6 +61,7 @@ abstract class CodeEmitter
 	def visit(MProperty p) {}
 	def visit(MReference r) {}
 	def visit(MMethod m) {}
+	def visit(MDocument d) {}
 
 	/**
 	 *

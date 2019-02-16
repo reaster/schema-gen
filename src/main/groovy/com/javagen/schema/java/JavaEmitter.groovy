@@ -21,6 +21,9 @@ import com.javagen.schema.model.MAnnotation
 import com.javagen.schema.model.MBase
 import com.javagen.schema.model.MBind
 import com.javagen.schema.model.MCardinality
+import com.javagen.schema.model.MDocument
+
+import static com.javagen.schema.common.GlobalFunctionsUtil.*
 import static com.javagen.schema.model.MCardinality.*
 import com.javagen.schema.model.MClass
 import com.javagen.schema.model.MEnum
@@ -51,6 +54,44 @@ class JavaEmitter extends CodeEmitter
 			new JavaTypeRegistry()
 	}
 
+	static Set<String> javaDocTags = ['author', 'code', 'deprecated', 'docRoot', 'exception', 'inheritDoc', 'link', 'linkplain', 'literal',
+									  'param', 'return',  'see', 'serial', 'serialData', 'serialField', 'since', 'throws', 'value', 'version'] as Set
+
+	@Override
+	def visit(MDocument d) {
+		if (!d)
+			return
+		def tags = d.attr.findAll { javaDocTags.contains(it.key) }
+		def items = d.attr.findAll { !javaDocTags.contains(it.key) }
+		if (d.statements || tags || items) {
+			out << '\n' << tabs << '/**'
+			d.statements.each {
+				if (it.trim()) {
+					out << '\n' << tabs << ' * ' << javadocEscape(it.trim())
+				} else {
+					out << '\n' << tabs << ' * ' << '<p>'
+				}
+			}
+			if (d.statements && items)
+				out << '\n' << tabs << ' * '
+			if (items) {
+				out << '\n' << tabs << ' * <ul>'
+				items.each { k,v ->
+					out << '\n' << tabs << " * <li>${v}</li>"
+				}
+				out << '\n' << tabs << ' * </ul>'
+			}
+			if ((d.statements || items) && tags)
+				out << '\n' << tabs << ' * '
+			tags.each { k,v ->
+				if (javaDocTags.contains(k)) {
+					out << '\n' << tabs << " * @${k} ${v}"
+				}
+			}
+			out << '\n' << tabs << ' */'
+		}
+	}
+
 	/** outputs each class in separate source file */
 	@Override
 	def visit(MModule m)
@@ -66,6 +107,8 @@ class JavaEmitter extends CodeEmitter
 			}
 			if (!c.imports.isEmpty())
 				out << '\n'
+			if (c.document)
+				visit(c.document.provisionForSource())
 			visit(c)
 		}
 		for(childModule in m.children.values()) { //visit submodules
@@ -90,16 +133,23 @@ class JavaEmitter extends CodeEmitter
 			out << 'static '
 		if (c.isAbstract() && !c.isInterface())
 			out << 'abstract '
-		out << (c.isInterface() ? 'interface ' : 'class ') << c.name << ' '
+		if (c.isInterface()) {
+			out << 'interface '
+		} else {
+			out << 'class '
+		}
+		out << c.name << ' '
 		if (c.getExtends())
-			out << 'extends ' << c.getExtends()
-		c.implements.unique().eachWithIndex { e, i ->
-			out << (i==0) ? 'extends ' : ', '
-			out << e.name
+			out << 'extends ' << c.getExtends() << ' '
+		c.implements.unique().eachWithIndex { interfaceName, i ->
+			out << (i==0 ? 'implements ' : ', ')
+			out << interfaceName
 		}
 		out << '\n' << tabs << '{'
 		this++
 		for(f in c.fields.values()) {
+			if (f.document)
+				visit(f.document)
 			visit(f)
 		}
 		if (!c.classes.isEmpty())
@@ -107,9 +157,12 @@ class JavaEmitter extends CodeEmitter
 		for(nested in c.classes) {
 			visit(nested)
 		}
-		if (!c.methods.isEmpty())
+		if (!c.classes.isEmpty() && !c.methods.isEmpty())
 			out << '\n'
 		for(m in c.methods) {
+			if (m.document)
+				visit(m.document)
+
 			visit(m)
 		}
 		this--
@@ -155,6 +208,9 @@ class JavaEmitter extends CodeEmitter
 	@Override
 	def visit(MField f)
 	{
+		MClass c = f.parent
+		if (c.interface && !f.static)
+			return
 //		if (f.name == 'map')
 //			println 'map'
 		f.annotations.list.findAll{ !it.onGenericParam || NON_GENERIC_PARAMS.contains(f.cardinality)}.each {
@@ -196,9 +252,11 @@ class JavaEmitter extends CodeEmitter
 			log.warning"ignoring method with no name: ${m}"
 			return
 		}
-		m.annotations.each {
-			out << '\n' << tabs
-			out << it
+		if (!m.parent.isInterface()) {
+			m.annotations.each {
+				out << '\n' << tabs
+				out << it
+			}
 		}
 		out << '\n' << tabs
 		if (m.scope && !m.parent.isInterface())
@@ -215,8 +273,10 @@ class JavaEmitter extends CodeEmitter
 		out << m.name << '('
 		m.params.eachWithIndex { MBind p, int i ->
 			if (i>0) out << ', '
-			p.annotations.each{ anno ->
-				out << anno << ' '
+			if (!m.parent.isInterface()) {
+				p.annotations.each{ anno ->
+					out << anno << ' '
+				}
 			}
 			out << typeDeclaration(p, m) << ' ' << p.name
 		}

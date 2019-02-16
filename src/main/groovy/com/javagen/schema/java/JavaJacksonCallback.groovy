@@ -116,9 +116,10 @@ class JavaJacksonCallback extends XmlNodeCallback
     }
     @Override void gen(Body body, MProperty property)
     {
+        boolean isCData = body.element || body.parent.mixedContent
         property.annotations << '@JacksonXmlText'
         property.parent.imports << 'com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText'
-        if (body.element) {
+        if (isCData) {
             property.annotations << '@JacksonXmlCData'
             property.parent.imports << 'com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlCData'
         }
