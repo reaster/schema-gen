@@ -67,7 +67,7 @@ class ComplexType extends SimpleType implements CompositorHolder
     }
 
     @Override Body getBody() {
-        if (elementCount() == 1 && childElements()[0] instanceof Any && childElements()[0].maxOccurs == 1) {
+        if (isBody()) {
             Any any = childElements()[0]
             new Body(parent: this, element: any, mixedContent: mixedContent)
         } else if (base != null) {

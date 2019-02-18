@@ -84,6 +84,8 @@ trait XmlSchemaVisitor
     }
 
     def visit(ComplexType complexType) {
+        if (complexType.qname.name == 'legType')
+            println complexType.qname.name
         if (printTrace) println "complexType @name=${complexType.qname.name}"
         //if (complexType.annotation) visit(complexType.annotation)
         for (Attribute attribute : complexType.attributes) {

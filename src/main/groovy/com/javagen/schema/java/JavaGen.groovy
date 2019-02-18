@@ -299,8 +299,8 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 
     def setClassProperties(MClass clazz, ComplexType complexType)
     {
-//		if (clazz.name == 'ReferenceWrapper')
-//			println "IGNORING: ${clazz.name}"
+		if (clazz.name == 'Leg')
+			println "ComplexType -> class: ${clazz.name}"
         clazz.ignore = complexType.isWrapperElement()
         if (clazz.ignore)
             log.warning "IGNORING WRAPPER CLASS: ${clazz.name}".toString()

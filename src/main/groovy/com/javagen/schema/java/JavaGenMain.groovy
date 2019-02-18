@@ -77,16 +77,24 @@ class JavaGenMain extends JavaGen
         def unknownEnum = 'Unknown'
         enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: javaEnumName(text, false) }
     }
-    def initHsf2()
+    def initAttraction()
     {
         schemaURL = new File('/Users/richard/dev/hs/hsf-data/attractions-1_0.xsd').toURI().toURL()
-        //schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-2_0.xsd').toURI().toURL()
-        //packageName = 'com.hotspringsfinder.model.v2'
         srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen')
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
         def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']
         def unknownEnum = 'Unknown'
-        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: javaEnumName(text, false) }
+        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: javaEnumName(text, false, true) }
+    }
+    def initHsf2()
+    {
+        schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-2_0.xsd').toURI().toURL()
+        packageName = 'com.hotspringsfinder.model.v2'
+        srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen')
+        customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
+        def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']
+        def unknownEnum = 'Unknown'
+        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: javaEnumName(text, false, true) }
     }
     def initKml()
     {
@@ -105,7 +113,8 @@ class JavaGenMain extends JavaGen
         //schemaURL = new File('/Users/richard/dev/hs/xml-xml/example-x-java/src/main/resources/xAL.xsd').toURI().toURL()
         //schemaURL = new URL('http://docs.oasis-open.org/election/external/xAL.xsd')
 		//initGpx()
-		initHsf2()
+		//initHsf2()
+        initAttraction()
         //initFactionDigits()
         //initXHTML()
     }

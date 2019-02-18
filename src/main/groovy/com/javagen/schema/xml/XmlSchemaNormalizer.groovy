@@ -149,7 +149,7 @@ class XmlSchemaNormalizer
 //                        println name
                     boolean isSimpleContent = child.simpleContent?.list()
                     if (isSimpleContent) {
-                        lastNode = new TextOnlyType()
+                        lastNode = new TextOnlyType() //create a dummy node to capture annotation nodes
                         traverseElements(child)
                     } else {
                         name = name ?: node.@name?.text()
@@ -161,9 +161,9 @@ class XmlSchemaNormalizer
                         boolean _abstract = child.@abstract?.text() == 'true'
                         if (_abstract)
                             complexType.abstract = _abstract
-                        lastNode = complexType
                         elementStack.push(complexType)
                         attributeStack.push(complexType)
+                        lastNode = complexType
                         traverseElements(child)
                         if (child.@name?.text()) {
                             schema.putGlobal(complexType) //global
@@ -175,6 +175,7 @@ class XmlSchemaNormalizer
                     }
                     break
                 case 'complexContent':
+                    lastNode = new TextOnlyType() //create a dummy node to capture annotation nodes
                     traverseElements(child)
                     break
                 case 'simpleContent':
@@ -289,6 +290,7 @@ class XmlSchemaNormalizer
                     if (ref) {
                         def attributeGroup = attributeGroupNodeLookup[qnameRef(ref)]
                         if (inlineGroups) {
+                            lastNode = new TextOnlyType() //create a dummy node to capture annotation nodes
                             traverseElements(attributeGroup) //just add them to the current type
                         } else {
                             attributeStack.peek().attributeGroups << attributeGroup
@@ -308,6 +310,7 @@ class XmlSchemaNormalizer
                     if (ref) {
                         def group = groupNodeLookup[qnameRef(ref)]
                         if (inlineGroups) {
+                            lastNode = new TextOnlyType() //create a dummy node to capture annotation nodes
                             traverseElements(group) //just add them to the current type
                         } else {
                             elementStack.peek().groups << group
@@ -416,6 +419,15 @@ class XmlSchemaNormalizer
                     if (baseType) {
                         Type parentType = findParentType(child)
                         parentType.base = baseType
+                        String parentName = parentType.qname.name
+//                        if (parentName == 'legType')
+//                            println parentName
+                        if (node.name() == 'complexContent' && baseType.isSimpleType()) {
+                            throw new IllegalStateException("'${parentType.qname.name}' - complextType/complextContent/${tag} @base='${base}': complextContent can't have simple base type")
+                        } else if (node.name() == 'simpleContent' && baseType.isComplextContent()) {
+                            throw new IllegalStateException("'${parentType.qname.name}' - complextType/simpleContent/${tag} @base='${base}': simpleContent can't have complex base type")
+                        }
+
                     } else {
                         throw new IllegalStateException("${tag} @name='${name}' has @base='${base}' missing @base attribute or NO global type was found")
 //                        QName qname2 = qnameRef(base)
@@ -425,6 +437,7 @@ class XmlSchemaNormalizer
 //                        //String schemaTypeName = gen.simpleXmlTypeToPropertyType.apply(t.qname.name)
 //                        println "Can't find baseType for base: ${base}"
                     }
+                    lastNode = new TextOnlyType() //create a dummy node to capture annotation nodes
                     traverseElements(child)
                     break
                 default:

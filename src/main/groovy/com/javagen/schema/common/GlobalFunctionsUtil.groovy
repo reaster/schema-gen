@@ -83,12 +83,16 @@ final class GlobalFunctionsUtil
 	/**
 	 * Generate a legal uppercase or camelCase Java enum name given an arbitrary string.
 	 */
-	static String javaEnumName(String anyString, boolean allUpperCase)
+	static String javaEnumName(String anyString, boolean allUpperCase=false, boolean preserveAcronymCase=false)
 	{
 		if (anyString==null || anyString.trim().length()==0)
 			return null
-		String normalized = replaceSpecialChars(anyString, ' ,._+-&/', (char)'_')
-		return allUpperCase ? legalJavaName(normalized.toUpperCase()) : camelBackJavaClass(normalized)
+		String normalized = replaceSpecialChars(anyString, ' ,_+-&/', (char)'_')
+		if (allUpperCase)
+			return legalJavaName(normalized.toUpperCase())
+		if (preserveAcronymCase && normalized.toUpperCase() == normalized)
+			return legalJavaName(normalized)
+		return legalJavaName(camelBackJavaClass(normalized))
 	}
 
 	/**
