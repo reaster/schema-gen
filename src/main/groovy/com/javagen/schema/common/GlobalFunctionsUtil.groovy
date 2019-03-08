@@ -337,18 +337,15 @@ final class GlobalFunctionsUtil
 			String charString = new String(onechar)
 			if (specialCharacters.indexOf(charString) >= 0) {
 				nextUpper = charString != '\''
-			} else {
-				if (nextUpper) {
-					if (!firstChar)
-						retstr.append(charString.toUpperCase())
-					else
-						retstr.append(charString.toLowerCase())
-					firstChar = false
-					nextUpper = false
-				} else {
-					retstr.append(charString.toLowerCase())
-					firstChar = false
-				}
+			} else if (firstChar) {
+                retstr.append(charString.toLowerCase())
+                firstChar = false
+                nextUpper = false
+            } else if (nextUpper) {
+                retstr.append(charString.toUpperCase())
+                nextUpper = false
+            } else {
+                retstr.append(charString) //.toLowerCase()
 			}
 
 		}

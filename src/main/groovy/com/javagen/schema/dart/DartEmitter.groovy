@@ -114,8 +114,8 @@ class DartEmitter extends CodeEmitter
 		if (c.getExtends())
 			out << ' extends ' << c.getExtends()
 		c.implements.unique().eachWithIndex { e, i ->
-			out << (i==0) ? 'extends ' : ', '
-			out << e.name
+			out << (i==0 ? ' implements ' : ', ')
+			out << e
 		}
 
 		/*
@@ -278,8 +278,8 @@ class DartEmitter extends CodeEmitter
 			out << 'static '
 		if (m.isFinal())
 			out << 'final '
-		if (m.isAbstract())
-			out << 'abstract '
+//		if (m.isAbstract())
+//			out << 'abstract '
 		if (m.stereotype == Stereotype.constructor) {
 			boolean allProperties = MMethod.IncludeProperties.allProperties == m.includeProperties
 			if (allProperties) {
@@ -322,8 +322,10 @@ class DartEmitter extends CodeEmitter
 //				out << "${p.name}" << '=' << "${p.name}_"
 //			}
 		} else {
-			out << typeDeclaration(m.type, m)
-			out << (m.operator ? ' operator ' : ' ')
+			if (!m.isVoidType()) {
+				out << typeDeclaration(m.type, m) << ' '
+			}
+			out << (m.operator ? 'operator ' : '')
 			out << (m.getter ? 'get ' : '')
 			out << (m.setter ? 'set ' : '')
 			out << m.name

@@ -9,6 +9,15 @@ class GlobalFunctionsUtilTest
 {
 
     @Test
+    void testCamelBackName()
+    {
+        assertEquals('handle leading special chars','heyDude', camelBackName('_Hey_dude'))
+        assertEquals('leave embedded upper case','searchTag1', camelBackName('searchTag1'))
+        assertEquals('remove multiple spaces','heyDude', camelBackName('hey  dude'))
+        assertEquals('lowercase first char','heyDude', camelBackName('Hey_dude'))
+    }
+
+    @Test
     void testContainsRelativeFilePath()
     {
         assertEquals('if dot in path, assumes it was originally relative','./src/test/resources/xml.xsd', containsRelativeFilePath(new File('./src/test/resources/xml.xsd').toURI().toURL()))

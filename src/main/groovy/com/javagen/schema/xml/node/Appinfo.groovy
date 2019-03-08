@@ -22,6 +22,7 @@ class Appinfo extends Node
     static final String EXTENDS_DIRECTIVE = JAVAGEN_PREFIX+'extends'
     static final String IMPLEMENTS_DIRECTIVE = JAVAGEN_PREFIX+'implements'
     static final String ABSTACTION_DIRECTIVE = JAVAGEN_PREFIX+'abstraction'
+    static final String TYPE_DIRECTIVE = JAVAGEN_PREFIX+'type'
 
     String text;
 

@@ -55,6 +55,19 @@ class DartGenMain extends DartGen
         enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: dartEnumName(text, false) }
     }
 
+    def initAttraction()
+    {
+        schemaURL = new File('/Users/richard/dev/hs/hsf-data/attractions-1_0.xsd').toURI().toURL()
+        //srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen')
+        sourceFileName = 'attractions'
+        projectDir = new File('/Users/richard/dev/flutter/hot_springs_finder')
+        customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
+//        def enumCustomNames = ['primitive+':'primitivePlus','$':'cheap','$$':'moderate','$$$':'pricy','$$$$':'exclusive']
+//        def unknownEnum = 'unknown'
+//        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: dartEnumName(text, false, true) }
+        enumNameFunction = { text -> dartEnumName(text, false, true) }
+    }
+
     def initHsf2()
     {
         schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-2_0.xsd').toURI().toURL()
@@ -64,9 +77,9 @@ class DartGenMain extends DartGen
         projectDir = new File('/Users/richard/dev/flutter/hot_springs_finder')
 //        srcDir = new File('/Users/richard/dev/flutter/hot_springs_finder/lib/model')
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
-        def enumCustomNames = ['primitive+':'primitivePlus','$':'cheap','$$':'moderate','$$$':'pricy','$$$$':'exclusive']
-        def unknownEnum = 'unknown'
-        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: dartEnumName(text, false, true) }
+//        def enumCustomNames = ['primitive+':'primitivePlus','$':'cheap','$$':'moderate','$$$':'pricy','$$$$':'exclusive']
+//        def unknownEnum = 'unknown'
+        enumNameFunction = { text -> dartEnumName(text, false, true) }
     }
 
     DartGenMain()
@@ -74,7 +87,8 @@ class DartGenMain extends DartGen
         super()
         //initGpx()
         //initHsf()
-        initHsf2()
+        //initHsf2()
+        initAttraction()
         //initWadl()
     }
 

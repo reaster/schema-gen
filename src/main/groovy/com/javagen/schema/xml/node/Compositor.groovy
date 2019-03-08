@@ -38,11 +38,13 @@ abstract class Compositor extends Node implements CompositorHolder
     /** rather than actually trying to compute this, we just put it in the id attribute in the form: '*polymorphic-{rootTypeName}' */
     String polymporphicRootTypeName()
     {
-        String typeName = 'anyType'
-        if (id?.contains('polymorphic-')) {
-            int index = id.indexOf('polymorphic-') + 'polymorphic-'.length()
-            typeName = id.substring(index)
-        }
+        def appinfoType = annotation?.appinfoValues(Appinfo.TYPE_DIRECTIVE)
+        String typeName = appinfoType ? appinfoType[0] : 'anyType'
+//        String typeName = 'anyType'
+//        if (id?.contains('polymorphic-')) {
+//            int index = id.indexOf('polymorphic-') + 'polymorphic-'.length()
+//            typeName = id.substring(index)
+//        }
         return typeName
     }
 }

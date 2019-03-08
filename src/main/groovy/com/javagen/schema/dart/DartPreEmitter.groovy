@@ -64,8 +64,24 @@ class DartPreEmitter extends CodeEmitter
         c.classes.each {
             visit(it)
         }
-        c.fields.values().each {
-            visit(it)
+        if (c.isInterface()) {
+            propertiesToAbstractAccessors(c)
+        } else {
+            c.fields.values().each {
+                visit(it)
+            }
+        }
+    }
+
+    private propertiesToAbstractAccessors(MClass c)
+    {
+        List<MField> fields = c.fields.values().findAll{ !it.isStatic() }
+        for(MField f : fields) {
+            MMethod getter = new MMethod(name:f.name, refs:['property':f], stereotype: MMethod.Stereotype.getter, getter:true, abstract: true, type:f.type)
+            c.addMethod(getter)
+            MMethod setter = new MMethod(name:f.name, refs:['property':f], stereotype: MMethod.Stereotype.setter, setter:true, abstract: true, params:[new MBind(type:f.type,name:f.name)])
+            c.addMethod(setter)
+            c.fields.remove(f.name)
         }
     }
 
@@ -337,7 +353,7 @@ class DartPreEmitter extends CodeEmitter
         fields.each { f ->
             if (f.isStatic() || f.isGenIgnore())
                 return
-            v.out << '\n' << v.tabs << "result = 31 * result + ${f.name}?.hashCode ?? 0;"
+            v.out << '\n' << v.tabs << "result = 31 * result + (${f.name}?.hashCode ?? 0);"
         }
         v.out << '\n' << v.tabs << 'return result;'
     }
@@ -368,7 +384,7 @@ class DartPreEmitter extends CodeEmitter
     }
     private addDefaultClassMethodSubs(MClass c)
     {
-        if (c.ignore)
+        if (c.ignore || c.isInterface())
             return
         defaultMethods.each {
             if (CLASS_METHODS.contains(it)) {

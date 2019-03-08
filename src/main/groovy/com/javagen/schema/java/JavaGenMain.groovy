@@ -18,6 +18,7 @@ package com.javagen.schema.java
 
 import com.javagen.schema.common.PluralService
 import com.javagen.schema.common.PluralServiceNoop
+import com.javagen.schema.dart.DartUtil
 
 import static com.javagen.schema.common.GlobalFunctionsUtil.javaEnumName
 
@@ -82,9 +83,7 @@ class JavaGenMain extends JavaGen
         schemaURL = new File('/Users/richard/dev/hs/hsf-data/attractions-1_0.xsd').toURI().toURL()
         srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen')
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
-        def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']
-        def unknownEnum = 'Unknown'
-        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: javaEnumName(text, false, true) }
+        //enumNameFunction = { text -> DartUtil.dartEnumName(text, false, true) } //match client case
     }
     def initHsf2()
     {
@@ -92,9 +91,7 @@ class JavaGenMain extends JavaGen
         packageName = 'com.hotspringsfinder.model.v2'
         srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen')
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
-        def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']
-        def unknownEnum = 'Unknown'
-        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: javaEnumName(text, false, true) }
+        //enumNameFunction = { text -> DartUtil.dartEnumName(text, false, true) } //match client case
     }
     def initKml()
     {

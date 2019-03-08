@@ -188,6 +188,8 @@ class DartJsonEmitter extends CodeEmitter
                     } else if (f.isReference()) {
                         String unWrap = f.type.isListWrapper() ? "['${f.type.firstField().name}']" : ''
                         v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << '==null ? null : ' << toJsonMethod << '(instance.' << f.name << ')' << unWrap << ');'
+                    } else if (f.type.name == 'bool') { //translate to 1, 0 or null to be compatible with SqlLite
+                        v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << ' != null ? (instance.' << f.name << ' ? 1 : 0) : null);'
                     } else if (f.type.name == 'DateTime') {
                         v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << '?.toIso8601String());'
                     } else if (f.type.name == 'Uri') {
@@ -239,6 +241,8 @@ class DartJsonEmitter extends CodeEmitter
                 } else if (f.isReference()) {
                     String unWrap = f.type.isListWrapper() ? "['${f.type.firstField().name}']" : ''
                     v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '==null ? null : ' << toJsonMethod << '(instance.' << f.name << ')' << unWrap
+                } else if (f.type.name == 'bool') { //translate to 1, 0 or null to be compatible with SqlLite
+                    v.out << '\n' << v.tabs << '\'' << f.name << '\', instance.' << f.name << ' != null ? (instance.' << f.name << ' ? 1 : 0) : null'
                 } else if (f.type.name == 'DateTime') {
                     v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '?.toIso8601String()'
                 } else if (f.type.name == 'Uri') {
@@ -343,10 +347,12 @@ class DartJsonEmitter extends CodeEmitter
                             v.out << '\n' << v.tabs << ': ' << methodCall << '(json[\'' << f.name << '\'] as Map<String, dynamic>)'
                         }
                         v.previous()
-                    } else if (f.type.name in ['String', 'int', 'bool']) {
+                    } else if (f.type.name in ['String', 'int']) {
                         v.out << '\n' << v.tabs << f.name << ': json[\'' << f.name << '\'] as ' << f.type.name
                     } else if (f.type.name == 'double') {
                         v.out << '\n' << v.tabs << f.name << ': (json[\'' << f.name << '\'] as num)?.toDouble()'
+                    } else if (f.type.name == 'bool') {
+                        v.out << '\n' << v.tabs << f.name << ': json[\'' << f.name << '\'] == null ? null : (json[\'' << f.name << '\'] as num).toInt() == 1'
                     } else if (f.type.name == 'DateTime') {
                         v.out << '\n' << v.tabs << f.name << ': json[\'' << f.name << '\'] == null ? null : DateTime.parse(json[\'' << f.name << '\'] as String)'
                     } else if (f.type.name == 'Uri') {
