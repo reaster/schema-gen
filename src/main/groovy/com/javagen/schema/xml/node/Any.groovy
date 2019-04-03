@@ -34,7 +34,7 @@ class Any extends Element
     String polymporphicRootTypeName()
     {
         def appinfoType = annotation?.appinfo(Appinfo.TYPE_DIRECTIVE)
-        String typeName = appinfoType ? appinfoType[0] : 'anyType'
+        String typeName = appinfoType ? appinfoType[0] : "${Schema.DEFAULT_PREFIX}:anyType"
 //        if (appinfoType)
 //        if (id?.contains('polymorphic-')) {
 //            int index = id.indexOf('polymorphic-') + 'polymorphic-'.length()

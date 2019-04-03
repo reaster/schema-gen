@@ -32,6 +32,7 @@ class DartSupportEmitter extends CodeEmitter
 {
 
     MModule support = new MModule(name:'support')
+    //boolean genEnumDecode = false
 
     DartSupportEmitter()
     {
@@ -54,7 +55,28 @@ class DartSupportEmitter extends CodeEmitter
         enums.each {
             m.classes.remove(it)
             support.addClass(it)
+            //genEnumTable(it)
         }
-     }
+    }
+
+//    private genEnumTable(MEnum e)
+//    {
+////    const _$FixTypeEnumEnumMap = <FixTypeEnum, dynamic>{
+////        FixTypeEnum.twoD: '2d',
+////        FixTypeEnum.threeD: '3d',
+////        FixTypeEnum.dgps: 'dgps',
+////        FixTypeEnum.none: 'none',
+////        FixTypeEnum.pps: 'pps'
+////    };
+//        def val = new StringBuilder("<${e.name}, dynamic>{")
+//        e.enumNames.eachWithIndex { String name, int i ->
+//            if (i>0) val << ','
+//            val << '\n' << tab() << e.name << '.' << name << ': \'' << gen.enumValueFunction.apply(e.enumValues[i]) << '\''
+//        }
+//        val << '\n' << '}'
+//        //MProperty p = new MProperty(name:DartJsonEmitter.enumMapName(e), genIgnore:true, const:true, cardinality: MCardinality.MAP, type:'dynamic', attr:['keyType': e], val:val.toString())
+//        MProperty p = new MProperty(name:DartJsonEmitter.enumMapName(e, false), genIgnore:true, const:true, cardinality: MCardinality.MAP, type:'dynamic', attr:['keyType': e], val:val.toString())
+//        support.addField(p)
+//    }
 
 }

@@ -9,6 +9,15 @@ class GlobalFunctionsUtilTest
 {
 
     @Test
+    void testIsSimpleString()
+    {
+        assertTrue('alphanumeric', isSimpleString('heyDude'))
+        assertTrue('alphanumeric', isSimpleString('heyDude123'))
+        assertFalse('symbols', isSimpleString('hey!dude'))
+        assertFalse('white space', isSimpleString('hey dude'))
+        assertFalse('null', isSimpleString(null))
+    }
+    @Test
     void testCamelBackName()
     {
         assertEquals('handle leading special chars','heyDude', camelBackName('_Hey_dude'))

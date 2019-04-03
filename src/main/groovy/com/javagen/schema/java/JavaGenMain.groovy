@@ -72,7 +72,7 @@ class JavaGenMain extends JavaGen
     {
         schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-1_1.xsd').toURI().toURL()
         //packageName = 'com.hotspringsfinder.detail.model'
-        srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen')
+        srcDir = new File('../javagen/schema-gen-hsf/hsf-java/src/main/java-gen')
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
         def enumCustomNames = ['primitive+':'PrimitivePlus','$':'Cheap','$$':'Moderate','$$$':'Pricy','$$$$':'Exclusive']
         def unknownEnum = 'Unknown'
@@ -81,16 +81,26 @@ class JavaGenMain extends JavaGen
     def initAttraction()
     {
         schemaURL = new File('/Users/richard/dev/hs/hsf-data/attractions-1_0.xsd').toURI().toURL()
-        srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen')
+        srcDir = new File('/Users/richard/dev/hs/attraction-model-v1/src/main/java-gen')
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
-        //enumNameFunction = { text -> DartUtil.dartEnumName(text, false, true) } //match client case
+        polyMorphicListName = 'results'
+        anyPropeertyNameWrapped = 'results'
+    }
+    def initHsf2Extension()
+    {
+        schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-extension-2_0.xsd').toURI().toURL()
+        packageName = 'com.hotspringsfinder.model.ext.v2'
+        srcDir = new File('/Users/richard/dev/hs/hsf-ext-v2/src/main/java-gen')
+        treatWrapperElementsAsCollections = false
     }
     def initHsf2()
     {
         schemaURL = new File('/Users/richard/dev/hs/hsf-data/hsf-2_0.xsd').toURI().toURL()
         packageName = 'com.hotspringsfinder.model.v2'
-        srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen')
+        //srcDir = new File('../javagen/schema-gen-hsf/hsf-java/src/main/java-gen')
+        srcDir = new File('/Users/richard/dev/hs/hsf-model-v2/src/main/java-gen')
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
+        polyMorphicListName = 'results'
         //enumNameFunction = { text -> DartUtil.dartEnumName(text, false, true) } //match client case
     }
     def initKml()
@@ -110,7 +120,8 @@ class JavaGenMain extends JavaGen
         //schemaURL = new File('/Users/richard/dev/hs/xml-xml/example-x-java/src/main/resources/xAL.xsd').toURI().toURL()
         //schemaURL = new URL('http://docs.oasis-open.org/election/external/xAL.xsd')
 		//initGpx()
-		//initHsf2()
+//		initHsf2()
+//        initHsf2Extension()
         initAttraction()
         //initFactionDigits()
         //initXHTML()

@@ -5,7 +5,7 @@ plugins {
 pluginBundle {
     website = 'https://github.com/reaster/schema-gen'
     vcsUrl = 'https://github.com/reaster/schema-gen'
-    plugins {
+    plugins {   
         gen {
             id = 'com.javagen.schema-gen'
             displayName = 'Schema Gen Plugin'

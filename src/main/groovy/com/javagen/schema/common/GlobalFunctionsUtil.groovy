@@ -502,6 +502,20 @@ final class GlobalFunctionsUtil
 		}
 	}
 
+	static boolean isSimpleString(String val) {
+		if (val==null)
+			return false
+		for(char c : val.toCharArray()) {
+			switch (charType(c)) {
+				case CharType.system:
+				case CharType.white:
+				case CharType.symbol:
+					return false
+			}
+		}
+		true
+	}
+
 	enum CharType{constonant, vowel, digit, white, symbol, system }
 
 	/** fast char categorization */

@@ -19,6 +19,7 @@ package com.javagen.schema.java
 import com.javagen.schema.common.CodeEmitter
 import com.javagen.schema.model.MBase
 import com.javagen.schema.model.MBind
+import com.javagen.schema.model.MCardinality
 import com.javagen.schema.model.MClass
 import com.javagen.schema.model.MEnum
 import com.javagen.schema.model.MField
@@ -31,6 +32,7 @@ import com.javagen.schema.model.MTypeRegistry
 
 import static com.javagen.schema.model.MCardinality.LIST
 import static com.javagen.schema.model.MCardinality.SET
+import static com.javagen.schema.model.MCardinality.MAP
 import static com.javagen.schema.model.MMethod.IncludeProperties.allProperties
 import static com.javagen.schema.model.MMethod.IncludeProperties.finalProperties
 import static com.javagen.schema.model.MMethod.Stereotype.adder
@@ -52,6 +54,7 @@ class JavaPreEmitter extends CodeEmitter
 {
     protected boolean moveFieldAnnotationsToGetter = true
     protected boolean moveFieldJavaDocsToGetter = true
+    protected boolean genEnumPropertyLookup = true;
 
     EnumSet<MMethod.Stereotype> CLASS_METHODS = EnumSet.noneOf(MMethod.Stereotype) //EnumSet.of(equals, hash, toString, toStringBuilder)
     EnumSet<MMethod.Stereotype> defaultMethods = EnumSet.noneOf(MMethod.Stereotype) //EnumSet.of(equals, hash, toString, toStringBuilder, getter, setter, adder)
@@ -107,6 +110,30 @@ class JavaPreEmitter extends CodeEmitter
     @Override
     def visit(MEnum e)
     {
+        /*
+        public static Map<String,AliasNameTypeEnum> map = Arrays.stream(AliasNameTypeEnum.values())
+            .collect(Collectors.toMap((v)->v.getValue(), (v)->v));
+
+        public static AliasNameTypeEnum lookup(String value) {
+            if (value==null) return Unknown;
+            AliasNameTypeEnum result = map.get(value);
+            return result==null ? Unknown : result;
+        }
+         */
+        if (genEnumPropertyLookup) {
+            e.fields.values().each {
+                String mapFieldName = "${it.name}Map"
+                String getterName = "get${upperCase(it.name)}"
+                MProperty map = new MProperty(name: mapFieldName, attr: ['keyType':it.type], type: e.name, cardinality:MAP, static:true, scope: 'public')
+                map.val = "java.util.Arrays.stream(${e.name}.values()).collect(java.util.stream.Collectors.toMap((v)->v.${getterName}(), (v)->v))"
+                //    public static AliasNameTypeEnum valueMap = AliasNameTypeEnum.ArraysStream(AliasNameTypeEnumValues())Collect(CollectorsToMap((v)>vGetValue()(v)>v));
+                e.addField(map)
+                String lookupName = "lookupBy${upperCase(it.name)}";
+                MBind param = new MBind(name: it.name, type: it.type)
+                MMethod lookup = new MMethod(name:lookupName, type:e.name, static:true, scope: 'public', params: [param], body: this.&lookupEnumMethodBody)
+                e.addMethod(lookup)
+            }
+        }
         e.methods.each {
             visit(it)
         }
@@ -199,6 +226,26 @@ class JavaPreEmitter extends CodeEmitter
         fields.eachWithIndex { f, i ->
             v.out << '\n' << v.tabs << "sb.append(\"${(i>0 || hasSuper ? ', ' : '')}${f.name}=\").append(${f.name})" << ';'
         }
+    }
+
+    /*
+       public static AliasNameTypeEnum lookup(String value) {
+            if (value==null) return Unknown;
+            AliasNameTypeEnum result = map.get(value);
+            return result==null ? Unknown : result;
+        }
+
+     */
+    private def lookupEnumMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+    {
+        MEnum e = m.parent
+        boolean isUnknown = e.enumNames.contains('Unknown') || e.enumNames.contains('unknown')
+        String paramName =  m.params.first().name
+        String paramType = m.params.first().type
+        String mapFieldName = "${paramName}Map"
+        v.out << '\n' << v.tabs << "if (${paramName}==null) return ${isUnknown ? 'Unknown' : 'null'};"
+        v.out << '\n' << v.tabs << "${m.parent.name} result = ${mapFieldName}.get(${paramName});"
+        v.out << '\n' << v.tabs << "return ${isUnknown ? 'result==null ? Unknown : ' : ''}result;"
     }
 
     private def toStringMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)

@@ -62,7 +62,7 @@ class ComplexType extends SimpleType implements CompositorHolder
 //        base == null || !(childElements().size() == 1 && childElements()[0] instanceof Any)
 //    }
     @Override boolean isBody() {
-        boolean result = elementCount() == 1 && childElements()[0] instanceof Any && childElements()[0].maxOccurs == 1
+        boolean result = elementCount() == 1 && childElements()[0] instanceof Any && childElements()[0].maxOccurs == 1 && mixedContent
         result
     }
 

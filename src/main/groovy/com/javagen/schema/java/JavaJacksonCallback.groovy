@@ -26,6 +26,7 @@ import com.javagen.schema.xml.node.Choice
 import com.javagen.schema.xml.node.ComplexType
 import com.javagen.schema.xml.node.Element
 import com.javagen.schema.xml.node.Restriction
+import com.javagen.schema.xml.node.Schema
 import com.javagen.schema.xml.node.TextOnlyType
 
 
@@ -147,7 +148,8 @@ class JavaJacksonCallback extends XmlNodeCallback
             clazz.annotations << '@JsonIgnoreProperties(value = {"schemaLocation"})'
         clazz.imports << 'com.fasterxml.jackson.annotation.JsonIgnoreProperties'
         final String tag = element.qname.name
-        final String anno = "@JacksonXmlRootElement(localName = \"${tag}\")"
+        final String namespace = gen.schema.prefixToNamespaceMap[Schema.targetNamespace]
+        final String anno = "@JacksonXmlRootElement(localName = \"${tag}\"${namespace ? ', namespace=\"'+namespace+'\"' : ''})"
         if (!clazz.annotations.any { it.startsWith('@JacksonXmlRootElement')})
             clazz.annotations << anno
         clazz.imports << 'com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement'

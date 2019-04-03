@@ -23,6 +23,7 @@ import com.javagen.schema.model.*
 import static com.javagen.schema.model.MMethod.IncludeProperties.allProperties
 import static com.javagen.schema.model.MMethod.IncludeProperties.finalProperties
 import static com.javagen.schema.model.MMethod.Stereotype.*
+import static com.javagen.schema.common.GlobalFunctionsUtil.lowerCase
 
 /**
  * Replaces broken Flutter json_serializable library code generator (until it's fixed), generating
@@ -37,7 +38,9 @@ class DartJsonEmitter extends CodeEmitter
     private static String toJsonMethodName(MType c) { toJsonMethodName(c.name) }
     private static String fromJsonMethodName(String className) { "_\$${className}FromJson" }
     private static String fromJsonMethodName(MType c) { fromJsonMethodName(c.name) }
-    private static String enumMapName(MEnum c, boolean underscore=true) { "${underscore ? '_' : ''}\$${c.name}EnumMap" }
+    //static String enumMapName(MEnum c, boolean underscore=true) { underscore ? "_\$${c.name}EnumMap" : "${lowerCase(c.name)}EnumMap" }
+    static String enumMapName(MEnum c, boolean underscore=true) { "${lowerCase(c.name)}EnumMap" }
+    //private static String enumMapName(MEnum c, boolean underscore=true) { "${underscore ? '_' : ''}\$${c.name}EnumMap" }
 
     MModule impl = new MModule(name:'src')
     boolean genEnumDecode = false
@@ -489,7 +492,7 @@ class DartJsonEmitter extends CodeEmitter
             val << '\n' << tab() << e.name << '.' << name << ': \'' << gen.enumValueFunction.apply(e.enumValues[i]) << '\''
         }
         val << '\n' << '}'
-        MProperty p = new MProperty(name:enumMapName(e, false), genIgnore:true, const:true, cardinality: MCardinality.MAP, type:'dynamic', attr:['keyType': e], val:val.toString())
+        MProperty p = new MProperty(name:enumMapName(e, true), scope:'public', genIgnore:true, const:true, cardinality: MCardinality.MAP, type:'dynamic', attr:['keyType': e], val:val.toString())
         impl.addField(p)
     }
 

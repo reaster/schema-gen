@@ -75,6 +75,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
     String propertyScope = 'private'
     String anyType = 'string'
     boolean useOptional = false
+    boolean treatWrapperElementsAsCollections = true
     boolean choiceCollectionWrapperConstructor = true
 
 
@@ -172,6 +173,8 @@ class JavaGen extends Gen implements XmlSchemaVisitor
             genAny(name, any)
         } else if (isWrapper) {
             anyWrapper(any)
+        } else {
+            genAny(anyPropertyName, any)
         }
     }
 
@@ -299,9 +302,9 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 
     def setClassProperties(MClass clazz, ComplexType complexType)
     {
-		if (clazz.name == 'Leg')
-			println "ComplexType -> class: ${clazz.name}"
-        clazz.ignore = complexType.isWrapperElement()
+//		if (clazz.name == 'Leg')
+//			println "ComplexType -> class: ${clazz.name}"
+        clazz.ignore = treatWrapperElementsAsCollections ? complexType.isWrapperElement() : false
         if (clazz.ignore)
             log.warning "IGNORING WRAPPER CLASS: ${clazz.name}".toString()
         clazz.abstract = complexType.abstract

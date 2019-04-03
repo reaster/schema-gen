@@ -401,6 +401,9 @@ class JavaEmitter extends CodeEmitter
 		if (val==null)
 			return null
 		if (f.type instanceof MEnum) {
+			if (!isSimpleString(val)) { //probably an expression, just return
+				return val
+			}
 			val = "${f.type.name}.${gen.enumNameFunction.apply(val)}"
 		}
 		String quote = valueQuote(f, (String)val)
@@ -410,6 +413,9 @@ class JavaEmitter extends CodeEmitter
 	boolean isTrue(String val)
 	{
 		val != null && (val == 'true' || val == '1' || val == 'yes')
+	}
+	boolean isSimpleString(String s) {
+
 	}
 
 //	String JAVA_ENUM_CLASS = '''<% if (packageName) { %>package ${packageName};
