@@ -19,6 +19,8 @@ package com.javagen.schema.dart
 
 import com.javagen.schema.common.PluralServiceNoop
 
+import java.util.function.Function
+
 import static com.javagen.schema.dart.DartUtil.dartEnumName
 
 /**
@@ -60,12 +62,21 @@ class DartGenMain extends DartGen
         schemaURL = new File('/Users/richard/dev/hs/hsf-data/attractions-1_0.xsd').toURI().toURL()
         //srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen')
         sourceFileName = 'attractions'
-        projectDir = new File('/Users/richard/dev/flutter/hot_springs_finder')
+        projectDir = new File('/Users/richard/dev/hs/flutter/hot_springs_finder')
         customPluralMappings = ['hours':'hours'] //needed for irregular nouns: tooth->teeth, person->people
 //        def enumCustomNames = ['primitive+':'primitivePlus','$':'cheap','$$':'moderate','$$$':'pricy','$$$$':'exclusive']
 //        def unknownEnum = 'unknown'
 //        enumNameFunction = { text -> text.contains('?') ? unknownEnum : enumCustomNames[text] ?: dartEnumName(text, false, true) }
         enumNameFunction = { text -> dartEnumName(text, false, true) }
+        simpleXmlTypeToPropertyType = { xmlType ->
+            if (xmlType=='uuidType') { //not supported by XML Schema
+                return 'Uuid'
+            } else if (xmlType == 'anyURI') { // don't want to slow down DB loading, original mapping returned 'Uri'
+                return 'String'
+            } else {
+                return DartTypeRegistry.simpleXmlTypeToPropertyType[xmlType]
+            }
+        }
     }
 
     def initHsf2()

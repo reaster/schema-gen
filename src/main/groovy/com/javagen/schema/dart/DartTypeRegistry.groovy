@@ -47,6 +47,11 @@ class DartTypeRegistry extends MTypeRegistry
     {
         null //throw new Error("method not implemented - type: ${name}")
     }
+    @Override MType typeForCardinality(MCardinality cardinality)
+    {
+        String name = container(cardinality)
+        types[name]
+    }
 
     private static Map<String, MType> defaultTypes()
     {
@@ -57,6 +62,8 @@ class DartTypeRegistry extends MTypeRegistry
         t << new MType(name:'BigInt')
         t << new MType(name:'bool', val: 'false')
         t << new MType(name:'DateTime', val: 'DateTime.now()')
+        t << new MType(name:'TimeOfDay', val: 'TimeOfDay.now()')
+        t << new MType(name:'Uuid', val: 'Uuid().v4()')
         t << new MType(name:'Deprecated')
         t << new MType(name:'Comparable')
         t << new MType(name:'double', val: '0.0')
@@ -69,8 +76,8 @@ class DartTypeRegistry extends MTypeRegistry
         t << new MType(name:'Invocation')
         t << new MType(name:'Iterable')
         t << new MType(name:'Iterator')
-        t << new MType(name:'List', val: '[]')
-        t << new MType(name:'Map', val: '{}')
+        t << new MType(name:'List', val: 'const []')
+        t << new MType(name:'Map', val: 'const {}')
         t << new MType(name:'MapEntry')
         t << new MType(name:'Match')
         t << new MType(name:'Null')
@@ -159,7 +166,7 @@ class DartTypeRegistry extends MTypeRegistry
             'boolean':'bool',
             'duration':'Duration',
             'dateTime':'DateTime',
-            'time':'DateTime',
+            'time':'TimeOfDay',
             'date':'DateTime',
             'gYearMonth':'String', //TODO
             'gYear':'int',

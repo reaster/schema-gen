@@ -44,6 +44,7 @@ class DartJsonEmitter extends CodeEmitter
 
     MModule impl = new MModule(name:'src')
     boolean genEnumDecode = false
+    static boolean substituteIntForBoolean = false
 
     DartJsonEmitter()
     {
@@ -117,7 +118,7 @@ class DartJsonEmitter extends CodeEmitter
                 genToJsonMethod(m)
                 genFromJsonMethod(m)
                 break
-            case fromJson: //never hit this cus is constructor?
+            case fromJson: //never hit this cus it's a constructor
                 break
 
         }
@@ -147,11 +148,11 @@ class DartJsonEmitter extends CodeEmitter
 
     private def toJsonMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
     {
-         if (gen.includeIfNull) {
-            toJsonMethodBodyIncludeNulls(m, v, hasSuper)
-        } else {
+//         if (gen.includeIfNull) {
+//            toJsonMethodBodyIncludeNulls(m, v, hasSuper)
+//        } else {
             toJsonMethodBodyExcludeNulls(m, v, hasSuper)
-        }
+//        }
     }
 
 
@@ -169,6 +170,8 @@ class DartJsonEmitter extends CodeEmitter
          */
         MClass targetClass = m.attr['class'] as MClass
         boolean unwrapMapInField = targetClass.isMapWrapper()
+        if (targetClass.name.endsWith('Extension'))
+            println targetClass.name
         if (unwrapMapInField) {
             v.out << '\n' << v.tabs << 'return instance.' << targetClass.fields.values()[0].name << ';'
         } else {
@@ -177,12 +180,29 @@ class DartJsonEmitter extends CodeEmitter
             } else {
                 v.out << '\n' << v.tabs << 'final val = <String, dynamic>{};'
             }
+            if (containsType(targetClass, 'TimeOfDay', false)) {
+                /*
+                 String formatTimeOfDay(TimeOfDay t) {
+                     return t==null ? null : "${t.hour<10?'0':''}${t.hour}:${t.minute<10?'0':''}${t.minute}:00";
+                 }
+                 */
+                v.out << '\n' << v.tabs << '''String formatTimeOfDay(TimeOfDay t) {'''
+                v.next()
+                v.out << '\n' << v.tabs << '''return t==null ? null : "${t.hour<10?'0':''}${t.hour}:${t.minute<10?'0':''}${t.minute}:00";'''
+                v.previous()
+                v.out << '\n' << v.tabs << '}'
+            }
             v.out << '\n' << v.tabs << 'void addNonNullValue(String key, dynamic value) { if (value != null) { val[key] = value; } }'
+
             for(MField f in targetClass.fields.values()) {
                 if (!f.isStatic() && !f.isGenIgnore()) {
                     String toJsonMethod = f.isPolymorphic() ? toJsonMethodName("Polymorphic${f.type.name}") : toJsonMethodName(f.type)
                     if (f.isArray() || f.isList() || f.isSet()) {
-                        v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << '==null ? null : instance.' << f.name << '.map(' << toJsonMethod << ').toList());'
+                        if (f.isReference()) {
+                            v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << '==null ? null : instance.' << f.name << '.map(' << toJsonMethod << ').toList());'
+                        } else {
+                            v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << '==null ? null : instance.' << f.name << ');'
+                        }
                     } else if (f.isMap()) {
                         v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\': instance.' << f.name << ');'
                     } else if (f.type instanceof MEnum) {
@@ -191,10 +211,19 @@ class DartJsonEmitter extends CodeEmitter
                     } else if (f.isReference()) {
                         String unWrap = f.type.isListWrapper() ? "['${f.type.firstField().name}']" : ''
                         v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << '==null ? null : ' << toJsonMethod << '(instance.' << f.name << ')' << unWrap << ');'
-                    } else if (f.type.name == 'bool') { //translate to 1, 0 or null to be compatible with SqlLite
-                        v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << ' != null ? (instance.' << f.name << ' ? 1 : 0) : null);'
+                    } else if (f.type.name == 'bool') {
+                        if (substituteIntForBoolean) {
+                            //translate to 1, 0 or null to be compatible with SqlLite
+                            v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << ' != null ? (instance.' << f.name << ' ? 1 : 0) : null);'
+                        } else {
+                            v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << ' != null ? instance.' << f.name << ' : null);'
+                        }
                     } else if (f.type.name == 'DateTime') {
                         v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << '?.toIso8601String());'
+                    } else if (f.type.name == 'TimeOfDay') {
+                        v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', formatTimeOfDay(instance.' << f.name << '));'
+                    } else if (f.type.name == 'Uuid') {
+                        v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << '?.toString());'
                     } else if (f.type.name == 'Uri') {
                         v.out << '\n' << v.tabs << 'addNonNullValue(\'' << f.name << '\', instance.' << f.name << '?.toString());'
                     } else {
@@ -205,62 +234,62 @@ class DartJsonEmitter extends CodeEmitter
             v.out << '\n' << v.tabs << 'return val;'
         }
     }
-    private static def toJsonMethodBodyIncludeNulls(MMethod m, CodeEmitter v, boolean hasSuper=false)
-    {
-        /*
-        //with include_if_null: true
-        Map<String, dynamic> _$GpxToJson(Gpx instance) => <String, dynamic>{
-          'creator': instance.creator,
-          'fix': _$FixTypeEnumEnumMap[instance.fix],
-          'metadata': _$MetadataToJson(instance.metadata),
-          'wpts': instance.wpts==null ? null : instance.wpts.map(_$WptToJson).toList(),
-          'extensions': instance.extensions==null ? null : _$ExtensionsToJson(instance.extensions)
-        };
-         */
-        MClass targetClass = m.attr['class'] as MClass
-        boolean unwrapMapInField = targetClass.isMapWrapper()
-        if (!unwrapMapInField) {
-            v.out << '<String, dynamic>{'
-        }
-        v.next()
-        int i = 0
-        for (MField f in targetClass.fields.values()) {
-            if (!f.isStatic() && !f.isGenIgnore()) {
-                String toJsonMethod = f.isPolymorphic() ? toJsonMethodName("Polymorphic${f.type.name}") : toJsonMethodName(f.type)
-                if (i > 0) {
-                    v.out << ','
-                }
-                if (f.isArray() || f.isList() || f.isSet()) {
-                    v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '==null ? null : instance.' << f.name << '.map(' << toJsonMethod << ').toList()'
-                } else if (f.isMap()) {
-                    if (f.isMapWrapper()) {
-                        v.out << '\n' << v.tabs << 'instance.' << f.name
-                    } else {
-                        v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name
-                    }
-                } else if (f.type instanceof MEnum) {
-                    def toJsonMapName = enumMapName( (MEnum)f.type )
-                    v.out << '\n' << v.tabs << '\'' << f.name << '\': ' << toJsonMapName << '[instance.' << f.name << ']'
-                } else if (f.isReference()) {
-                    String unWrap = f.type.isListWrapper() ? "['${f.type.firstField().name}']" : ''
-                    v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '==null ? null : ' << toJsonMethod << '(instance.' << f.name << ')' << unWrap
-                } else if (f.type.name == 'bool') { //translate to 1, 0 or null to be compatible with SqlLite
-                    v.out << '\n' << v.tabs << '\'' << f.name << '\', instance.' << f.name << ' != null ? (instance.' << f.name << ' ? 1 : 0) : null'
-                } else if (f.type.name == 'DateTime') {
-                    v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '?.toIso8601String()'
-                } else if (f.type.name == 'Uri') {
-                    v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '?.toString()'
-                } else {
-                    v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name
-                }
-                i++
-            }
-        }
-        v.previous()
-        if (!unwrapMapInField) {
-            v.out << '\n' << v.tabs << '}'
-        }
-    }
+//    private static def toJsonMethodBodyIncludeNulls(MMethod m, CodeEmitter v, boolean hasSuper=false)
+//    {
+//        /*
+//        //with include_if_null: true
+//        Map<String, dynamic> _$GpxToJson(Gpx instance) => <String, dynamic>{
+//          'creator': instance.creator,
+//          'fix': _$FixTypeEnumEnumMap[instance.fix],
+//          'metadata': _$MetadataToJson(instance.metadata),
+//          'wpts': instance.wpts==null ? null : instance.wpts.map(_$WptToJson).toList(),
+//          'extensions': instance.extensions==null ? null : _$ExtensionsToJson(instance.extensions)
+//        };
+//         */
+//        MClass targetClass = m.attr['class'] as MClass
+//        boolean unwrapMapInField = targetClass.isMapWrapper()
+//        if (!unwrapMapInField) {
+//            v.out << '<String, dynamic>{'
+//        }
+//        v.next()
+//        int i = 0
+//        for (MField f in targetClass.fields.values()) {
+//            if (!f.isStatic() && !f.isGenIgnore()) {
+//                String toJsonMethod = f.isPolymorphic() ? toJsonMethodName("Polymorphic${f.type.name}") : toJsonMethodName(f.type)
+//                if (i > 0) {
+//                    v.out << ','
+//                }
+//                if (f.isArray() || f.isList() || f.isSet()) {
+//                    v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '==null ? null : instance.' << f.name << '.map(' << toJsonMethod << ').toList()'
+//                } else if (f.isMap()) {
+//                    if (f.isMapWrapper()) {
+//                        v.out << '\n' << v.tabs << 'instance.' << f.name
+//                    } else {
+//                        v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name
+//                    }
+//                } else if (f.type instanceof MEnum) {
+//                    def toJsonMapName = enumMapName( (MEnum)f.type )
+//                    v.out << '\n' << v.tabs << '\'' << f.name << '\': ' << toJsonMapName << '[instance.' << f.name << ']'
+//                } else if (f.isReference()) {
+//                    String unWrap = f.type.isListWrapper() ? "['${f.type.firstField().name}']" : ''
+//                    v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '==null ? null : ' << toJsonMethod << '(instance.' << f.name << ')' << unWrap
+//                } else if (f.type.name == 'bool') { //translate to 1, 0 or null to be compatible with SqlLite
+//                    v.out << '\n' << v.tabs << '\'' << f.name << '\', instance.' << f.name << ' != null ? (instance.' << f.name << ' ? 1 : 0) : null'
+//                } else if (f.type.name == 'DateTime') {
+//                    v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '?.toIso8601String()'
+//                } else if (f.type.name == 'Uri') {
+//                    v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name << '?.toString()'
+//                } else {
+//                    v.out << '\n' << v.tabs << '\'' << f.name << '\': instance.' << f.name
+//                }
+//                i++
+//            }
+//        }
+//        v.previous()
+//        if (!unwrapMapInField) {
+//            v.out << '\n' << v.tabs << '}'
+//        }
+//    }
 
     private genFromJsonMethod(MMethod m)
     {
@@ -306,6 +335,22 @@ class DartJsonEmitter extends CodeEmitter
         //boolean isListWrapper = targetClass.isListWrapper()
 //        if ('ReferenceWrapper' == targetClass.name)
 //            println targetClass.name
+        if (containsType(targetClass, 'TimeOfDay')) {
+            /*
+             TimeOfDay parseTimeOfDay(String s) {
+                 if (s==null || s.trim().isEmpty) return null;
+                 List<String> segs = s.split(':');
+                 return TimeOfDay(hour:int.parse(segs[0]), minute:int.parse(segs[1]));
+             }
+             */
+            v.out << '\n' << v.tabs << '''TimeOfDay parseTimeOfDay(String s) {'''
+            v.next()
+            v.out << '\n' << v.tabs << '''if (s==null || s.trim().isEmpty) return null;'''
+            v.out << '\n' << v.tabs << '''List<String> segs = s.split(':');'''
+            v.out << '\n' << v.tabs << '''return TimeOfDay(hour:int.parse(segs[0]), minute:int.parse(segs[1]));'''
+            v.previous()
+            v.out << '\n' << v.tabs << '}'
+        }
         v.out << '\n' << v.tabs << 'return ' << targetClass.name << '('
         v.next()
         int i = 0
@@ -321,7 +366,11 @@ class DartJsonEmitter extends CodeEmitter
                         //def toJsonMethod = toJsonMethodName(f.type)
                         v.out << '\n' << v.tabs << f.name << ': (json[\'' << f.name << '\'] as List)'
                         v.next()
-                        v.out << '\n' << v.tabs << '?.map( (e) => e == null ? null : ' << methodCall << '(e as Map<String, dynamic>) )?.toList()'
+                        if (f.isReference()) {
+                            v.out << '\n' << v.tabs << '?.map( (e) => e == null ? null : ' << methodCall << '(e as Map<String, dynamic>) )?.toList()'
+                        } else {
+                            v.out << '\n' << v.tabs << '?.map( (e) => e == null ? null : (e as ' << f.type.name << ') )?.toList()'
+                        }
                         v.previous()
                     } else if (f.isMap()) {
                         if (f.isMapWrapper()) {
@@ -355,11 +404,19 @@ class DartJsonEmitter extends CodeEmitter
                     } else if (f.type.name == 'double') {
                         v.out << '\n' << v.tabs << f.name << ': (json[\'' << f.name << '\'] as num)?.toDouble()'
                     } else if (f.type.name == 'bool') {
-                        v.out << '\n' << v.tabs << f.name << ': json[\'' << f.name << '\'] == null ? null : (json[\'' << f.name << '\'] as num).toInt() == 1'
+                        if (substituteIntForBoolean) {
+                            v.out << '\n' << v.tabs << f.name << ': json[\'' << f.name << '\'] == null ? null : (json[\'' << f.name << '\'] as num).toInt() == 1'
+                        } else {
+                            v.out << '\n' << v.tabs << f.name << ': json[\'' << f.name << '\'] == null ? null : (json[\'' << f.name << '\'] as bool)'
+                        }
                     } else if (f.type.name == 'DateTime') {
                         v.out << '\n' << v.tabs << f.name << ': json[\'' << f.name << '\'] == null ? null : DateTime.parse(json[\'' << f.name << '\'] as String)'
+                    } else if (f.type.name == 'TimeOfDay') {
+                        v.out << '\n' << v.tabs << f.name << ': parseTimeOfDay(json[\'' << f.name << '\'] as String)'
                     } else if (f.type.name == 'Uri') {
                         v.out << '\n' << v.tabs << f.name << ': json[\'' << f.name << '\'] == null ? null : Uri.parse(json[\'' << f.name << '\'] as String)'
+                    } else if (f.type.name == 'Uuid') {
+                        v.out << '\n' << v.tabs << f.name << ': json[\'' << f.name << '\'] == null ? null : Uuid.fromString(json[\'' << f.name << '\'] as String)'
                     } else {
                         v.out << '\n' << v.tabs << f.name << ': json[\'' << f.name << '\'] as ' << f.type.name
                     }
@@ -372,6 +429,21 @@ class DartJsonEmitter extends CodeEmitter
         }
         v.previous()
         v.out << '\n' << v.tabs << ');'
+    }
+
+    private static boolean containsType(MClass clazz, String typeName, boolean recursive=true)
+    {
+        MClass c = clazz
+        while (c) {
+            for (MField f in c.fields.values()) {
+                if (f.type.name == typeName)
+                    return true
+            }
+            c = (recursive && c.extends)
+                    ? (MClass) MType.lookupType(c.extends)
+                    : null
+        }
+        false
     }
 
     private MMethod fromJsonPolymorphicMethod(MProperty f)
@@ -555,5 +627,27 @@ class DartJsonEmitter extends CodeEmitter
         v.out << '\n' << v.tabs << 'return _$enumDecode<T>(enumValues, source);'
     }
 
+//    private def formatTimeOfDayMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+//    {
+//        /*
+//        String formatTimeOfDay(TimeOfDay t) {
+//            return t==null ? null : "${t.hour<10?'0':''}${t.hour}:${t.minute<10?'0':''}${t.minute}:00";
+//        }
+//        */
+//        v.out << '\n' << v.tabs << '''return t==null ? null : "${t.hour<10?'0':''}${t.hour}:${t.minute<10?'0':''}${t.minute}:00";'''
+//    }
+//    private def parseTimeOfDayMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+//    {
+//        /*
+//        TimeOfDay parseTimeOfDay(String s) {
+//            if (s==null || s.trim().isEmpty) return null;
+//            List<String> segs = s.split(':');
+//            return TimeOfDay(hour:int.parse(segs[0]), minute:int.parse(segs[1]));
+//        }
+//        */
+//        v.out << '\n' << v.tabs << '''if (s==null || s.trim().isEmpty) return null;'''
+//        v.out << '\n' << v.tabs << '''List<String> segs = s.split(':');'''
+//        v.out << '\n' << v.tabs << '''return TimeOfDay(hour:int.parse(segs[0]), minute:int.parse(segs[1]));'''
+//    }
 
 }

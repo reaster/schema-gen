@@ -112,7 +112,7 @@ class XmlSchemaNormalizer
                 case 'simpleType':
                     name = name ?: node.@name?.text()
                     boolean _abstract = child.@abstract?.text() == 'true'
-                    if (name == 'documentType')
+                    if (name == 'usaStateCodeEnum')
                         println name
                     if (!name)
                         throw new IllegalStateException("simpleType must have name defined")

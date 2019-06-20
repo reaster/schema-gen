@@ -59,6 +59,7 @@ class DartSupportEmitter extends CodeEmitter
         }
     }
 
+
 //    private genEnumTable(MEnum e)
 //    {
 ////    const _$FixTypeEnumEnumMap = <FixTypeEnum, dynamic>{

@@ -44,6 +44,11 @@ class SwiftTypeRegistry extends MTypeRegistry
     {
         null //throw new Error("method not implemented - type: ${name}")
     }
+    @Override MType typeForCardinality(MCardinality cardinality)
+    {
+        String name = containerClassName(cardinality)
+        types[name]
+    }
 
     private static Map<String, MType> defaultTypes()
     {

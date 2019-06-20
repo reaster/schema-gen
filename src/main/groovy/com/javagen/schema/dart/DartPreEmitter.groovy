@@ -58,6 +58,10 @@ class DartPreEmitter extends CodeEmitter
     {
         addDefaultClassMethodSubs(c)
 
+        c.fields.values().each {
+            visit(it)
+        }
+
         c.methods.each {
             visit(it)
         }
@@ -99,11 +103,29 @@ class DartPreEmitter extends CodeEmitter
     @Override
     def visit(MField f)
     {
+        if (f.name == 'open')
+            print "${f.name}:${f.type.name}, "
+        if (f.type.name=='Uuid') {
+            MClass c = f.parent instanceof MClass ? f.parent : null
+            c.imports << 'uuid_enhanced/uuid.dart'
+        } else if (f.type.name=='TimeOfDay') {
+            MClass c = f.parent instanceof MClass ? f.parent : null
+            c.imports << 'flutter/material.dart';
+        }
     }
 
     @Override
     def visit(MProperty p)
     {
+        if (p.name == 'open')
+            print "${p.name}:${p.type.name}, "
+        if (p.type.name=='Uuid') {
+            MClass c = p.parent instanceof MClass ? p.parent : null
+            c.imports << 'uuid_enhanced/uuid.dart'
+        } else if (p.type.name=='TimeOfDay') {
+            MClass c = p.parent instanceof MClass ? p.parent : null
+            c.imports << 'flutter/material.dart';
+        }
     }
 
     @Override

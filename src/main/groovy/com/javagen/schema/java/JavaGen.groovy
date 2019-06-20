@@ -307,6 +307,9 @@ class JavaGen extends Gen implements XmlSchemaVisitor
         clazz.ignore = treatWrapperElementsAsCollections ? complexType.isWrapperElement() : false
         if (clazz.ignore)
             log.warning "IGNORING WRAPPER CLASS: ${clazz.name}".toString()
+        java.util.List<String> ignore = complexType.appinfoValues(Appinfo.IGNORE_DIRECTIVE)
+        if (ignore && !ignore.isEmpty())
+            clazz.ignore = true
         clazz.abstract = complexType.abstract
         if (complexType.base) {
             String typeName = complexType.base.qname.name
@@ -328,6 +331,20 @@ class JavaGen extends Gen implements XmlSchemaVisitor
             //if (clazz.extends)
             //	log.warning "CLASS ${clazz.name} ALLREADY extends ${clazz.extends}, overriding extends with ${interfaceName}"
             clazz.implements << interfaceName
+        }
+        java.util.List<String> directives = complexType.appinfoValues(Appinfo.ABSTACTION_DIRECTIVE)
+        for(String directive : directives) {
+            switch (directive) {
+                case 'interface':
+                    println "INTERFACE FROM COMPLEX_TYPE: ${clazz.name}"
+                    clazz.abstract = true
+                    clazz.interface = true
+                    break
+                case 'mixin':
+                    println "MIXIN FROM COMPLEX_TYPE: ${clazz.name}"
+                    clazz.mixin = true
+                    break
+            }
         }
         clazz.document = toDocument(complexType)
     }
@@ -438,6 +455,31 @@ class JavaGen extends Gen implements XmlSchemaVisitor
                             log.warning "CLASS ${className} ALLREADY extends ${clazz.extends}, overriding extends with ${interfaceName}"
                         clazz.extends = interfaceName
                         println "INTERFACE EXTENDING ${className} GROUP: ${interfaceName}"
+                    }
+//					if (clazz.name == 'Results')
+//						println clazz.name
+                    compositorStack.push(group)
+                    this << clazz
+                    XmlSchemaVisitor.super.visit(group)
+                    this >> clazz
+                    clazz.document = toDocument(group)
+                    //setClassProperties(clazz, group)
+                    //callback.gen(group, clazz)
+                    compositorStack.pop()
+                    break
+                case 'mixin':
+                    String className = classNameFunction.apply(group.qname.name)
+                    println "MIXIN FROM GROUP: ${className}"
+                    MClass clazz = lookupOrCreateClass(className)
+                    clazz.mixin = true
+                    clazz.attr['nodeType'] = group
+                    java.util.List<String> extensions = group.appinfoValues(Appinfo.EXTENDS_DIRECTIVE)
+                    for(String extension : extensions) {
+                        String interfaceName = classNameFunction.apply(extension)
+                        if (clazz.extends)
+                            log.warning "MIXIN ${className} ALLREADY extends ${clazz.extends}, overriding extends with ${interfaceName}"
+                        clazz.extends = interfaceName
+                        println "MIXIN EXTENDING ${className} GROUP: ${interfaceName}"
                     }
 //					if (clazz.name == 'Results')
 //						println clazz.name
@@ -565,12 +607,14 @@ class JavaGen extends Gen implements XmlSchemaVisitor
         MType type = schemaTypeToPropertyType(polymorphicType ?: schema.getGlobal(DEFAULT_NS, anyType), container)
         MProperty property
         if (polymorphicType) {
-            String val = any.fixed ?: any.'default' ?: (container == LIST) ? 'new java.util.ArrayList<>()' : null
+            MType listType = MTypeRegistry.instance().typeForCardinality(LIST)
+            String val = any.fixed ?: any.'default' ?: (container == LIST) ? listType.val : null
             property = new MProperty(name:propertyName, type:type, cardinality:container, scope:propertyScope, final:any.fixed!=null, val:val)
         } else if (container == LIST) {
             container = MAP
             MBind mapRType = new MBind(cardinality:container,type:type)
-            String val = 'new java.util.LinkedHashMap<>()'
+            MType linkedMapType = MTypeRegistry.instance().typeForCardinality(LINKEDMAP)
+            String val = linkedMapType.val
             property = new MProperty(name:propertyName, type:type, cardinality:container, scope:propertyScope, final:any.fixed!=null, val:val, attr:['keyType':'String'])
             mapPropertyAccessors(property)
         } else {
@@ -828,6 +872,8 @@ class JavaGen extends Gen implements XmlSchemaVisitor
     {
         //String javaType
         Type t = type
+        if (t.qname.name=='uuidType')
+            println t.qname.name
         while(t) {
             switch (t) {
                 case SimpleType:
@@ -836,10 +882,13 @@ class JavaGen extends Gen implements XmlSchemaVisitor
                 case TextOnlyType:
                     if (mapToEnum(t as TextOnlyType)) {
                         return enumClassNameFunction.apply(t.qname.name)
-                    } else if (t.isBuiltInType()) {
-                        return simpleXmlTypeToPropertyType.apply(t.qname.name)
-                    } else {
-                        t = t.base //go deeper looking for built-in type
+                    } else { //if (t.isBuiltInType()) {
+                        String langType = simpleXmlTypeToPropertyType.apply(t.qname.name)
+                        if (langType) {
+                            return langType
+                        } else {
+                            t = t.base //go deeper looking for built-in type
+                        }
                     }
                     break
                 case List:

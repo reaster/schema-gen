@@ -59,6 +59,9 @@ abstract class MTypeRegistry
      */
     abstract MType lookupTypeSpecial(String name)
 
+    /** return language container type for cardinality */
+    abstract MType typeForCardinality(MCardinality cardinality)
+
     String lookupDefaultValue(String name, boolean mutable=true)
     {
         if (!name)

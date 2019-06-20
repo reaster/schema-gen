@@ -82,8 +82,8 @@ class DartGen extends JavaGen
         anyType = 'anyType'
         propertyScope = 'public'
         choiceCollectionWrapperConstructor = false
-        simpleXmlTypeToPropertyType = { typeName ->
-            DartTypeRegistry.simpleXmlTypeToPropertyType[typeName]
+        simpleXmlTypeToPropertyType = { xmlType ->
+            DartTypeRegistry.simpleXmlTypeToPropertyType[xmlType]
         }
         if ( ! MTypeRegistry.isInitialized() )
             new DartTypeRegistry()
@@ -92,6 +92,7 @@ class DartGen extends JavaGen
                 new DartPreEmitter(gen: this),
                 new DartJsonEmitter(gen: this),
                 new DartSupportEmitter(gen: this),
+                new DartMixinEmitter(gen: this),
                 new DartEmitter(gen: this)
         ]
         enumNameFunction = { text -> DartUtil.dartEnumName(text, false) }

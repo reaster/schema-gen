@@ -63,6 +63,11 @@ class JavaTypeRegistry extends MTypeRegistry
             null //throw new Error("unknown Java type: ${name}")
         }
     }
+    @Override MType typeForCardinality(MCardinality cardinality)
+    {
+        String name = containerInterface(cardinality)
+        types[name]
+    }
 
     private static Map<String, MType> defaultTypes()
     {
@@ -78,6 +83,7 @@ class JavaTypeRegistry extends MTypeRegistry
         t << new MType(name:'java.util.HashSet', val: 'new java.util.HashSet<>()')
         t << new MType(name:'java.util.ArrayList', val: 'new java.util.ArrayList<>()')
         t << new MType(name:'java.util.Locale', val: 'java.util.Locale.getDefault()')
+        t << new MType(name:'java.util.UUID', val: 'java.util.UUID.randomUUID()')
         t << new MType(name:'char',primitive:true, val: '\0')
         t << new MType(name:'byte',primitive:true, val: '0')
         t << new MType(name:'short',primitive:true, val: '0')

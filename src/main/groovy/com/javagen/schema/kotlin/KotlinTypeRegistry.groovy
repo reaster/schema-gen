@@ -47,6 +47,11 @@ class KotlinTypeRegistry extends MTypeRegistry
     {
         null //throw new Error("method not implemented - type: ${name}")
     }
+    @Override MType typeForCardinality(MCardinality cardinality)
+    {
+        String name = container(cardinality)
+        types[name]
+    }
 
     private static Map<String, MType> defaultTypes()
     {
