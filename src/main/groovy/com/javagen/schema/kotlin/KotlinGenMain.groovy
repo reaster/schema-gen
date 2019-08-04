@@ -40,7 +40,7 @@ class KotlinGenMain extends KotlinGen
     def initGpx()
     {
         schemaURL = new File('../schema-gen-examples/kotlin-gpx/src/main/resources/gpx.xsd').toURI().toURL()
-        srcDir = new File('../schema-gen-examples/kotlin-gpx/src/main/kotlin-gen\'')
+        srcDir = new File('../schema-gen-examples/kotlin-gpx/src/main/kotlin-gen')
     }
 
     def initHsf()
