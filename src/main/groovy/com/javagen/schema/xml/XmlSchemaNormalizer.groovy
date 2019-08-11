@@ -93,6 +93,10 @@ class XmlSchemaNormalizer
             println 'overflow...'
             return
         }
+        if (!node) {
+            println 'node == null'
+            return
+        }
         boolean isGlobal = node.name() == 'schema' || node.name().endsWith(':schema')
         for (child in node.'*') {
             String tag = child.name()

@@ -69,11 +69,18 @@ class SwiftGenMain extends SwiftGen
         schemaURL = new File('../schema-gen-examples/java-gpx/src/main/resources/gpx.xsd').toURI().toURL()
         srcDir = new File('../schema-gen-examples/java-gpx/src/main/swift-gen')
     }
+    def initAixm()
+    {
+        schemaURL = new URL('file:../schema-gen-examples/swift-aixm/src/main/resources/AIXM-Update.xsd')
+        srcDir = new File('../schema-gen-examples/swift-aixm/src/main/swift-gen')
+        enumNameFunction = { text -> swiftEnumName(text, true) }
+    }
 
     SwiftGenMain()
     {
         super()
-        initHsfProducts()
+        //initHsfProducts()
+        initAixm()
     }
 
     static void main(String[] args) { new SwiftGenMain().gen() }
