@@ -16,8 +16,6 @@
 
 package com.javagen.schema.model
 
-import com.sun.tools.classfile.Opcode
-
 /**
  * TODO needs to be refactored to take a collection of instances.
  */
