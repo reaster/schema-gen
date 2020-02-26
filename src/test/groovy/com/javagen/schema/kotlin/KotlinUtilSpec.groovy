@@ -43,6 +43,6 @@ class KotlinUtilSpec extends Specification
         camelBackKotlinClass('my_house') == 'MyHouse'
         camelBackKotlinClass('my---purple-_eye') == 'MyPurpleEye'
         camelBackKotlinClass('any') == 'Any_'
-        camelBackKotlinClass('StringBuilder') == 'Stringbuilder'
+        camelBackKotlinClass('StringBuilder') == 'StringBuilder_'
     }
 }

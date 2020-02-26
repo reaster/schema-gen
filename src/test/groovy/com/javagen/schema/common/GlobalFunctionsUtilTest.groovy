@@ -130,4 +130,15 @@ class GlobalFunctionsUtilTest
         assertEquals("heroes", toPlural("hero"))
     }
 
+    @Test
+    void testJavaVariableName()
+    {
+        assertEquals("ab", javaVariableName("ab"))
+        assertEquals("aB", javaVariableName("aB"))
+        assertEquals("aBc", javaVariableName("aBc"))
+        assertEquals("aB", javaVariableName("a-b"))
+        assertEquals("aB", javaVariableName("a_b"))
+        assertEquals("aB", javaVariableName("a b"))
+    }
+
 }
