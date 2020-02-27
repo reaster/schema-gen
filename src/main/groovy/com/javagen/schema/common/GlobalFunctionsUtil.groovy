@@ -80,6 +80,25 @@ final class GlobalFunctionsUtil
 		return isJavaReservedWord(identifier) ? identifier+'_' : identifier
 	}
 
+	static String javaVariableName(String anyString)
+	{
+		StringBuilder javaVariable = new StringBuilder()
+
+		anyString.split('[ _-]').eachWithIndex { s, i ->
+
+			if (i == 0) {
+				javaVariable.append(s)
+			} else {
+				javaVariable.append(s.substring(0, 1).toUpperCase())
+				javaVariable.append(s.substring(1, s.length()))
+			}
+
+			println s
+    }
+		
+		return legalJavaName( javaVariable.toString() )
+	}
+
 	/**
 	 * Generate a legal uppercase or camelCase Java enum name given an arbitrary string.
 	 */

@@ -76,7 +76,7 @@ abstract class Gen
     Function<String,String> enumValueFunction = { text -> text }
     Function<String,String> enumClassNameFunction = { text -> GlobalFunctionsUtil.enumClassName(text, addSuffixToEnumClass) }
     Function<String,String> classNameFunction = { text -> GlobalFunctionsUtil.className(text, removeSuffixFromType) }
-    Function<String,String> propertyNameFunction = { text -> GlobalFunctionsUtil.legalJavaName(lowerCase(text)) }
+    Function<String,String> propertyNameFunction = { text -> GlobalFunctionsUtil.javaVariableName(text) }
     Function<String,String> constantNameFunction = { text -> GlobalFunctionsUtil.javaConstName(text) }
     Function<String,String> collectionNameFunction = { singular -> customPluralMappings[singular] ?: pluralService.toPlural(singular) }
     Function<String,String> simpleXmlTypeToPropertyType
