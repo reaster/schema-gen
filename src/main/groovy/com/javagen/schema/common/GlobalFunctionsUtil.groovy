@@ -93,8 +93,7 @@ final class GlobalFunctionsUtil
 				javaVariable.append(s.substring(1, s.length()))
 			}
 
-			println s
-    }
+		}
 		
 		return legalJavaName( javaVariable.toString() )
 	}
