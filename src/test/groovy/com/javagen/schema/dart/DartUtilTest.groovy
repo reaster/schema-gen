@@ -42,10 +42,12 @@ class DartUtilTest
     @Test
     void testDartEnumName()
     {
-        assertEquals('id',  dartEnumName('ID', false, false))
-        assertEquals('ID',  dartEnumName('id', true, false))
-        assertEquals('ID',  dartEnumName('ID', false, true))
-        assertEquals('id',  dartEnumName('id', false, true))
+        assertEquals('ABBCcc',  dartEnumName('A_BB_CCC'))
+        assertEquals('Id',  dartEnumName('id'))
+        assertEquals('ID',  dartEnumName('id', true))
+        assertEquals('THREE_BLIND_MICE',  dartEnumName('three_blind_mice', true))
+        assertEquals('ID',  dartEnumName('ID'))
+        assertEquals('IdABCDEF',  dartEnumName('id_ABCDEF', false, true))
     }
 
 

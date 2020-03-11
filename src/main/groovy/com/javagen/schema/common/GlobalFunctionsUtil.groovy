@@ -16,6 +16,7 @@
 
 package com.javagen.schema.common
 
+import com.sun.org.apache.xpath.internal.operations.Bool
 import groovy.transform.CompileStatic
 import org.xml.sax.InputSource
 
@@ -24,6 +25,8 @@ import javax.xml.parsers.SAXParser
 import javax.xml.parsers.SAXParserFactory
 import org.xml.sax.Attributes
 import org.xml.sax.SAXException
+
+import java.util.function.Function
 
 
 /**
@@ -69,12 +72,14 @@ final class GlobalFunctionsUtil
 
 	/**
 	 * Make sure identifier is a legal Java name and modify it if necessary.
+	 * Assumes all characters pass the Character.isJavaIdentifierPart test.
 	 */
 	static String legalJavaName(String identifier)
 	{
 		if (identifier==null || identifier.trim().length()==0)
 			return identifier
-		if (Character.isDigit(identifier.charAt(0))) {
+
+		if (!Character.isJavaIdentifierStart(identifier.charAt(0))) {
 			return '_'+identifier
 		}
 		return isJavaReservedWord(identifier) ? identifier+'_' : identifier
@@ -105,7 +110,7 @@ final class GlobalFunctionsUtil
 	{
 		if (anyString==null || anyString.trim().length()==0)
 			return null
-		String normalized = replaceSpecialChars(anyString, ' ,_+-&/', (char)'_')
+		String normalized = normalize(anyString)
 		if (allUpperCase)
 			return legalJavaName(normalized.toUpperCase())
 		if (preserveAcronymCase && normalized.toUpperCase() == normalized)
@@ -173,6 +178,12 @@ final class GlobalFunctionsUtil
 		String filePath = fullClassName.replace('.','/')
 		return "${filePath}.${ext}"
 	}
+
+	static String javadocEscape(String name)
+	{
+		name?.replace('<', '&lt;')
+	}
+
 
 	////////////////////////////////////////////////////////////////////////////
 	// generic common methods:
@@ -274,114 +285,177 @@ final class GlobalFunctionsUtil
 	}
 
 	/**
-	 * Change first character to upper case
-	 */
-	static String lowerCase(String text) {
-		if (text && !text.charAt(0).isLowerCase()) {
-			final String head = text[0..0].toLowerCase()
-			return text.length()>1 ? head+text[1..-1] : head
-		} else {
-			return text
-		}
-	}
-	/**
 	 * Change first character to lower case
 	 */
-	static String upperCase(String text)
-	{
-		if (text && !text.charAt(0).isUpperCase()) {
-			final String head = text[0..0].toUpperCase()
-			return text.length()>1 ? head+text[1..-1] : head
+	static String lowerCase(String text, boolean tailToLowerCase = false) {
+		if (text) {
+			final String head = text[0..0].toLowerCase()
+			final String tail = text.length()==1 ? '' : tailToLowerCase ? text[1..-1].toLowerCase() : text[1..-1]
+			head+tail
 		} else {
-			return text
+			text
 		}
 	}
+	/**
+	 * Change first character to upper case
+	 */
+	static String upperCase(String text, boolean tailToLowerCase = false)
+	{
+		if (text) {
+			final String head = text[0..0].toUpperCase()
+			final String tail = text.length()==1 ? '' : tailToLowerCase ? text[1..-1].toLowerCase() : text[1..-1]
+			head+tail
+		} else {
+			text
+		}
+	}
+
+	final static String WHITESPACE_CHARS = ' .,_+-/\r\n\t\\'
+	final static char TOKEN_DIVIDER_CHAR = (char)'_'
+	final static Closure LEGAL_ID_FUNC = { Character ch -> Character.isJavaIdentifierPart(ch) }
+	final static Map<Character,String> EXPLICIT_REPLACEMENTS = [
+			((char)'&') : '_and_'
+	]
 
 	/**
-	 * Replaces specialCharacters with replacement char. Sequential
-	 * specialCharacters are replaced with a single replacement. The single
-	 * exception is '&', which is replaced by 'and', unless it's NOT in the
-	 * specialCharacters param.
+	 * Given a descriptive text phrase, prepare it for converting it to a language-specific type or variable name, by tokenizing
+	 * it's words, removing extra whitespace and illegal characters, while replacing specific characters with
+	 * specific text or trimming leading/trailing whitespace.
+	 * Example normalize(" - boy's summer camp & soccer! - ") -> 'boys_summer_camp_and_soccer'
+	 * @param text a descriptive word or phrase suitable for conversion to a type or variable name.
+	 * @param whitespaceChars these characters are replaced by a tokenDividerChar.
+	 * @param tokenDividerChar character to replace specialChars with, defaults to '_'
+	 * @param specificReplacements explicit replacement text, defaults to replacing '&' with '_and_'
+	 * @param legalIdCharFunc strips characters that return false, defaults to Character.isJavaIdentifierPart(ch)
+	 * @param trim if true, removes whitespace from beginning and ending of text.
+	 * @return tokenized name with preserved case
 	 */
-	static String replaceSpecialChars(final String text, final String specialChars, final char replacement)
+	static String normalize(final String text,
+							String whitespaceChars = WHITESPACE_CHARS,
+							char tokenDividerChar = TOKEN_DIVIDER_CHAR,
+							Map<Character,String> specificReplacements = EXPLICIT_REPLACEMENTS,
+							Closure legalIdCharFunc = LEGAL_ID_FUNC,
+							boolean trim = true)
 	{
-		if (text == null)
-			return ""
-		StringBuilder retstr = new StringBuilder("")
-		final int strlen = text.length()
-		boolean replacedSpecial = false
-		for (int i = 0; i < strlen; i++) {
-			char ch = text.charAt(i)
-			if (specialChars.indexOf((int)ch) >= 0) {
-				if (ch == (char)'&') {
-					retstr.append("and")
+		if (text == null || text.trim().isEmpty())
+			return ''
+		StringBuilder result = new StringBuilder()
+		String input = text;
+		int strlen = input.length()
+		//if any specialReplacements, do the replacements first
+		if (!specificReplacements.isEmpty()) {
+			for (int i = 0; i < strlen; i++) {
+				final char ch = input.charAt(i)
+				final String specialReplacement = specificReplacements[ch];
+				if (specialReplacement != null) {
+					result.append(specialReplacement)
 				} else {
-					if (replacedSpecial)
-						continue
-					retstr.append(replacement)
-					replacedSpecial = true
+					result.append(ch)
 				}
-			} else {
-				retstr.append(ch)
-				replacedSpecial = false
+			}
+			input = result.toString()
+			result.setLength(0)
+			strlen = input.length()
+		}
+		boolean replacedWhitespace = false
+		for (int i = 0; i < strlen; i++) {
+			final char ch = input.charAt(i)
+			if (whitespaceChars.indexOf((int)ch) >= 0) {
+				if (replacedWhitespace) //only want one consecutive replacement
+					continue
+				result.append(tokenDividerChar)
+				replacedWhitespace = true
+			} else if (legalIdCharFunc(ch)) {
+				result.append(ch)
+				replacedWhitespace = false
+			}
+			//otherwise ignore (remove) non-legal characters
+		}
+		if (trim) {
+			while(result.length() > 0 && result.charAt(0) == tokenDividerChar) {
+				result.deleteCharAt(0);
+			}
+			while(result.length() > 0 && result.charAt(result.length()-1) == tokenDividerChar) {
+				result.deleteCharAt(result.length()-1);
 			}
 		}
-		return retstr.toString()
+		result.toString()
 	}
-
-//	static String varFromClassName(String className)
-//	{
-//		String varName = lowerCase( className.substring(className.lastIndexOf('.')+1) )
-//		return varName
-//    }
+	/**
+	 * Replaces non-legal identifier characters with underline char. Just calls normalize with default arguments.
+	 */
+	static String replaceSpecialChars(final String text)
+	{
+		return normalize(text);
+	}
 
 	/**
 	 * strips blank/special characters from a string and makes first char after
 	 * a special character upper case (excluding the very first character of the
 	 * string)
 	 */
-	static String camelBackName(String anyString) {
-		if (anyString == null)
-			return ""
-		StringBuilder retstr = new StringBuilder("")
-		String specialCharacters = " _/.,#'%-"
-		int strlen = anyString.length()
-		char[] onechar = new char[1]
-		boolean nextUpper = false
-		boolean firstChar = true
+	static String camelBackName(String text) {
+//		if (anyString == null)
+//			return ""
+//		StringBuilder retstr = new StringBuilder("")
+//		String specialCharacters = " _/.,#'%-"
+//		int strlen = anyString.length()
+//		char[] onechar = new char[1]
+//		boolean nextUpper = false
+//		boolean firstChar = true
+//
+//		for (int i = 0; i < strlen; i++) {
+//			onechar[0] = anyString.charAt(i)
+//			String charString = new String(onechar)
+//			if (specialCharacters.indexOf(charString) >= 0) {
+//				nextUpper = charString != '\''
+//			} else if (firstChar) {
+//				retstr.append(charString.toLowerCase())
+//				firstChar = false
+//				nextUpper = false
+//			} else if (nextUpper) {
+//				retstr.append(charString.toUpperCase())
+//				nextUpper = false
+//			} else {
+//				retstr.append(charString) //.toLowerCase()
+//			}
+//
+//		}
+		camelCaseName(text)
+	}
 
-		for (int i = 0; i < strlen; i++) {
-			onechar[0] = anyString.charAt(i)
-			String charString = new String(onechar)
-			if (specialCharacters.indexOf(charString) >= 0) {
-				nextUpper = charString != '\''
-			} else if (firstChar) {
-                retstr.append(charString.toLowerCase())
-                firstChar = false
-                nextUpper = false
-            } else if (nextUpper) {
-                retstr.append(charString.toUpperCase())
-                nextUpper = false
-            } else {
-                retstr.append(charString) //.toLowerCase()
+	/**
+	 * Tokenizes the text if it contains whitespace, then
+	 * @param text
+	 * @param upperCamelCase
+	 * @param tailToLowerCase
+	 * @param preserveAcronymsOfLength
+	 * @return
+	 */
+	static String camelCaseName(String text, boolean upperCamelCase=false, boolean tailToLowerCase = false, int preserveAcronymsOfLength=0) {
+		if (text == null || text.trim().isEmpty())
+			return ''
+		StringBuilder result = new StringBuilder()
+		String[] tokens = normalize(text).split(''+TOKEN_DIVIDER_CHAR)
+		for(String token in tokens) {
+			if (token.length() <= preserveAcronymsOfLength && token.toUpperCase() == token) {
+				result.append(token)
+			} else {
+				final boolean toUpperCase = result.length()>0 || upperCamelCase
+				result.append( toUpperCase ? upperCase(token, tailToLowerCase) : lowerCase(token, tailToLowerCase))
 			}
-
 		}
-		return retstr.toString()
+		result.toString()
 	}
 
-
-	static String javadocEscape(String name)
-	{
-		name?.replace('<', '&lt;')
-	}
-
+	/** remove XML element and attribute namespace prefixes */
 	static String stripNamespace(String name)
 	{
 		def pos = name ? name.indexOf(':') : -1
-		return pos>0 ? name[pos+1..-1] : name
+		pos>0 ? name[pos+1..-1] : name
 	}
 
+	/** returns XML element and attribute namespace prefix or null if it is not present */
 	static String extractNamespacePrefix(String name)
 	{
 		def pos = name ? name.indexOf(':') : -1
@@ -399,7 +473,7 @@ final class GlobalFunctionsUtil
 	{
 		if (nodeType==null || nodeType.trim().length()==0)
 			return null
-		String normalized = replaceSpecialChars(nodeType, ' ,_+-&/', (char)'_')
+		final String normalized = normalize(nodeType)
 		addSuffix( upperCase(normalized), suffix)
 	}
 

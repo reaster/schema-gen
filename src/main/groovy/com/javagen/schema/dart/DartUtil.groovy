@@ -116,7 +116,7 @@ class DartUtil {
             final numberText = upperCase(digitToNumberName(Integer.parseInt(identifier.substring(0,1))))
             identifier = "${numberText}${upperCase(identifier.substring(1))}"
         }
-        if (removeSuffix && identifier.endsWith(removeSuffix)) {
+        if (removeSuffix && identifier.endsWith(removeSuffix) && removeSuffix.length() != identifier.length()) {
             identifier = stripSuffix(identifier, removeSuffix)
         }
         identifier = upperCase(identifier)
@@ -130,17 +130,17 @@ class DartUtil {
 
     /**
      * Generate a legal uppercase or camelCase Dart enum name given an arbitrary string.
+     * Rule: capitalize acronyms and abbreviations longer than two letters like words.
      */
-    static String dartEnumName(String anyString, boolean allUpperCase=false, boolean preserveAcronymCase=false)
+    static String dartEnumName(String text, boolean allUpperCase=false, boolean preserveAcronymCase=false)
     {
-        if (anyString==null || anyString.trim().length()==0)
+        if (text==null || text.trim().length()==0)
             return null
-        String normalized = replaceSpecialChars(anyString, ' ,_+-&/', (char)'_')
-        if (allUpperCase)
-            return legalDartName(normalized.toUpperCase())
-        if (preserveAcronymCase && normalized.toUpperCase() == normalized)
-            return legalDartName(normalized)
-        return legalDartName(camelBackName(normalized))
+        if (allUpperCase) {
+            legalDartName(normalize(text).toUpperCase())
+        } else {
+            legalDartName(camelCaseName(text, true, true, preserveAcronymCase ? Integer.MAX_VALUE : 2))
+        }
     }
 
     /**
@@ -154,7 +154,7 @@ class DartUtil {
     }
 
     /**
-     * Convert arbitrary stirng to legal Dart constant name.  All non-legal
+     * Convert arbitrary string to legal Dart constant name.  All non-legal
      * identifier characters are converted to '_'.
      */
     static String dartConstName(String anyString)
