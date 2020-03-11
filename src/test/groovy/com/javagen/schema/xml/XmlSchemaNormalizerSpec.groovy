@@ -44,18 +44,17 @@ class XmlSchemaNormalizerSpec extends Specification
     }
 
 
-    @Ignore
     def "test basic normalizer API"() {
         given:
-        def xml = """<xsd:xml xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://joe.org/schemmata" targetNamespace="http://joe.org/schemmata" elementFormDefault="qualified">
-                        <xsd:element name="joe" type="JoeType" />
+        def xml = """<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:j="http://joe.org/schemmata" targetNamespace="http://joe.org/schemmata" elementFormDefault="qualified">
+                        <xsd:element name="joe" type="j:JoeType" />
                         <xsd:complexType name="JoeType">
                             <xsd:choice minOccurs="0" maxOccurs="unbounded">
                                 <xsd:element name="name" type="xsd:string"/>
                                 <xsd:element name="zip" type="xsd:positiveInteger" />
                             </xsd:choice>
                         </xsd:complexType>
-                    </xsd:xml>"""
+                    </xsd:schema>"""
         Schema s = new XmlSchemaNormalizer().buildSchema(xml)
         //println s //uncomment to see schema model we're validating
         /*

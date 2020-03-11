@@ -46,7 +46,11 @@ class  MBind extends MBase
 		isContainerType() && min == 0
 	}
 	boolean isContainerType(EnumSet<MCardinality> set) { return set.contains(cardinality) }
-	void setType(String typeName) { type = MType.lookupType(typeName); if (!type) throw new IllegalArgumentException("no type registered under '${typeName}'") }
+	void setType(String typeName) {
+		type = MType.lookupType(typeName);
+		if (!type)
+			throw new IllegalArgumentException("no type registered under '${typeName}'")
+	}
 	void setType(MType type) { this.type=type }
 	MType getType() { return type }
 	MRestriction getRestriction(MRestriction.Type type) { restrictions.find { r -> r.type == type }}

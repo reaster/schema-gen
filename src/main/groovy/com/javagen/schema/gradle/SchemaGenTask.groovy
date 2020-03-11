@@ -17,6 +17,7 @@
 package com.javagen.schema.gradle
 
 import com.javagen.schema.common.GlobalFunctionsUtil
+import com.javagen.schema.dart.DartTypeRegistry
 import com.javagen.schema.java.JavaTypeRegistry
 import com.javagen.schema.kotlin.KotlinTypeRegistry
 import com.javagen.schema.swift.SwiftTypeRegistry
@@ -66,8 +67,14 @@ class SchemaGenTask extends DefaultTask
             println "schemaGen.swift.srcDir=${extension.swift.srcDir}, schemaURL=${extension.swift.schemaURL}"
             extension.swift.gen()
         }
+        if (extension.dart) {
+            new DartTypeRegistry()
+            adjustProjectFilePaths(extension.dart)
+            println "schemaGen.dart.srcDir=${extension.dart.srcDir}, schemaURL=${extension.dart.schemaURL}"
+            extension.dart.gen()
+        }
         if (extension.noAction) {
-            println "SchemaGenPlugin is applied but no schema DSL found in gradle.build file, add 'schemaGen { java{} kotlin{} swift{} }'"
+            println "SchemaGenPlugin is applied but no schema DSL found in gradle.build file, add 'schemaGen{ java{} kotlin{} dart{} swift{} }'"
         }
     }
     private void adjustProjectFilePaths(Gen gen)

@@ -66,7 +66,7 @@ class FractionDigitsSpec extends Specification
         envClass.fields.size() > 0
         envClass.fields.values().each { println it }
         when: "nest_volume element with simpleType"
-        MProperty nest_volume = envClass.fields['nest_volume']
+        MProperty nest_volume = envClass.fields['nestVolume']
         then: "maps to annotated property"
         nest_volume != null
         nest_volume.cardinality == MCardinality.REQUIRED

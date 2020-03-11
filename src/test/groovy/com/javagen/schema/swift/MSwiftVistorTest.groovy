@@ -14,6 +14,7 @@ import com.javagen.schema.model.MTypeRegistry
 import com.javagen.schema.model.MCardinality
 import org.junit.Before
 import org.junit.BeforeClass
+import org.junit.Ignore
 import org.junit.Test
 
 import static com.javagen.schema.model.MMethod.IncludeProperties.allProperties
@@ -21,6 +22,7 @@ import static com.javagen.schema.model.MMethod.IncludeProperties.finalProperties
 import static com.javagen.schema.model.MMethod.Stereotype.constructor
 import static junit.framework.TestCase.assertTrue
 
+//@Ignore('not running in Intellij')
 class MSwiftVistorTest
 {
 	Gen gen

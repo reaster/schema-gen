@@ -16,5 +16,27 @@
 
 package com.javagen.schema.gradle
 
+import org.gradle.api.Project
+import org.junit.Test
+import org.gradle.testfixtures.ProjectBuilder
+
+import static junit.framework.TestCase.assertTrue
+
 class SchemaGenPluginTest {
+    @Test
+    public void schemaGenPluginAddsGenTaskToProject() {
+        Project project = ProjectBuilder.builder().build()
+        project.pluginManager.apply 'com.javagen.schema-gen'
+        def gen = project.tasks.gen
+        println(gen)
+        assertTrue( (gen instanceof SchemaGenTask) )
+    }
+    @Test
+    public void schemaGenPluginAddsGenCleanTaskToProject() {
+        Project project = ProjectBuilder.builder().build()
+        project.pluginManager.apply 'com.javagen.schema-gen'
+        def genClean = project.tasks.genClean
+        println(genClean)
+        assertTrue( (genClean instanceof SchemaGenCleanTask) )
+    }
 }

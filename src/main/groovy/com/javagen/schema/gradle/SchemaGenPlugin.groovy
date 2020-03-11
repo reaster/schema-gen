@@ -22,7 +22,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * Simple Gradle plugin to generate object model and marshalling code from XML schema. Supports java, kotlin and swift.
+ * Simple Gradle plugin to generate object model and marshalling code from XML schema. Supports java, kotlin, dart and swift.
  *
  * @author Richard Easterling
  */

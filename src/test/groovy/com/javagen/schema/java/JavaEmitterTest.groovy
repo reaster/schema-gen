@@ -13,6 +13,7 @@ import com.javagen.schema.model.MType
 import com.javagen.schema.model.MTypeRegistry
 import org.junit.Before
 import org.junit.BeforeClass
+import org.junit.Ignore
 import org.junit.Test
 
 import static com.javagen.schema.model.MCardinality.ARRAY
@@ -31,6 +32,7 @@ import static junit.framework.TestCase.assertTrue
 /**
  * Test Java code generation from models.
  */
+//@Ignore('not running in Intellij')
 class JavaEmitterTest
 {
 	Gen gen
@@ -143,6 +145,7 @@ class JavaEmitterTest
 		//add a private constructor
 		phoneEnum.addMethod( new MMethod(name:phoneEnum.shortName(), stereotype:constructor, includeProperties:allProperties, scope:'private') )
 		module.addClass(phoneEnum)
+		MType.registerType(phoneEnum)
 
 		new JavaPreEmitter(gen:gen).visit(module)
 		visitor.visit(module)

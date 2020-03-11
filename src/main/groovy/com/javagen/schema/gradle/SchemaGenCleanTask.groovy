@@ -19,6 +19,7 @@ package com.javagen.schema.gradle
 import com.javagen.schema.common.Gen
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.tasks.TaskAction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -39,7 +40,7 @@ class SchemaGenCleanTask extends DefaultTask
     }
 
 
-    @org.gradle.api.tasks.TaskAction
+    @TaskAction
     def gen()
     {
         GenExtension extension = project.schemaGen
@@ -68,6 +69,13 @@ class SchemaGenCleanTask extends DefaultTask
             deleteSanityCheck(project.projectDir, extension.swift)
             deleteSanityCheck(project.rootProject.projectDir, extension.swift)
             project.delete(outputDir(extension.swift))
+        }
+        if (extension.dart) {
+            LOG.info('deleting schemaGen.dart.srcDir={}', extension.dart.srcDir)
+            deleteSanityCheck(new File(project.projectDir, 'src'), extension.dart)
+            deleteSanityCheck(project.projectDir, extension.dart)
+            deleteSanityCheck(project.rootProject.projectDir, extension.dart)
+            project.delete(outputDir(extension.dart))
         }
     }
 

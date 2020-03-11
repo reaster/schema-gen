@@ -16,6 +16,7 @@
 
 package com.javagen.schema.gradle
 
+import com.javagen.schema.dart.DartGen
 import com.javagen.schema.java.JavaGen
 import com.javagen.schema.kotlin.KotlinGen
 import com.javagen.schema.swift.SwiftGen
@@ -23,7 +24,7 @@ import groovy.transform.ToString
 import org.gradle.api.Action
 
 /**
- * Gradle extension that holds configuration and entry point for java, kotlin and swift code generators.
+ * Gradle extension that holds configuration and entry point for java, kotlin, dart and swift code generators.
  *
  * @author Richard Easterling
  */
@@ -36,6 +37,7 @@ class GenExtension
     JavaGen java
     KotlinGen kotlin
     SwiftGen swift
+    DartGen dart
 
     void swift(Action<? super SwiftGen> action) {
         if (!swift)
@@ -52,5 +54,10 @@ class GenExtension
             java  = new JavaGen()
         action.execute(java);
     }
-    boolean isNoAction() { java || kotlin || swift }
+    void dart(Action<? super DartGen> action) {
+        if (!dart)
+            dart  = new DartGen()
+        action.execute(dart);
+    }
+    boolean isNoAction() { java || kotlin || swift  || dart }
 }
