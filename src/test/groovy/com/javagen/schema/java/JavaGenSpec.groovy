@@ -202,7 +202,7 @@ class JavaGenSpec extends Specification
         then: "normalized xml produced"
         schema != null
         when: "xml ComplexType"
-        ComplexType wptType = schema.getGlobal(schema.qname('wptType'))
+        ComplexType wptType = schema.getGlobal(schema.qname('wptType')) as ComplexType
         then: "normalized ComplexType produced"
         wptType != null
         when: "get composter from wpt"
@@ -231,13 +231,13 @@ class JavaGenSpec extends Specification
         states.cardinality == MCardinality.LIST
         states.type.name == 'String'
         when: "simpleType list"
-        MProperty regions = wptClass.fields['regions']
+        MProperty regions = wptClass.fields['regions'] as MProperty
         then: "map to LIST"
         regions != null
         regions.cardinality == MCardinality.LIST
         regions.type.name == 'String'
         when: "fixed attribute"
-        MProperty version = wptClass.fields['version']
+        MProperty version = wptClass.fields['version'] as MProperty
         then: "map to required, final property"
         version != null
         version.cardinality == MCardinality.REQUIRED
@@ -245,13 +245,13 @@ class JavaGenSpec extends Specification
         version.isFinal()
         version.val == '1.1'
         when: "required simpleType attribute"
-        MProperty lat = wptClass.fields['lat']
+        MProperty lat = wptClass.fields['lat'] as MProperty
         then: "map to required property"
         lat != null
         lat.cardinality == MCardinality.REQUIRED
         lat.type.name == 'double'
         when: "optional simpleType attribute"
-        MProperty lon = wptClass.fields['lon']
+        MProperty lon = wptClass.fields['lon'] as MProperty
         then: "map to optional property"
         lon != null
         when: "using Optional setting, primatives are put in primitve wrapper classes and placed in java.common.Optional instances"
@@ -260,7 +260,7 @@ class JavaGenSpec extends Specification
         lon.cardinality == MCardinality.OPTIONAL
         lon.type.name == 'Double'
         when: "simpleType enumeration attribute"
-        MProperty fix = wptClass.fields['fix']
+        MProperty fix = wptClass.fields['fix'] as MProperty
         MEnum fixTypeEnum = module.lookupClass('FixTypeEnum')
         then: "map to generated Java enum"
         fix != null
@@ -269,7 +269,7 @@ class JavaGenSpec extends Specification
         fixTypeEnum.enumValues.size() == 3
         fixTypeEnum.enumNames.size() == 3
         when: "fixed element"
-        MProperty author = wptClass.fields['author']
+        MProperty author = wptClass.fields['author'] as MProperty
         then:
         author != null
         author.cardinality == MCardinality.REQUIRED
@@ -284,19 +284,19 @@ class JavaGenSpec extends Specification
         ele.type.name == 'Double' //'java.math.BigDecimal'
         ele.val == '1.0'
         when: "optional dateTime element"
-        MProperty time = wptClass.fields['time']
+        MProperty time = wptClass.fields['time'] as MProperty
         then:
         time != null
         time.cardinality == MCardinality.OPTIONAL
         time.type.name == 'java.time.LocalDateTime'
         when: "required element"
-        MProperty name = wptClass.fields['name']
+        MProperty name = wptClass.fields['name'] as MProperty
         then:
         name != null
         name.cardinality == MCardinality.REQUIRED
         name.type.name == 'String'
         when: "unbounded element"
-        MProperty places = wptClass.fields['places']
+        MProperty places = wptClass.fields['places'] as MProperty
         then:
         places != null
         places.cardinality == MCardinality.LIST
@@ -310,7 +310,7 @@ class JavaGenSpec extends Specification
         measureTypeEnum.enumValues == ['2d','3d','dgps','none','pps']
         measureTypeEnum.enumNames == ['_2d','_3d','Dgps','None','Pps']
         when: "element from union of enummerations"
-        MProperty measure = wptClass.fields['measure']
+        MProperty measure = wptClass.fields['measure'] as MProperty
         then:
         measure != null
         measure.cardinality == MCardinality.REQUIRED

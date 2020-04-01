@@ -767,7 +767,7 @@ class XmlSchemaNormalizer
 
     Schema buildSchema(String xmlSchemaText) {
         prefixToNamespaceMap.push(loadNamespaces(xmlSchemaText))
-        Schema schema = buildSchema(new ByteArrayInputStream(xmlSchemaText.getBytes()), null)
+        Schema schema = internalBuildSchema(new ByteArrayInputStream(xmlSchemaText.getBytes()), null)
         if (prefixToNamespaceMap.size() > 1) {
             prefixToNamespaceMap.pop()
         }
@@ -777,7 +777,7 @@ class XmlSchemaNormalizer
     /**
      * recursive work flow of normalizer
      */
-    private Schema internalBuildSchema(InputStream inputStream, URL context)
+    Schema internalBuildSchema(InputStream inputStream, URL context)
     {
         boolean isRootSchema = schema == null
         XmlSlurper xmlSlurper = new XmlSlurper()
