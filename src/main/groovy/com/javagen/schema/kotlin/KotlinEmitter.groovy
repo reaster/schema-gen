@@ -82,7 +82,7 @@ class KotlinEmitter extends CodeEmitter
 		out << '\n' << tabs
 		if (c.scope && c.scope != 'public')
 			out << c.scope << ' '
-		if (!c.isStatic())
+		if (gen.emitInnerClasses && c.parent instanceof MClass && !cdata && !c.isInterface() && !c.isStatic())
 			out << 'inner '
 		if (c.isAbstract())
 			out << 'abstract '

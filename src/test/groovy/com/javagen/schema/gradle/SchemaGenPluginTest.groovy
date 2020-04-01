@@ -16,6 +16,7 @@
 
 package com.javagen.schema.gradle
 
+import com.javagen.schema.java.JavaGen
 import org.gradle.api.Project
 import org.junit.Test
 import org.gradle.testfixtures.ProjectBuilder
@@ -38,5 +39,35 @@ class SchemaGenPluginTest {
         def genClean = project.tasks.genClean
         println(genClean)
         assertTrue( (genClean instanceof SchemaGenCleanTask) )
+    }
+    @Test
+    public void schemaGenExapmplesTest() {
+        def schemaGenExamplesDir = new File('../schema-gen-examples')
+        if (schemaGenExamplesDir.exists()) {
+            //gradle setup
+            Project project = ProjectBuilder.builder().withProjectDir(schemaGenExamplesDir).build()
+            project.pluginManager.apply 'com.javagen.schema-gen'
+            assertTrue( (project.tasks.genClean instanceof SchemaGenCleanTask) )
+            SchemaGenCleanTask genClean = project.tasks.genClean
+            assertTrue( (project.tasks.gen instanceof SchemaGenTask) )
+            SchemaGenTask gen = project.tasks.gen
+            GenExtension extension = genClean.project.schemaGen
+            extension.java = new JavaGen()
+            //java-gpx setup
+            extension.java.schemaURL = new File(schemaGenExamplesDir, 'java-gpx/src/main/resources/gpx.xsd').toURI().toURL()
+            extension.java.srcDir = new File('java-gpx/src/main/java-gen')
+            //remove old generated code and regenerate
+            genClean.gen();
+            gen.gen()
+            //java-atom setup
+            extension.java.schemaURL = new File(schemaGenExamplesDir, 'java-atom/src/main/resources/atom.xsd').toURI().toURL()
+            extension.java.srcDir = new File('java-atom/src/main/java-gen')
+            extension.java.packageName = 'org.w3.atom.java'
+            extension.java.addSuffixToEnumClass = null
+            extension.java.anyPropertyName = 'text'
+            //remove old generated code and regenerate
+            genClean.gen();
+            gen.gen()
+        }
     }
 }

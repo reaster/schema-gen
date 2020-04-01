@@ -1,7 +1,8 @@
 plugins {
+    id 'java-gradle-plugin'
     id 'groovy'
     id 'maven-publish'
-    id 'signing'
+    //id 'signing'
     //id 'java-gradle-plugin'
 }
 
@@ -63,8 +64,8 @@ publishing {
 //        }
 //    }
 //}
-//group 'com.javagen'
-//version '0.9.4'
+group 'com.javagen'
+version '0.9.5'
 
 //apply plugin: 'groovy'
 //apply plugin: 'maven'

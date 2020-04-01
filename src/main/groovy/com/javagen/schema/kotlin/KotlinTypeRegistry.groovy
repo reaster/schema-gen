@@ -63,6 +63,7 @@ class KotlinTypeRegistry extends MTypeRegistry
         t << new MType(name:'Set', val: 'setOf()')
         t << new MType(name:'List', val: 'listOf()')
         t << new MType(name:'Map', val: 'mapOf()')
+        t << new MType(name:'LinkedHashMap', val: 'linkedMapOf()')
         t << new MType(name:'MutableSet', val: 'mutableSetOf()')
         t << new MType(name:'MutableList', val: 'mutableListOf()')
         t << new MType(name:'MutableMap', val: 'mutableMapOf()')

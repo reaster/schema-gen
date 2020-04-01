@@ -31,9 +31,10 @@ class JavaGenMain extends JavaGen
 {
     def initXHTML()
     {
-        schemaURL = new File('/Users/richard/dev/hs/hsf-data/xhtml1-strict-subset.xsd').toURI().toURL()
+        schemaURL = new URL('file:../schema-gen-examples/java-x/src/main/resources/xhtml4-strict-subset.xsd')
         packageName = 'com.hotspringsfinder.xhtml.model'
-        srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen2')
+        srcDir = new File('../schema-gen-examples/java-x/src/main/java-gen')
+        //srcDir = new File('../schema-gen-hsf/hsf-java/src/main/java-gen2')
     }
     def initAtom()
     {
@@ -62,10 +63,17 @@ class JavaGenMain extends JavaGen
         srcDir = new File('../schema-gen-examples/java-x/src/main/java-gen')
     }
 
-    def initGpx()
+    def initJavaGpx()
     {
         schemaURL = new File('../schema-gen-examples/java-gpx/src/main/resources/gpx.xsd').toURI().toURL()
         srcDir = new File('../schema-gen-examples/java-gpx/src/main/java-gen')
+        anyPropeertyNameWrapped = 'anyMap'
+    }
+
+    def initGpx()
+    {
+        schemaURL = new File('../schema-gen-examples/gpx/src/main/resources/gpx.xsd').toURI().toURL()
+        srcDir = new File('../schema-gen-examples/gpx/src/main/java-gen')
     }
 
     def initHsf()
@@ -112,19 +120,31 @@ class JavaGenMain extends JavaGen
         printSchema = true
     }
 
+    def initJava14Gpx()
+    {
+        schemaURL = new File('../schema-gen-examples/java-gpx/src/main/resources/gpx.xsd').toURI().toURL()
+        srcDir = new File('../schema-gen-examples/java14-gpx/src/main/java-gen')
+        pluralService = new com.javagen.schema.common.PluralServiceNoop()//property names must match tags for now
+        //callback = new Java14JacksonCallback(this) //sets POJOs to records
+        pipeline = [
+            new Java14Emitter(),
+            new JavaPreEmitter(gen: this),
+            new JavaEmitter(gen: this)
+        ]
+    }
+
     JavaGenMain()
     {
         super()
-        //initAtom()
+//        initAtom() //working 3/14/2020
         //initKml()
-        //schemaURL = new File('/Users/richard/dev/hs/xml-xml/example-x-java/src/main/resources/xAL.xsd').toURI().toURL()
-        //schemaURL = new URL('http://docs.oasis-open.org/election/external/xAL.xsd')
-		//initGpx()
+		initJavaGpx() //working 3/14/2020
+//        initJava14Gpx() //working 4/1/2020
 //		initHsf2()
 //        initHsf2Extension()
-        initAttraction()
+        //initAttraction()
         //initFactionDigits()
-        //initXHTML()
+//        initXHTML()
     }
 
     static void main(String[] args) {

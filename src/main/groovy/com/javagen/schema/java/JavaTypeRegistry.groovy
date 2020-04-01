@@ -77,6 +77,7 @@ class JavaTypeRegistry extends MTypeRegistry
         t << new MType(name:'java.util.Date', val: 'new java.util.Date()')
         t << new MType(name:'java.util.Optional', val: 'java.util.Optional.empty()')
         t << new MType(name:'java.util.Map', val: 'new java.util.HashMap<>()')
+        t << new MType(name:'java.util.LinkedHashMap', val: 'new java.util.LinkedHashMap<>()')
         t << new MType(name:'java.util.Set', val: 'new java.util.HashSet<>()')
         t << new MType(name:'java.util.List', val: 'new java.util.ArrayList<>()')
         t << new MType(name:'java.util.HashMap', val: 'new java.util.HashMap<>()')
@@ -172,10 +173,16 @@ class JavaTypeRegistry extends MTypeRegistry
         type.name.equals('boolean') || type.name.equals('Boolean')
     }
 
+    static boolean isString(MType type)
+    {
+        type.name.equals('String') || type.name.equals('StringBuilder')
+    }
+
     static String containerInterface(MCardinality cardinality)
     {
         switch (cardinality) {
-            case MCardinality.MAP: return 'java.util.Map'
+            case MCardinality.MAP:
+            case MCardinality.LINKEDMAP: return 'java.util.Map'
             case MCardinality.SET: return 'java.util.Set'
             case MCardinality.LIST: return 'java.util.List'
             case MCardinality.OPTIONAL: return 'java.util.Optional'
@@ -186,6 +193,7 @@ class JavaTypeRegistry extends MTypeRegistry
     {
         switch (cardinality) {
             case MCardinality.MAP: return 'java.util.HashMap'
+            case MCardinality.LINKEDMAP: return 'java.util.LinkedHashMap'
             case MCardinality.SET: return 'java.util.HashSet'
             case MCardinality.LIST: return 'java.util.ArrayList'
             case MCardinality.OPTIONAL: return 'java.util.Optional'

@@ -30,6 +30,8 @@ import com.javagen.schema.model.MReference
 import com.javagen.schema.model.MType
 import com.javagen.schema.model.MTypeRegistry
 
+import java.lang.reflect.Field
+
 import static com.javagen.schema.model.MCardinality.LIST
 import static com.javagen.schema.model.MCardinality.SET
 import static com.javagen.schema.model.MCardinality.MAP
@@ -37,6 +39,7 @@ import static com.javagen.schema.model.MMethod.IncludeProperties.allProperties
 import static com.javagen.schema.model.MMethod.IncludeProperties.finalProperties
 import static com.javagen.schema.model.MMethod.Stereotype.adder
 import static com.javagen.schema.model.MMethod.Stereotype.constructor
+import static com.javagen.schema.model.MMethod.Stereotype.canonicalConstructor
 import static com.javagen.schema.model.MMethod.Stereotype.equals
 import static com.javagen.schema.model.MMethod.Stereotype.getter
 import static com.javagen.schema.model.MMethod.Stereotype.hash
@@ -62,10 +65,12 @@ class JavaPreEmitter extends CodeEmitter
     JavaPreEmitter()
     {
         //HACK to fix EnumSet.of() bug
+        //CLASS_METHODS = EnumSet.of(equals,hash,toString,toStringBuilder)
         CLASS_METHODS.add(equals)
         CLASS_METHODS.add(hash)
         CLASS_METHODS.add(toString)
         CLASS_METHODS.add(toStringBuilder)
+        //defaultMethods = EnumSet.of(equals,hash,toString,toStringBuilder,getter,setter,adder)
         defaultMethods.add(equals)
         defaultMethods.add(hash)
         defaultMethods.add(toString)
@@ -89,7 +94,7 @@ class JavaPreEmitter extends CodeEmitter
 
     @Override
     def visit(MClass c) {
-        if (!c.interface) {
+        if (!c.interface && !c.data) {
             defaultMethods.each {
                 if (CLASS_METHODS.contains(it))
                     c.addMethod(new MMethod(stereotype: it))
@@ -150,8 +155,10 @@ class JavaPreEmitter extends CodeEmitter
     @Override
     def visit(MProperty p)
     {
-        if (p.isStatic())
+        if (p.isStatic() || p.parentClass()?.data)
             return
+        if (p.name == 'emails' && p.parent.name == 'Person')
+            println (p)
         //generate accessors
         EnumSet<MMethod.Stereotype> accessors = EnumSet.noneOf(MMethod.Stereotype.class)//.of(equals, hash)
         if (!p.isFinal() && defaultMethods.contains(setter))
@@ -186,6 +193,10 @@ class JavaPreEmitter extends CodeEmitter
                             m.params = m.parent.fields.values().findAll { p -> !p.isStatic() }
                     }
                 }
+                break
+            case canonicalConstructor:
+                m.name = m.parent.shortName()
+                m.body = m.body ?: this.&canonicalConstructorMethodBody
                 break
             case hash:
                 m.annotations << '@Override'
@@ -276,6 +287,25 @@ class JavaPreEmitter extends CodeEmitter
         }
     }
 
+    private def canonicalConstructorMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+    {
+        def constFields = m.parent.fields.values().findAll { !it.isStatic() && it.isFinal() && it.val }
+        for(def f : constFields) {
+            if (f.type.isPrimitive()) {
+                v.out << '\n' << v.tabs << "if (!${f.val} != ${f.name})"
+                v.next()
+                v.out << '\n' << v.tabs << "throw new IllegalArgumentException(\"${f.name} must be ${f.val}, not \\\"+${f.name});"
+                v.previous()
+            } else {
+                def quote = JavaTypeRegistry.isString(f.type) ? "\"" : ''
+                v.out << '\n' << v.tabs << "if (!${quote}${f.val}${quote}.equals(${f.name}))"
+                v.next()
+                v.out << '\n' << v.tabs << "throw new IllegalArgumentException(\"${f.name} must be '${f.val}', not \"+${f.name});"
+                v.previous()
+            }
+        }
+    }
+
 
     private def genAccessors(MProperty p, EnumSet<MMethod.Stereotype> accessors)
     {
@@ -322,6 +352,8 @@ class JavaPreEmitter extends CodeEmitter
                     String getterName = method?.name
                     if (!method) {
                         getterName = JavaTypeRegistry.isBoolean(p.type) && !p.isContainerType() ? 'is' + upCaseName : 'get' + upCaseName
+                        if (getterName == 'getLat')
+                            println method
                         MBind type = new MBind(type: p.type, cardinality: p.cardinality)
                         Closure methodBody = p.getterBody ?: JavaPreEmitter.&getterMethodBody
                         method = new MMethod(name: getterName, type: type, scope: 'public', body: methodBody, stereotype: getter)
@@ -382,6 +414,10 @@ class JavaPreEmitter extends CodeEmitter
         def prop = m.refs['property']
         def propName = prop.name
         assert m.params.size() == 2
+        v.out << '\n' << v.tabs << 'if (' << 'this.' << propName << ' == null)'
+        v.next()
+        v.out << '\n' << v.tabs << 'this.' << propName << ' = new ' << JavaTypeRegistry.containerImplementation(prop.cardinality) << '<>();'
+        v.previous()
         v.out << '\n' << v.tabs << 'this.' << propName << '.put(' << m.params[0].name << ', ' << m.params[1].name << ');'
     }
     static def adderMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)

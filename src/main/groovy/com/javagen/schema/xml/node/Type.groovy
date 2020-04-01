@@ -29,6 +29,7 @@ abstract class Type extends Node
     boolean isSimpleContent() { false }
     /** @return true if contains child elements and attributes. */
     boolean isComplextContent() { false }
+    /** node contains data, no sub-elements or attributes */
     boolean isBody() { false }
     boolean isMixed() { false }
     /**

@@ -65,6 +65,7 @@ class XmlSchemaNormalizer
     com.javagen.schema.xml.node.Node lastNode;
     boolean verbose = false
     boolean inlineGroups = true
+    //boolean useDefaultNS = false
 
     Stack<Map<String,String>> prefixToNamespaceMap = new Stack<>()
 
@@ -754,7 +755,8 @@ class XmlSchemaNormalizer
         final Map<String,String> namespaces = overrideNamespaces( loadNamespaces(xmlSchemaURL), overrideNamespace )
         //println "PUSH: ${namespaces}"
         prefixToNamespaceMap.push(namespaces)
-        Schema schema = buildSchema(xmlSchemaURL.openStream(), xmlSchemaURL)
+        //useDefaultNS = namespaces[''] == namespaces['targetNamespace']
+        Schema schema = internalBuildSchema(xmlSchemaURL.openStream(), xmlSchemaURL)
         if (prefixToNamespaceMap.size() > 1) {
             def popedNS = prefixToNamespaceMap.pop()
             //println "POP: ${popedNS}"
@@ -775,7 +777,7 @@ class XmlSchemaNormalizer
     /**
      * recursive work flow of normalizer
      */
-    Schema buildSchema(InputStream inputStream, URL context)
+    private Schema internalBuildSchema(InputStream inputStream, URL context)
     {
         boolean isRootSchema = schema == null
         XmlSlurper xmlSlurper = new XmlSlurper()

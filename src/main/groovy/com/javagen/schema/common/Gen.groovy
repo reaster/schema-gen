@@ -70,6 +70,7 @@ abstract class Gen
     boolean sortEnumValues = true
     boolean includeIfNull = false
     boolean includeJsonSupport = true
+    boolean emitInnerClasses = false //emit nested Kotlin classes as inner classes
 
     Function<String,String> packageNameFunction = { ns -> packageName ?: ns ? GlobalFunctionsUtil.javaPackageFromNamespace(ns, true) : 'com.javagen.model' }
     Function<String,String> enumNameFunction = { text -> GlobalFunctionsUtil.javaEnumName(text, false) }

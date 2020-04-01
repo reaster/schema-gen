@@ -32,7 +32,9 @@ import com.javagen.schema.model.MTypeRegistry
 import com.javagen.schema.xml.XmlSchemaNormalizer
 import com.javagen.schema.xml.node.Any
 import com.javagen.schema.xml.node.Body
+import com.javagen.schema.xml.node.Type
 
+import static com.javagen.schema.model.MCardinality.LINKEDMAP
 import static com.javagen.schema.model.MMethod.Stereotype.constructor
 import static com.javagen.schema.model.MMethod.Stereotype.equals
 import static com.javagen.schema.model.MMethod.Stereotype.getter
@@ -95,50 +97,32 @@ class KotlinGen extends JavaGen
         callback.gen(body, property)
     }
 
+    @Override void anyWrapper(Any any)
+    {
+        MClass clazz = nestedStack.peek()
+        MCardinality container = container(any)
+        if (container.isContainer())
+            container = LINKEDMAP
+        def propertyName = "extensionPut"
+        MProperty property = new MProperty(name:propertyName, type:MTypeRegistry.instance().lookupType('MutableMap'), cardinality:MCardinality.OPTIONAL, final:any.fixed!=null)
+        clazz.addField(property)
+        callback.gen(any, property)
+        println "any -> ${name}: ${type}"
+    }
+
     @Override MProperty genAny(String propertyName, Any any)
     {
         MClass clazz = nestedStack.peek()
         MCardinality container = container(any)
         MType type = schemaTypeToPropertyType(any.type ?: schema.getGlobal(DEFAULT_NS, anyType), container)
         MProperty property
+        if (propertyName == 'map')
+            println(propertyName)
         if (container == MCardinality.LIST) {
-            /*
-            class Foo(@JsonIgnore var map:LinkedHashMap<String, String> = linkedMapOf())
-            {
-                public @JsonAnySetter fun set(key: String, value: String) = this.map.put(key, value)
-                public @JsonAnyGetter fun all(): Map<String, String> = this.map
-                override fun hashCode() = map.hashCode()
-                override fun equals(other: Any?) = when {
-                    this === other -> true
-                    other is Foo -> map.size == other.map.size
-                                            && map.all { (k,v) -> v.equals(other.map[k]) }
-                    else -> false
-                }
-                override fun toString() = map.toString()
-            }
-             */
-//            if (propertyName == 'any')
-//                println("any")
-            String anyClassName = classNameFunction.apply(propertyName)
-            MClass anyClass = (MClass)MType.lookupType(anyClassName)
-            if (!anyClass || anyClass.fields.isEmpty()) { //TODO should this be done in the ComplexType method?
-                anyClass = new MClass(name: anyClassName)
-                MBind keyParam = new MBind(name: 'key', type: 'String')
-                MBind valParam = new MBind(name: 'value', type: type)
-                MBind anyParam = new MBind(name: 'other', type: 'Any', cardinality: MCardinality.OPTIONAL)
-                MProperty anyProp = new MProperty(name:'map', type:type, cardinality:MCardinality.LINKEDMAP, val:'linkedMapOf()', attr:['keyType':'String'])
-                anyClass.addField( anyProp )
-                anyClass.addMethod(new MMethod(name: 'set', params: [keyParam, valParam], expr: 'this.map.put(key, value)', stereotype: setter))
-                anyClass.addMethod(new MMethod(name: 'all', type: anyProp, expr: 'this.map', stereotype: getter))
-                anyClass.addMethod(new MMethod(name: 'hashCode', override: true, expr: 'map.hashCode()', stereotype: hash))
-                anyClass.addMethod(new MMethod(name: 'equals', override: true, params: [anyParam], expr: this.&mapHashCodeMethodBody, stereotype: equals))
-                anyClass.addMethod(new MMethod(name: 'toString', override: true, expr: 'map.toString()', stereotype: toString))
-                clazz.parentModule().addClass(anyClass)
-                MType.registerType(anyClass)
-                callback.gen(any, anyClass)
-            }
-            property = new MReference(name:propertyName, type:anyClass, cardinality:MCardinality.OPTIONAL, final:any.fixed!=null)
-
+            property = new MProperty(name:propertyName, type:MTypeRegistry.instance().lookupType('MutableMap'), cardinality:MCardinality.OPTIONAL, final:any.fixed!=null)
+//            String anyClassName = classNameFunction.apply(propertyName)
+//            MClass anyClass = generateAnyMapClassIfAbscent(any, anyClassName, clazz)
+//            property = new MReference(name:propertyName, type:anyClass, cardinality:MCardinality.OPTIONAL, final:any.fixed!=null)
         } else {
             String val = any.fixed ?: any.'default'
             property = new MProperty(name:propertyName, type:type, cardinality:container, final:any.fixed!=null, val:val)
@@ -160,6 +144,43 @@ class KotlinGen extends JavaGen
         v.out << '\n' << v.tabs << 'else -> false'
         v.previous()
         v.out << '\n' << v.tabs << '}'
+    }
+
+    private MClass generateAnyMapClassIfAbscent(Any any, String anyClassName, MClass parentClass)
+    {
+        /*
+         class Foo(@JsonIgnore var map:LinkedHashMap<String, String> = linkedMapOf())
+         {
+             public @JsonAnySetter fun set(key: String, value: String) = this.map.put(key, value)
+             public @JsonAnyGetter fun all(): Map<String, String> = this.map
+             override fun hashCode() = map.hashCode()
+             override fun equals(other: Any?) = when {
+                 this === other -> true
+                 other is Foo -> map.size == other.map.size
+                                         && map.all { (k,v) -> v.equals(other.map[k]) }
+                 else -> false
+             }
+             override fun toString() = map.toString()
+         }
+          */
+        MClass anyClass = (MClass)MType.lookupType(anyClassName)
+        if (!anyClass || anyClass.fields.isEmpty()) { //TODO should this be done in the ComplexType method?
+            anyClass = new MClass(name: anyClassName)
+            MBind keyParam = new MBind(name: 'key', type: 'String')
+            MBind valParam = new MBind(name: 'value', type: type)
+            MBind anyParam = new MBind(name: 'other', type: 'Any', cardinality: MCardinality.OPTIONAL)
+            MProperty anyProp = new MProperty(name:'map', type:type, cardinality:MCardinality.LINKEDMAP, val:'linkedMapOf()', attr:['keyType':'String'])
+            anyClass.addField( anyProp )
+            anyClass.addMethod(new MMethod(name: 'set', params: [keyParam, valParam], expr: 'this.map.put(key, value)', stereotype: setter))
+            anyClass.addMethod(new MMethod(name: 'all', type: anyProp, expr: 'this.map', stereotype: getter))
+            anyClass.addMethod(new MMethod(name: 'hashCode', override: true, expr: 'map.hashCode()', stereotype: hash))
+            anyClass.addMethod(new MMethod(name: 'equals', override: true, params: [anyParam], expr: this.&mapHashCodeMethodBody, stereotype: equals))
+            anyClass.addMethod(new MMethod(name: 'toString', override: true, expr: 'map.toString()', stereotype: toString))
+            parentClass.parentModule().addClass(anyClass)
+            MType.registerType(anyClass)
+            callback.gen(any, anyClass)
+        }
+        anyClass
     }
 
     KotlinGen()

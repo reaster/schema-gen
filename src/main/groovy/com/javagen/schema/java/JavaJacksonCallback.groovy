@@ -157,6 +157,8 @@ class JavaJacksonCallback extends XmlNodeCallback
 
     private void applyRestrictions(MField field, List<Restriction> restrictions)
     {
+//        if (field.name == 'lat')
+//            println field
         String min = null
         String max = null
         String fractionDigitsVal = null
@@ -164,32 +166,33 @@ class JavaJacksonCallback extends XmlNodeCallback
         if (restrictions) {
             restrictions.each { restriction ->
                 final String value = restriction.value
+                boolean onGenericParam = field.isContainerType(); //apply annotation to generic type because we're wrapped in a container?
                 if (value) {
                     switch (restriction.type) {
                         case minExclusive: //not really supported
                         case minInclusive:
                             if (JavaTypeRegistry.isFloatingPointType(field.type.name)) {
-                                field.annotations << new MAnnotation(expr:"@DecimalMin(\"${value}\")", onGenericParam:true)
+                                field.annotations << new MAnnotation(expr:"@DecimalMin(\"${value}\")", onGenericParam:onGenericParam)
                                 field.imports << 'javax.validation.constraints.DecimalMin'
                             } else {
-                                field.annotations << new MAnnotation(expr:"@Min(${stripDecimals(value)})", onGenericParam:true)
+                                field.annotations << new MAnnotation(expr:"@Min(${stripDecimals(value)})", onGenericParam:onGenericParam)
                                 field.imports << 'javax.validation.constraints.Min'
                             }
                             break
                         case maxExclusive: //not really supported
                         case maxInclusive:
                             if (JavaTypeRegistry.isFloatingPointType(field.type.name)) {
-                                field.annotations << new MAnnotation(expr:"@DecimalMax(\"${value}\")", onGenericParam:true)
+                                field.annotations << new MAnnotation(expr:"@DecimalMax(\"${value}\")", onGenericParam:onGenericParam)
                                 field.imports << 'javax.validation.constraints.DecimalMax'
                             } else {
-                                field.annotations << new MAnnotation(expr:"@Max(${stripDecimals(value)})", onGenericParam:true)
+                                field.annotations << new MAnnotation(expr:"@Max(${stripDecimals(value)})", onGenericParam:onGenericParam)
                                 field.imports << 'javax.validation.constraints.Max'
                             }
                             break
                         case whiteSpace: //preserve, replace, collapse
                             break
                         case pattern:
-                            field.annotations << new MAnnotation(expr:"@Pattern(regexp=\"${escapeJavaRegexp(value)}\")", onGenericParam:true)
+                            field.annotations << new MAnnotation(expr:"@Pattern(regexp=\"${escapeJavaRegexp(value)}\")", onGenericParam:onGenericParam)
                             field.imports << 'javax.validation.constraints.Pattern'
                             break
                         case length:
@@ -219,7 +222,7 @@ class JavaJacksonCallback extends XmlNodeCallback
         }
         if (fractionDigitsVal && totalDigitsVal) {
             String integerDigits = String.valueOf( Integer.parseInt(totalDigitsVal) - Integer.parseInt(fractionDigitsVal) )
-            field.annotations << new MAnnotation(expr:"@Digits(integer=${integerDigits},fraction=${fractionDigitsVal})", onGenericParam:true)
+            field.annotations << new MAnnotation(expr:"@Digits(integer=${integerDigits},fraction=${fractionDigitsVal})", onGenericParam:onGenericParam)
             field.imports << 'javax.validation.constraints.Digits'
         }
         //boolean primitiveOrWrapper = JavaTypeRegistry.isPrimitive(field.type.name) || JavaTypeRegistry.isWrapper(field.type.name)

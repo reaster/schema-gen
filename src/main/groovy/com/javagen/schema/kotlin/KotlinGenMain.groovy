@@ -57,8 +57,8 @@ class KotlinGenMain extends KotlinGen
     KotlinGenMain()
     {
         super()
-        //initGpx()
-        initHsf()
+        initGpx()
+//        initHsf()
         //initWadl()
     }
 

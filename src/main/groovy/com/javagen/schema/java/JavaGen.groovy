@@ -74,7 +74,6 @@ class JavaGen extends Gen implements XmlSchemaVisitor
     String polyMorphicListName = 'list'
     String propertyScope = 'private'
     String anyType = 'string'
-    boolean useOptional = false
     boolean treatWrapperElementsAsCollections = true
     boolean choiceCollectionWrapperConstructor = true
 
@@ -165,9 +164,11 @@ class JavaGen extends Gen implements XmlSchemaVisitor
 //      any.type = xml.getGlobal(DEFAULT_NS, anyType) - can't modify after vistor activated - causes bugs
 //		println "any:${any.type.qname.name} -> ${name} property"
         TextOnlyType parentType = nestedStack.peek().attr['nodeType']
+        if (parentType.qname.name  == 'extensionsType')
+            println parentType
         //Compositor compositor = compositorStack.peek()
         boolean isBody = parentType.isBody()
-        boolean isWrapper = parentType.isWrapperElement()
+        boolean isWrapper = parentType.isWrapperElement(true)
         if ( !isBody && !isWrapper) {
             String name = parentType.isWrapperElement(true) ?  anyPropeertyNameWrapped : anyPropertyName
             genAny(name, any)
@@ -178,7 +179,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
         }
     }
 
-    private void anyWrapper(Any any)
+    void anyWrapper(Any any)
     {
         MCardinality container = container(any)
         if (container.isContainer())
@@ -368,6 +369,8 @@ class JavaGen extends Gen implements XmlSchemaVisitor
     {
         Map<MType,String> polymorphicTypes = new LinkedHashMap()
         for(Element e : choice.childElements()) { //includes elements and groups
+            if (e.type == null)
+                throw new Error("No mapped type for ${e}")
             MType type = schemaTypeToPropertyType(e.type, REQUIRED)
             polymorphicTypes.put(type, e.qname.name)
         }
@@ -596,7 +599,7 @@ class JavaGen extends Gen implements XmlSchemaVisitor
     {
         String propertyName = property.name
         property.methods[putter] = new MMethod(name: "put${upperCase(propertyName)}", params: [new MBind(name:'key', type: 'String'), new MBind(name: 'value', type: property.type)], body: JavaPreEmitter.&putterMethodBody, stereotype: putter, refs: ['property':property])
-        property.methods[getter] = new MMethod(name: "get${upperCase(propertyName)}", type:property.type, body: JavaPreEmitter.&getterMethodBody, stereotype: getter, refs: ['property':property])
+        //property.methods[getter] = new MMethod(name: "get${upperCase(propertyName)}", type:property.type, body: JavaPreEmitter.&getterMethodBody, stereotype: getter, refs: ['property':property])
     }
 
     MProperty genAny(String propertyName, Any any)
@@ -606,17 +609,17 @@ class JavaGen extends Gen implements XmlSchemaVisitor
         Type polymorphicType = polymporphicType(any) ?: any.type // any.type is not allowed in XML Schema?
         MType type = schemaTypeToPropertyType(polymorphicType ?: schema.getGlobal(DEFAULT_NS, anyType), container)
         MProperty property
-        if (polymorphicType) {
+        if (container == LIST) {
+            container = LINKEDMAP
+            MBind mapRType = new MBind(cardinality:container,type:type)
+            MType linkedMapType = MTypeRegistry.instance().typeForCardinality(LINKEDMAP)
+            String val = null //linkedMapType.val
+            property = new MProperty(name:propertyName, type:type, cardinality:container, scope:propertyScope, final:any.fixed!=null, val:val, attr:['keyType':'String'])
+            mapPropertyAccessors(property)
+        } else if (polymorphicType) {
             MType listType = MTypeRegistry.instance().typeForCardinality(LIST)
             String val = any.fixed ?: any.'default' ?: (container == LIST) ? listType.val : null
             property = new MProperty(name:propertyName, type:type, cardinality:container, scope:propertyScope, final:any.fixed!=null, val:val)
-        } else if (container == LIST) {
-            container = MAP
-            MBind mapRType = new MBind(cardinality:container,type:type)
-            MType linkedMapType = MTypeRegistry.instance().typeForCardinality(LINKEDMAP)
-            String val = linkedMapType.val
-            property = new MProperty(name:propertyName, type:type, cardinality:container, scope:propertyScope, final:any.fixed!=null, val:val, attr:['keyType':'String'])
-            mapPropertyAccessors(property)
         } else {
             String val = any.fixed ?: any.'default'
             property = new MProperty(name:propertyName, type:type, cardinality:container, scope:propertyScope, final:any.fixed!=null, val:val)

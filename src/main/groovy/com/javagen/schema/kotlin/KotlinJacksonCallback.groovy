@@ -16,7 +16,9 @@
 
 package com.javagen.schema.kotlin
 
+import com.javagen.schema.common.CodeEmitter
 import com.javagen.schema.java.JavaTypeRegistry
+import com.javagen.schema.model.MBind
 import com.javagen.schema.model.MCardinality
 import com.javagen.schema.model.MClass
 import com.javagen.schema.model.MEnum
@@ -61,6 +63,7 @@ class KotlinJacksonCallback extends XmlNodeCallback {
         clazz.data = true
     }
 
+    /** root element callback */
     @Override
     void gen(Element element, MClass clazz) {
         if (!clazz)
@@ -120,7 +123,31 @@ class KotlinJacksonCallback extends XmlNodeCallback {
 
     void gen(Any anyNode, MProperty property) {
         applyRestrictions(property)
+        if (property.cardinality == MCardinality.LIST) {
+            MClass clazz = property.parentClass()
+            def params = [new MBind(name: 'key', type: 'string'), new MBind(name: 'value', type: 'string')]
+            MMethod putMethod = new MMethod(name: "${property.name}Put", params:params, body:KotlinJacksonCallback.&putterMethodBody  )
+            putMethod.attr['property']= property
+            putMethod.annotations << '@JsonAnySetter'
+            clazz.imports << 'com.fasterxml.jackson.annotation.JsonAnySetter'
+            clazz.addMethod(putMethod)
+        }
     }
+
+    static def putterMethodBody(MMethod m, CodeEmitter v, boolean hasSuper=false)
+    {
+        MProperty prop = (MProperty)m.refs['property']
+        v.out << '\n' << v.tabs << 'if (' << 'this.' << prop.name << ' == null) {'
+        v.next()
+        v.out << '\n' << v.tabs << 'this.' << prop.name << ' = linkedMapOf(key to value)'
+        v.previous()
+        v.out << '\n' << v.tabs << '} else {'
+        v.next()
+        v.out << '\n' << v.tabs << prop.name << '?.put(' << m.params[0].name << ', ' << m.params[1].name << ')'
+        v.previous()
+        v.out << '\n' << v.tabs << '}'
+    }
+
 
     void gen(Any anyNode, MClass anyClass) {
         anyClass.fields.values().each { MField f ->

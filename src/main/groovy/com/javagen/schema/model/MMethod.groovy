@@ -20,7 +20,7 @@ import com.javagen.schema.common.CodeEmitter
 
 class MMethod extends MBase
 {
-	enum Stereotype {unknown, constructor, getter, setter, adder, putter, toString, toStringBuilder, equals, hash, toJson, fromJson, equalsList, equalsMap, equalsSet}
+	enum Stereotype {unknown, constructor, canonicalConstructor, getter, setter, adder, putter, toString, toStringBuilder, equals, hash, toJson, fromJson, equalsList, equalsMap, equalsSet}
 	enum IncludeProperties {noProperties, finalProperties, allProperties}
 	Stereotype stereotype = Stereotype.unknown
 	IncludeProperties includeProperties
@@ -49,6 +49,7 @@ class MMethod extends MBase
 		refs['property'] = field
 		this.stereotype = stereotype
 	}
+	boolean isConstructor() { stereotype == Stereotype.constructor || stereotype== Stereotype.canonicalConstructor }
 	MMethod setAbstract(a) { _abstract = a; return this }
 	boolean isAbstract() { _abstract }
 	MMethod setStatic(s) { _static = s; return this }

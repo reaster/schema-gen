@@ -133,12 +133,49 @@ class JavaEmitter extends CodeEmitter
 			out << 'static '
 		if (c.isAbstract() && !c.isInterface())
 			out << 'abstract '
-		if (c.isInterface()) {
-			out << 'interface '
+		if (c.data) {
+			out << 'record '
+			out << c.name << ' '
+			if (!c.fields.isEmpty()) {
+				out << '('
+				this++
+				def fields = c.fields.values().findAll { !it.isStatic() }
+				for(int i;i<fields.size();i++) {
+					final MField f = fields[i]
+					if (i>0)
+						out << ', '
+					if (f.document)
+						visit(f.document)
+					//out << '\n' << tabs
+					f.annotations.list.findAll{ !it.onGenericParam || NON_GENERIC_PARAMS.contains(f.cardinality)}.each {
+						out << '\n' << tabs
+						out << it
+					}
+					out << '\n' << tabs
+					//if (f.scope)
+					//	out << f.scope << ' '
+					//if (f.isStatic())
+					//	out << 'static '
+					//if (f.isFinal())
+					//	out << 'final '
+					def iType = f.type.name
+					out << typeDeclaration(f) << ' ' << f.name
+//					def val = defaultValue(f, f.val)
+//					if (val != null) {
+//						out << ' = ' << val
+//					}
+				}
+				this--
+				out << '\n' << tabs << ')'
+			}
 		} else {
-			out << 'class '
+			if (c.isInterface()) {
+				out << 'interface '
+			} else {
+				out << 'class '
+			}
+			out << c.name << ' '
 		}
-		out << c.name << ' '
 		if (c.getExtends())
 			out << 'extends ' << c.getExtends() << ' '
 		c.implements.unique().eachWithIndex { interfaceName, i ->
@@ -148,13 +185,17 @@ class JavaEmitter extends CodeEmitter
 		out << '\n' << tabs << '{'
 		this++
 		for(f in c.fields.values()) {
-			if (f.document)
-				visit(f.document)
-			visit(f)
+			if (!c.data || f.isStatic()) {
+				if (f.document)
+					visit(f.document)
+				visit(f)
+			}
 		}
-		if (!c.classes.isEmpty())
-			out << '\n'
+//		if (!c.classes.isEmpty())
+//			out << '\n'
 		for(nested in c.classes) {
+			if (nested.document)
+				visit(nested.document)
 			visit(nested)
 		}
 		if (!c.classes.isEmpty() && !c.methods.isEmpty())
@@ -162,7 +203,6 @@ class JavaEmitter extends CodeEmitter
 		for(m in c.methods) {
 			if (m.document)
 				visit(m.document)
-
 			visit(m)
 		}
 		this--
@@ -236,13 +276,17 @@ class JavaEmitter extends CodeEmitter
 	@Override
 	def visit(MReference r)
 	{
-		visit( (MProperty)r )
+		//if (!r.parentClass()?.data) {
+			visit( (MProperty)r )
+		//}
 	}
 	
 	@Override
 	def visit(MProperty p)
 	{
-		visit( (MField)p )
+		//if (!p.parentClass()?.data) {
+			visit( (MField)p )
+		//}
 	}
 
 	@Override
@@ -252,10 +296,14 @@ class JavaEmitter extends CodeEmitter
 			log.warning"ignoring method with no name: ${m}"
 			return
 		}
+//		if (m.name == 'getLat')
+//			println (m)
 		if (!m.parent.isInterface()) {
 			m.annotations.each {
-				out << '\n' << tabs
-				out << it
+				if (!it.onGenericParam) {
+					out << '\n' << tabs
+					out << it
+				}
 			}
 		}
 		out << '\n' << tabs
@@ -267,20 +315,23 @@ class JavaEmitter extends CodeEmitter
 			out << 'final '
 		if (m.isAbstract())
 			out << 'abstract '
-		if (m.stereotype != Stereotype.constructor) {
+		if (!m.isConstructor()) {
 			out << typeDeclaration(m.type, m) << ' '
 		}
-		out << m.name << '('
-		m.params.eachWithIndex { MBind p, int i ->
-			if (i>0) out << ', '
-			if (!m.parent.isInterface()) {
-				p.annotations.each{ anno ->
-					out << anno << ' '
+		out << m.name
+		if (m.stereotype != Stereotype.canonicalConstructor) {
+			out << '('
+			m.params.eachWithIndex { MBind p, int i ->
+				if (i>0) out << ', '
+				if (!m.parent.isInterface()) {
+					p.annotations.each{ anno ->
+						out << anno << ' '
+					}
 				}
+				out << typeDeclaration(p, m) << ' ' << p.name
 			}
-			out << typeDeclaration(p, m) << ' ' << p.name
+			out << ')'
 		}
-		out << ')'
 		if (m.isAbstract() || m.parent.isInterface()) {
 			out << ';'
 		} else if (m.body!=null) {
@@ -312,14 +363,19 @@ class JavaEmitter extends CodeEmitter
 			case MCardinality.SET:
 			case MCardinality.OPTIONAL:
 				String s = container + '<'
-				p.annotations.list.findAll{ it.onGenericParam }.each {
+				def annotations = m ? m.annotations : p.annotations
+				annotations.list.findAll{ it.onGenericParam }.each {
 					s += it
 					s += ' '
 				}
 				s += p.type.name
 				s += '>'
+				if (annotations.list.find{ it.onGenericParam }) {
+					println("${m.name}: ${s}")
+				}
 				return s
 			case MCardinality.MAP:
+			case MCardinality.LINKEDMAP:
 				def keyType = p.attr['keyType']
 				keyType = keyType ?:  m?.refs['property']?.attr['keyType']
 				keyType = keyType ?: 'String'
@@ -367,6 +423,7 @@ class JavaEmitter extends CodeEmitter
 			case MCardinality.ARRAY:
 				return "new ${f.type.name}[0]"
 			case MCardinality.LIST:
+			case MCardinality.LINKEDMAP:
 			case MCardinality.MAP:
 			case MCardinality.SET:
 				if (val)
