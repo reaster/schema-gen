@@ -118,6 +118,7 @@ class JavaPreEmitter extends CodeEmitter
         /*
         public static Map<String,AliasNameTypeEnum> map = Arrays.stream(AliasNameTypeEnum.values())
             .collect(Collectors.toMap((v)->v.getValue(), (v)->v));
+        //or public static Map<String,RouteEnum> valueMap = java.util.Arrays.stream(RouteEnum.values()).collect(Collectors.toMap(RouteEnum::getValue, Function.identity()));
 
         public static AliasNameTypeEnum lookup(String value) {
             if (value==null) return Unknown;

@@ -104,20 +104,20 @@ class XmlSchemaNormalizer
             if (!tag)
                 throw new IllegalStateException("no element tag found for ${node}")
             String name = child.@name?.text()
-            if (name == 'emailType' || name == 'hoursType')
+            if (name == 'AbstractRequest' || name == 'containmentAggregationStructure')
                 println name
             String ref = child.@ref?.text()
             String id = child.@id?.text()
             String typeWithPrefix = child.@type?.text()
             Type type = typeWithPrefix ? schema.getGlobal(qnameRef(typeWithPrefix)) : null
             if (typeWithPrefix && !type) {
-                throw new IllegalStateException("${tag} @name='${name}' has @type='${typeWithPrefix}' but NO global type was found")
+                throw new IllegalStateException("${tag} @name='${name}' has @type='${typeWithPrefix}' but NO global type was found under ${qnameRef(typeWithPrefix)}")
             }
             switch (tag) {
                 case 'simpleType':
                     name = name ?: node.@name?.text()
                     boolean _abstract = child.@abstract?.text() == 'true'
-                    if (name == 'usaStateCodeEnum')
+                    if (name == 'NilReasonType')
                         println name
                     if (!name)
                         throw new IllegalStateException("simpleType must have name defined")
@@ -314,6 +314,9 @@ class XmlSchemaNormalizer
                 case 'group':
                     if (ref) {
                         def group = groupNodeLookup[qnameRef(ref)]
+                        if (!group) {
+                            throw new IllegalStateException("ERROR: groupNodeLookup[qnameRef('${ref}')] -> null")
+                        }
                         if (inlineGroups) {
                             lastNode = new TextOnlyType() //create a dummy node to capture annotation nodes
                             traverseElements(group) //just add them to the current type
@@ -366,6 +369,8 @@ class XmlSchemaNormalizer
                     elementStack.peek().compositors << choice
                     elementStack.push(choice)
                     lastNode = choice
+                    if (!child)
+                        println 'empty child'
                     traverseElements(child)
                     elementStack.pop()
                     break
@@ -483,10 +488,15 @@ class XmlSchemaNormalizer
             schema.putGlobal(qname, isTextOnlyType(node) ? new TextOnlyType(qname:qname) : new SimpleType(qname:qname))
         }
         for(node in schemaNode.complexType.list()) {
-            QName qname = qname(node.@name.text())
+            String name = node.@name.text()
+            QName qname = qname(name)
+            if (name == 'AbstractRequestStructure')
+                println qname
             complexTypeNodeLookup[qname] = node
             boolean isSimpleContent = !node.simpleContent.list().isEmpty()
             schema.putGlobal(qname, isSimpleContent ? new SimpleType(qname:qname) : new ComplexType(qname:qname))
+            if (!schema.getGlobal(qname))
+                throw new IllegalStateException("can't lookup ${qname}")
         }
         for(node in schemaNode.attributeGroup.list()) {
             QName qname = qname(node.@name.text())
@@ -738,7 +748,6 @@ class XmlSchemaNormalizer
                 throw new IllegalStateException("no 'targetNamespace' defined in ${namespaces} or namespace stack (prefixToNamespaceMap)")
 
             result.put('targetNamespace', targetNamespace)
-            result.put('', targetNamespace) //TODO do we need this?
 //            result.keySet().forEach{ key ->
 //                if (result[key.toString()] == targetNamespace ) {
 //                    result[key.toString()] = overrideNamespace
@@ -750,20 +759,25 @@ class XmlSchemaNormalizer
         }
     }
 
-    Schema buildSchema(final URL xmlSchemaURL, final String overrideNamespace=null)
+    private Map<String,Set<URL>> _visitedFilesByNamespace = [:]
+
+    private boolean hasVisited(final URL xmlSchemaURL, final Map<String,String> namespaces)
     {
-        final Map<String,String> namespaces = overrideNamespaces( loadNamespaces(xmlSchemaURL), overrideNamespace )
-        //println "PUSH: ${namespaces}"
-        prefixToNamespaceMap.push(namespaces)
-        //useDefaultNS = namespaces[''] == namespaces['targetNamespace']
-        Schema schema = internalBuildSchema(xmlSchemaURL.openStream(), xmlSchemaURL)
-        if (prefixToNamespaceMap.size() > 1) {
-            def popedNS = prefixToNamespaceMap.pop()
-            //println "POP: ${popedNS}"
-        }
-        schema.prefixToNamespaceMap = prefixToNamespaceMap.peek()
-        schema
+        final String targetNamespace = namespaces['targetNamespace']
+        Set<URL> visitedFiles = _visitedFilesByNamespace[targetNamespace]
+        visitedFiles ? visitedFiles.contains(xmlSchemaURL) : false
     }
+    private def setVisited(final URL xmlSchemaURL, final Map<String,String> namespaces)
+    {
+        final String targetNamespace = namespaces['targetNamespace']
+        Set<URL> visitedFiles = _visitedFilesByNamespace[targetNamespace]
+        if (visitedFiles) {
+            visitedFiles.add(xmlSchemaURL)
+        } else {
+            _visitedFilesByNamespace[targetNamespace] = [xmlSchemaURL] as Set
+        }
+    }
+
 
     Schema buildSchema(String xmlSchemaText) {
         prefixToNamespaceMap.push(loadNamespaces(xmlSchemaText))
@@ -774,10 +788,32 @@ class XmlSchemaNormalizer
         schema.prefixToNamespaceMap = prefixToNamespaceMap.peek()
         schema
     }
+
+    Schema buildSchema(final URL xmlSchemaURL, final String overrideNamespace=null)
+    {
+        final Map<String,String> namespaces = overrideNamespaces( loadNamespaces(xmlSchemaURL), overrideNamespace )
+        if (hasVisited(xmlSchemaURL, namespaces)) {
+            println "SKIP ${xmlSchemaURL}. Already processed."
+            null
+        } else {
+            println "PUSH: ${xmlSchemaURL} ${namespaces}"
+            prefixToNamespaceMap.push(namespaces)
+            //useDefaultNS = namespaces[''] == namespaces['targetNamespace']
+            setVisited(xmlSchemaURL, namespaces)
+            Schema schema = internalBuildSchema(xmlSchemaURL.openStream(), xmlSchemaURL)
+            if (prefixToNamespaceMap.size() > 1) {
+                def popedNS = prefixToNamespaceMap.pop()
+                println "POP: ${xmlSchemaURL} ${popedNS}"
+            }
+            schema.prefixToNamespaceMap = prefixToNamespaceMap.peek()
+            schema
+        }
+    }
+
     /**
      * recursive work flow of normalizer
      */
-    Schema internalBuildSchema(InputStream inputStream, URL context)
+    private Schema internalBuildSchema(InputStream inputStream, URL context)
     {
         boolean isRootSchema = schema == null
         XmlSlurper xmlSlurper = new XmlSlurper()
@@ -792,6 +828,7 @@ class XmlSchemaNormalizer
         } else {
             schema.prefixToNamespaceMap = prefixToNamespaceMap.peek()
         }
+        indexGlobalNodes(xmlSchema) //need to index global elements so they can be ref(erenced)
         for(imprt in xmlSchema.'import'.list()) {
             String location = imprt.@schemaLocation.text()
             //String namespace = imprt.@namespace.text()
@@ -805,8 +842,7 @@ class XmlSchemaNormalizer
             String targetNamespace = prefixToNamespaceMap.peek()['targetNamespace']
             buildSchema(url, targetNamespace)  //import overrides namespaces with its own namespace
         }
-        //need to index global elements so they can be ref(erenced)
-        indexGlobalNodes(xmlSchema)
+        //indexGlobalNodes(xmlSchema) //need to index global elements so they can be ref(erenced)
         lastNode = schema
         //walk the schema XML tree
         traverseElements(xmlSchema)
@@ -826,5 +862,6 @@ class XmlSchemaNormalizer
         }
         schema
     }
+
 
 }

@@ -113,9 +113,7 @@ class JavaGenMain extends JavaGen
     }
     def initKml()
     {
-        schemaURL = new URL('file:../schema-gen-examples/java-x/src/main/resources/ogckml22.xsd')
-        //schemaURL = new URL('file:../schema-gen-examples/java-x/src/main/resources/atom-author-link.xsd')
-        srcDir = new File('../schema-gen-examples/java-x/src/main/java-gen')
+        schemaURL = new URL('file:../schema-gen-examples/java-x/src/main/resources/ogckml22.xsd')        srcDir = new File('../schema-gen-examples/java-x/src/main/java-gen')
         rootElements = ['kml']
         printSchema = true
     }
@@ -132,13 +130,43 @@ class JavaGenMain extends JavaGen
             new JavaEmitter(gen: this)
         ]
     }
+    def initNetex()
+    {
+        schemaURL = new File('/Users/richard/dev/netex-cen/NeTEx/xsd/netex_framework/netex_all_objects_generic.xsd').toURI().toURL()
+//        schemaURL = new File('/Users/richard/dev/netex-cen/NeTEx/xsd/NeTEx_publication.xsd').toURI().toURL()
+//        schemaURL = new File('/Users/richard/dev/netex-cen/NeTEx/xsd/NeTEx_publication-NoConstraint.xsd').toURI().toURL()
+//        schemaURL = new File('/Users/richard/dev/netex-cen/NeTEx/xsd/gml/basicTypes.xsd').toURI().toURL()
+//        schemaURL = new File('/Users/richard/dev/netex-cen/NeTEx/xsd/NeTEx_siri.xsd').toURI().toURL()
+//        schemaURL = new File('/Users/richard/dev/netex-cen/NeTEx/xsd/NeTEx_publication_timetable.xsd').toURI().toURL()
+        packageName = 'org.rutebanken.netex'
+        srcDir = new File('/Users/richard/dev/netex-cen/netex-java-model2/src/main/java-gen')
+        //treatWrapperElementsAsCollections = false
+    }
+
+    def initIES()
+    {
+        schemaURL = new URL('https://combat.vision/data/v4.3/IES.xsd')
+        packageName = 'vision.combat.data.v4_3'
+        srcDir = new File('/Users/richard/dev/combat-vision/src/main/java-gen')
+        //treatWrapperElementsAsCollections = false
+    }
+
+    def initCircular()
+    {
+        schemaURL = new File('/Users/richard/dev/hs/schema-gen/src/test/resources/circular1.xsd').toURI().toURL()
+        srcDir = new File('/Users/richard/dev/combat-vision/src/main/java-gen')
+        //treatWrapperElementsAsCollections = false
+    }
 
     JavaGenMain()
     {
         super()
+//        initCircular()
+        initIES()
+//        initNetex()
 //        initAtom() //working 3/14/2020
         //initKml()
-		initJavaGpx() //working 3/14/2020
+//		initJavaGpx() //working 3/14/2020
 //        initJava14Gpx() //working 4/1/2020
 //		initHsf2()
 //        initHsf2Extension()

@@ -220,6 +220,7 @@ final class GlobalFunctionsUtil
 		Set<String> alreadyDefinedNS = [] as Set
 		boolean targetFound = false
 		String targetNamespaceKey = 'targetNamespace'
+		int nodeLevel = 0;
 
 		NamespaceHandler() {
 			namespaces['xml'] = "http://www.w3.org/XML/1998/namespace"
@@ -227,21 +228,30 @@ final class GlobalFunctionsUtil
 
 		@Override void startPrefixMapping (String prefix, String uri) throws SAXException
 		{
-			//if ( ! alreadyDefinedNS.contains(uri) ) {
+			if ( nodeLevel < 2 ) {
 				alreadyDefinedNS << uri
 				namespaces.put(prefix, uri)
-			//}
+				//println "adding nested namespace level[${nodeLevel}] '${prefix}':'${uri}'"
+			} else {
+				//println "ignoring nested namespace level[${nodeLevel}] '${prefix}':'${uri}'"
+			}
 		}
 		@Override void startElement(String uri, String localName,String qName, Attributes attributes) throws SAXException
 		{
+			nodeLevel++;
 			if (!targetFound && targetNamespaceKey!=null) {
 				int index = attributes.getIndex(targetNamespaceKey)
 				if (index >= 0) {
-					namespaces[targetNamespaceKey] = attributes.getValue(index)
-					println("<${qName} targetNamespace='${attributes.getValue(index)}'>")
+					String nsUri = attributes.getValue(index);
+					namespaces.put(targetNamespaceKey, nsUri)
+					//println "adding targetNamespace namespace level[${nodeLevel}] '${targetNamespaceKey}':'${nsUri}'"
 				}
 				targetFound = true
 			}
+		}
+		@Override void endElement(String uri, String localName,String qName) throws SAXException
+		{
+			nodeLevel--
 		}
 	}
 

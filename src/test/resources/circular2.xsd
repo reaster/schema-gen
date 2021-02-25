@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        elementFormDefault="qualified"
+        targetNamespace="http://javagen.com/fee"
+        xmlns:fee="http://javagen.com/fee" version="1.0.0">
+
+    <include schemaLocation="circular1.xsd"/>
+
+    <complexType name="FiType">
+        <sequence>
+            <element name="name" type="xs:string"/>
+        </sequence>
+    </complexType>
+    <complexType name="FumType">
+        <sequence>
+            <element name="fo" type="fee:FoType"/>
+        </sequence>
+    </complexType>
+</schema>
